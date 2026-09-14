@@ -705,10 +705,10 @@ export const SupplyCartPage: React.FC = () => {
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc' }}>
       <Navbar />
 
-      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: '32px 24px' }}>
+      <main className="cart-main-container">
         {/* Page Title */}
         <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.5px' }}>
+          <h1 className="cart-page-title">
             🛒 Shopping Cart & Express Checkout
           </h1>
           <p style={{ color: '#64748b', fontSize: '15px', marginTop: '4px' }}>
@@ -803,7 +803,7 @@ export const SupplyCartPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: '28px', alignItems: 'start' }}>
+          <div className="cart-main-layout">
 
             {/* ── Cart Items Column ── */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -847,13 +847,8 @@ export const SupplyCartPage: React.FC = () => {
                   return (
                     <div
                       key={item.product.id}
-                      className="glass-panel"
+                      className="glass-panel cart-item-card"
                       style={{
-                        padding: '16px 18px',
-                        borderRadius: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '14px',
                         background: isChecked ? '#ffffff' : '#f8fafc',
                         border: isChecked ? '1.5px solid #ca8a04' : '1.5px solid #e2e8f0',
                         transition: 'all 0.15s ease',
@@ -861,26 +856,14 @@ export const SupplyCartPage: React.FC = () => {
                     >
                       <input
                         type="checkbox"
+                        className="cart-item-checkbox"
                         checked={isChecked}
                         onChange={() => toggleSelectSupply(item.product.id)}
                         style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
                       />
 
                       {/* Product Image Thumbnail */}
-                      <div
-                        style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '12px',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          overflow: 'hidden',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
+                      <div className="cart-item-thumbnail">
                         <img
                           src={getImageUrl(item.product.images?.[0], categoryImages[item.product.category] ?? 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=600&q=80')}
                           alt={item.product.name}
@@ -895,7 +878,7 @@ export const SupplyCartPage: React.FC = () => {
                         />
                       </div>
 
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="cart-item-info">
                         <div style={{ fontSize: '12px', color: '#854d0e', fontWeight: 700 }}>
                           {item.product.supplierName}
                         </div>
@@ -924,9 +907,9 @@ export const SupplyCartPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                      <div className="cart-item-actions">
                         {/* Qty Stepper */}
-                        <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+                        <div className="cart-item-stepper" style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
                           <button
                             type="button"
                             onClick={() => handleUpdateSupplyQty(item.product.id, -1)}
@@ -966,12 +949,13 @@ export const SupplyCartPage: React.FC = () => {
                           </button>
                         </div>
 
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#ca8a04', minWidth: '80px', textAlign: 'right' }}>
+                        <div className="cart-item-subtotal" style={{ fontSize: '16px', fontWeight: 800, color: '#ca8a04', minWidth: '80px', textAlign: 'right' }}>
                           ₱{(item.quantity * item.product.price).toLocaleString()}
                         </div>
 
                         <button
                           type="button"
+                          className="cart-item-remove-btn"
                           onClick={() => handleRemoveSupply(item.product.id)}
                           title="Remove item"
                           style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
@@ -990,13 +974,8 @@ export const SupplyCartPage: React.FC = () => {
                   return (
                     <div
                       key={item.id}
-                      className="glass-panel"
+                      className="glass-panel cart-item-card"
                       style={{
-                        padding: '16px 18px',
-                        borderRadius: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '14px',
                         background: isChecked ? '#ffffff' : '#f8fafc',
                         border: isChecked ? '1.5px solid #176B3A' : '1.5px solid #e2e8f0',
                         transition: 'all 0.15s ease',
@@ -1004,26 +983,14 @@ export const SupplyCartPage: React.FC = () => {
                     >
                       <input
                         type="checkbox"
+                        className="cart-item-checkbox"
                         checked={isChecked}
                         onChange={() => toggleSelectProduce(item.id)}
                         style={{ width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
                       />
 
                       {/* Produce Crop Image Thumbnail */}
-                      <div
-                        style={{
-                          width: '64px',
-                          height: '64px',
-                          borderRadius: '12px',
-                          backgroundColor: '#f8fafc',
-                          border: '1px solid #e2e8f0',
-                          overflow: 'hidden',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                        }}
-                      >
+                      <div className="cart-item-thumbnail">
                         <img
                           src={getImageUrl(item.listing.photos?.[0] || item.listing.imageUrl, getCropImageFallback(item.listing.cropName))}
                           alt={item.listing.cropName}
@@ -1038,7 +1005,7 @@ export const SupplyCartPage: React.FC = () => {
                         />
                       </div>
 
-                      <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="cart-item-info">
                         <div style={{ fontSize: '12px', color: '#176B3A', fontWeight: 700 }}>
                           Farmer: {item.listing.sellerName || item.listing.farmerName || 'Verified Farmer'}
                         </div>
@@ -1067,9 +1034,9 @@ export const SupplyCartPage: React.FC = () => {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                      <div className="cart-item-actions">
                         {/* Qty Stepper */}
-                        <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
+                        <div className="cart-item-stepper" style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', background: '#fff' }}>
                           <button
                             type="button"
                             onClick={() => handleUpdateProduceQty(item.id, -5)}
@@ -1109,12 +1076,13 @@ export const SupplyCartPage: React.FC = () => {
                           </button>
                         </div>
 
-                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#176B3A', minWidth: '80px', textAlign: 'right' }}>
+                        <div className="cart-item-subtotal" style={{ fontSize: '16px', fontWeight: 800, color: '#176B3A', minWidth: '80px', textAlign: 'right' }}>
                           ₱{(item.quantity * (item.listing.pricePerUnit || 0)).toLocaleString()}
                         </div>
 
                         <button
                           type="button"
+                          className="cart-item-remove-btn"
                           onClick={() => handleRemoveProduce(item.id)}
                           title="Remove item"
                           style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '18px', padding: '4px' }}
@@ -1129,7 +1097,7 @@ export const SupplyCartPage: React.FC = () => {
             </div>
 
             {/* ── Order Summary Panel ── */}
-            <div className="glass-panel" style={{ padding: '24px', borderRadius: '20px', position: 'sticky', top: '24px' }}>
+            <div className="glass-panel cart-summary-panel">
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '18px' }}>
                 {activeTab === 'supplies' ? 'Supply Checkout' : 'Crop Checkout'}
               </h2>
