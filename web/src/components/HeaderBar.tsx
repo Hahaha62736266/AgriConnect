@@ -228,6 +228,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         {/* Search Field */}
         <div
           ref={searchRef}
+          className={`header-search-wrap ${showSuggestions && searchQuery.trim().length > 0 ? 'is-active' : ''}`}
           style={{
             flex: '0 1 480px',
             maxWidth: '480px',
@@ -235,108 +236,153 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
             position: 'relative',
           }}
         >
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#6B7280"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ position: 'absolute', left: '14px', pointerEvents: 'none' }}
-          >
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setShowSuggestions(true);
-            }}
-            onFocus={() => setShowSuggestions(true)}
-            placeholder="Search crops, prices, programs..."
-            aria-label="Search AgriConnect"
-            style={{
-              width: '100%',
-              height: '40px',
-              paddingLeft: '40px',
-              paddingRight: '16px',
-              borderRadius: '10px',
-              border: '1px solid #D8D6CE',
-              background: '#F8F7F3',
-              fontSize: '14px',
-              color: '#1A1C1A',
-              fontWeight: 500,
-              outline: 'none',
-              transition: 'background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
-            }}
-            onFocusCapture={(e) => {
-              e.currentTarget.style.background = '#FFFFFF';
-              e.currentTarget.style.borderColor = '#176B3A';
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(23, 107, 58, 0.12)';
-            }}
-            onBlurCapture={(e) => {
-              e.currentTarget.style.background = '#F8F7F3';
-              e.currentTarget.style.borderColor = '#D8D6CE';
-              e.currentTarget.style.boxShadow = 'none';
-            }}
-          />
-        </div>
-
-        {/* Autocomplete Dropdown */}
-        {showSuggestions && searchQuery.trim().length > 0 && (
-          <div
-            style={{
-              position: 'absolute',
-              top: 'calc(100% + 8px)',
-              left: 0,
-              right: 0,
-              background: '#FFFFFF',
-              borderRadius: '14px',
-              border: '1.5px solid #E4E2DC',
-              boxShadow: '0 14px 36px rgba(23, 107, 58, 0.14)',
-              overflow: 'hidden',
-              zIndex: 600,
-            }}
-          >
-            <div style={{ padding: '10px 16px', fontSize: '12px', fontWeight: 800, color: '#525450', background: '#F8F7F3', borderBottom: '1px solid #E4E2DC' }}>
-              SEARCH SUGGESTIONS FOR "{searchQuery}"
-            </div>
-            {filteredSuggestions.length > 0 ? (
-              filteredSuggestions.map((item, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleSelectSuggestion(item.path)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 16px',
-                    cursor: 'pointer',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                    color: '#1A1C1A',
-                    borderBottom: '1px solid #F8F7F3',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = '#EAF6EE')}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
-                >
-                  <span style={{ fontSize: '18px' }}>{item.icon}</span>
-                  <span style={{ flex: 1 }}>{item.title}</span>
-                  <span style={{ fontSize: '13px', color: '#176B3A', fontWeight: 700 }}>Open →</span>
-                </div>
-              ))
-            ) : (
-              <div style={{ padding: '16px', fontSize: '14px', color: '#525450', textAlign: 'center' }}>
-                No direct matches. Press Enter to search marketplace.
-              </div>
-            )}
+          <div className="header-search-input-box" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#6B7280"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ position: 'absolute', left: '14px', pointerEvents: 'none' }}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder="Search crops, prices, programs..."
+              aria-label="Search AgriConnect"
+              className="header-search-input"
+              style={{
+                width: '100%',
+                height: '40px',
+                paddingLeft: '40px',
+                paddingRight: '16px',
+                borderRadius: '10px',
+                border: '1px solid #D8D6CE',
+                background: '#F8F7F3',
+                fontSize: '14px',
+                color: '#1A1C1A',
+                fontWeight: 500,
+                outline: 'none',
+                transition: 'background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease',
+              }}
+              onFocusCapture={(e) => {
+                e.currentTarget.style.background = '#FFFFFF';
+                e.currentTarget.style.borderColor = '#176B3A';
+                e.currentTarget.style.boxShadow = '0 0 0 3px rgba(23, 107, 58, 0.12)';
+              }}
+              onBlurCapture={(e) => {
+                e.currentTarget.style.background = '#F8F7F3';
+                e.currentTarget.style.borderColor = '#D8D6CE';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            />
           </div>
-        )}
+
+          {/* Search Mobile Backdrop */}
+          {showSuggestions && searchQuery.trim().length > 0 && (
+            <div
+              className="header-search-backdrop"
+              onClick={() => setShowSuggestions(false)}
+            />
+          )}
+
+          {/* Autocomplete Dropdown */}
+          {showSuggestions && searchQuery.trim().length > 0 && (
+            <div
+              className="header-search-dropdown"
+              style={{
+                position: 'absolute',
+                top: 'calc(100% + 8px)',
+                left: 0,
+                right: 0,
+                background: '#FFFFFF',
+                borderRadius: '14px',
+                border: '1.5px solid #E4E2DC',
+                boxShadow: '0 14px 36px rgba(23, 107, 58, 0.14)',
+                overflow: 'hidden',
+                zIndex: 600,
+              }}
+            >
+              <div
+                className="header-search-dropdown-header"
+                style={{
+                  padding: '10px 16px',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  color: '#525450',
+                  background: '#F8F7F3',
+                  borderBottom: '1px solid #E4E2DC',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span>SEARCH SUGGESTIONS FOR "{searchQuery}"</span>
+                <button
+                  onClick={() => setShowSuggestions(false)}
+                  className="header-search-mobile-close"
+                  style={{
+                    border: 'none',
+                    background: '#E2E8F0',
+                    color: '#475569',
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    display: 'none',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                  }}
+                  title="Close Suggestions"
+                >
+                  ✕
+                </button>
+              </div>
+              {filteredSuggestions.length > 0 ? (
+                filteredSuggestions.map((item, index) => (
+                  <div
+                    key={index}
+                    onClick={() => handleSelectSuggestion(item.path)}
+                    className="header-search-item"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 16px',
+                      cursor: 'pointer',
+                      fontSize: '15px',
+                      fontWeight: 600,
+                      color: '#1A1C1A',
+                      borderBottom: '1px solid #F8F7F3',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#EAF6EE')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '#FFFFFF')}
+                  >
+                    <span style={{ fontSize: '18px', flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ flex: 1, minWidth: 0 }}>{item.title}</span>
+                    <span style={{ fontSize: '13px', color: '#176B3A', fontWeight: 700, flexShrink: 0 }}>Open →</span>
+                  </div>
+                ))
+              ) : (
+                <div style={{ padding: '16px', fontSize: '14px', color: '#525450', textAlign: 'center' }}>
+                  No direct matches. Press Enter to search marketplace.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

@@ -116,10 +116,11 @@ export const NotificationBell: React.FC = () => {
   };
 
   return (
-    <div ref={popoverRef} style={{ position: 'relative' }}>
+    <div ref={popoverRef} className="notif-bell-wrapper" style={{ position: 'relative' }}>
       <button
         onClick={() => setIsOpen((prev) => !prev)}
         aria-label="Notifications"
+        className={`notif-bell-btn ${unreadCount > 0 ? 'has-unread' : ''}`}
         style={{
           position: 'relative',
           display: 'flex',
@@ -128,9 +129,9 @@ export const NotificationBell: React.FC = () => {
           width: '40px',
           height: '40px',
           borderRadius: '10px',
-          background: unreadCount > 0 ? '#fef9c3' : '#FFFFFF',
-          border: unreadCount > 0 ? '1.5px solid var(--color-accent)' : '1px solid #E4E2DC',
-          color: unreadCount > 0 ? 'var(--color-accent)' : '#525450',
+          background: unreadCount > 0 ? '#EFFDF5' : '#FFFFFF',
+          border: unreadCount > 0 ? '1.5px solid #16A34A' : '1px solid #E4E2DC',
+          color: unreadCount > 0 ? '#15803D' : '#525450',
           cursor: 'pointer',
           transition: 'all 0.15s ease',
           flexShrink: 0,
@@ -154,6 +155,7 @@ export const NotificationBell: React.FC = () => {
         {/* Unread Count Badge */}
         {unreadCount > 0 && (
           <span
+            className="notif-count-badge"
             style={{
               position: 'absolute',
               top: '-6px',
@@ -162,7 +164,7 @@ export const NotificationBell: React.FC = () => {
               height: '18px',
               padding: '0 4px',
               borderRadius: '9px',
-              backgroundColor: '#ef4444',
+              backgroundColor: '#EF4444',
               color: '#fff',
               fontSize: '10px',
               fontWeight: 800,
@@ -179,9 +181,18 @@ export const NotificationBell: React.FC = () => {
         )}
       </button>
 
+      {/* Backdrop overlay for mobile touch dismiss */}
+      {isOpen && (
+        <div
+          className="notif-backdrop"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       {/* Popover Panel */}
       {isOpen && (
         <div
+          className="notif-popover-panel"
           style={{
             position: 'absolute',
             top: '48px',
@@ -190,7 +201,7 @@ export const NotificationBell: React.FC = () => {
             maxHeight: '480px',
             backgroundColor: '#ffffff',
             borderRadius: '16px',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.16)',
             border: '1px solid #e2e8f0',
             zIndex: 1000,
             display: 'flex',
@@ -200,6 +211,7 @@ export const NotificationBell: React.FC = () => {
         >
           {/* Header */}
           <div
+            className="notif-popover-header"
             style={{
               padding: '14px 16px',
               borderBottom: '1px solid #f1f5f9',
@@ -213,13 +225,15 @@ export const NotificationBell: React.FC = () => {
               <span style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a' }}>Notifications</span>
               {unreadCount > 0 && (
                 <span
+                  className="notif-unread-badge"
                   style={{
-                    backgroundColor: '#ca8a04',
-                    color: '#fff',
-                    fontSize: '10px',
+                    backgroundColor: '#EFFDF5',
+                    color: '#15803D',
+                    fontSize: '11px',
                     fontWeight: 800,
-                    padding: '2px 7px',
+                    padding: '2px 8px',
                     borderRadius: '10px',
+                    border: '1px solid #BBF7D0',
                   }}
                 >
                   {unreadCount} new
@@ -227,25 +241,49 @@ export const NotificationBell: React.FC = () => {
               )}
             </div>
 
-            {unreadCount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {unreadCount > 0 && (
+                <button
+                  onClick={handleMarkAllRead}
+                  className="notif-mark-read-btn"
+                  style={{
+                    border: 'none',
+                    background: 'none',
+                    color: '#0E4A27',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Mark all read
+                </button>
+              )}
               <button
-                onClick={handleMarkAllRead}
+                onClick={() => setIsOpen(false)}
+                className="notif-mobile-close-btn"
+                title="Close notifications"
                 style={{
                   border: 'none',
-                  background: 'none',
-                  color: '#ca8a04',
-                  fontSize: '12px',
-                  fontWeight: 700,
+                  background: '#E2E8F0',
+                  color: '#475569',
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  display: 'none',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   cursor: 'pointer',
+                  fontSize: '12px',
+                  fontWeight: 800,
                 }}
               >
-                Mark all read
+                ✕
               </button>
-            )}
+            </div>
           </div>
 
           {/* Body */}
-          <div style={{ overflowY: 'auto', flex: 1, padding: '8px 0' }}>
+          <div className="notif-popover-body" style={{ overflowY: 'auto', flex: 1, padding: '4px 0' }}>
             {loading ? (
               <div style={{ padding: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
                 Loading notifications…
@@ -253,7 +291,7 @@ export const NotificationBell: React.FC = () => {
             ) : notifications.length === 0 ? (
               <div style={{ padding: '40px 16px', textAlign: 'center', color: '#94a3b8' }}>
                 <div style={{ fontSize: '32px', marginBottom: '6px' }}>🔔</div>
-                <div style={{ fontSize: '14px', fontWeight: 600 }}>No Notifications</div>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#475569' }}>No Notifications</div>
                 <div style={{ fontSize: '12px', marginTop: '2px' }}>You're all caught up!</div>
               </div>
             ) : (
@@ -261,26 +299,29 @@ export const NotificationBell: React.FC = () => {
                 <div
                   key={notif.id}
                   onClick={() => handleItemClick(notif)}
+                  className={`notif-item ${notif.isRead ? 'is-read' : 'is-unread'}`}
                   style={{
                     padding: '12px 16px',
                     display: 'flex',
                     gap: '12px',
                     cursor: 'pointer',
-                    backgroundColor: notif.isRead ? '#ffffff' : '#fefce8',
+                    backgroundColor: notif.isRead ? '#ffffff' : '#EFFDF5',
                     borderBottom: '1px solid #f1f5f9',
-                    transition: 'background 0.15s ease',
+                    borderLeft: notif.isRead ? '3px solid transparent' : '3px solid #0E4A27',
+                    transition: 'all 0.15s ease',
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = notif.isRead ? '#f8fafc' : '#fef08a';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = notif.isRead ? '#f8fafc' : '#DCFCE7';
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = notif.isRead ? '#ffffff' : '#fefce8';
+                    (e.currentTarget as HTMLElement).style.backgroundColor = notif.isRead ? '#ffffff' : '#EFFDF5';
                   }}
                 >
                   <div
+                    className={`notif-icon-box type-${notif.type}`}
                     style={{
-                      width: '34px',
-                      height: '34px',
+                      width: '36px',
+                      height: '36px',
                       borderRadius: '10px',
                       backgroundColor: '#f1f5f9',
                       display: 'flex',
@@ -304,20 +345,21 @@ export const NotificationBell: React.FC = () => {
                         alignItems: 'center',
                       }}
                     >
-                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span className="notif-title" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {notif.title}
                       </span>
-                      <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: 500, flexShrink: 0, marginLeft: '6px' }}>
+                      <span className="notif-time" style={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600, flexShrink: 0, marginLeft: '6px' }}>
                         {formatTime(notif.createdAt)}
                       </span>
                     </div>
 
                     <div
+                      className="notif-message"
                       style={{
                         fontSize: '12px',
                         color: '#475569',
                         marginTop: '2px',
-                        lineHeight: 1.3,
+                        lineHeight: 1.35,
                         display: '-webkit-box',
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: 'vertical',
@@ -330,11 +372,12 @@ export const NotificationBell: React.FC = () => {
 
                   {!notif.isRead && (
                     <div
+                      className="notif-unread-dot"
                       style={{
                         width: '8px',
                         height: '8px',
                         borderRadius: '50%',
-                        backgroundColor: '#ca8a04',
+                        backgroundColor: '#16A34A',
                         alignSelf: 'center',
                         flexShrink: 0,
                       }}
@@ -349,3 +392,4 @@ export const NotificationBell: React.FC = () => {
     </div>
   );
 };
+
