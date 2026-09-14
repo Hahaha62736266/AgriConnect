@@ -42,7 +42,7 @@ const paymentStatusBadges: Record<PaymentStatus, { label: string; badgeClass: st
 };
 
 export const ProfilePage: React.FC = () => {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, logout } = useAuth();
   const navigate = useNavigate();
 
   const [firstName, setFirstName] = useState(user?.firstName || '');
@@ -70,6 +70,14 @@ export const ProfilePage: React.FC = () => {
   const { success: toastSuccess, error: toastError } = useToast();
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  const handleLogout = () => {
+    setShowLogoutModal(false);
+    logout();
+    toastSuccess('Logged Out', 'You have been safely logged out.');
+    navigate('/login');
+  };
 
   // Purchases state
   const [orders, setOrders] = useState<SupplyOrder[]>([]);
@@ -158,22 +166,23 @@ export const ProfilePage: React.FC = () => {
   const currentTabOrders = getOrdersForTab(activeTab);
 
   return (
-    <div className="app-container" style={{ paddingBottom: '40px' }}>
+    <div className="app-container profile-container" style={{ paddingBottom: '40px' }}>
       {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '34px', fontWeight: 800, color: '#0E4A27' }}>
+      <div className="profile-page-header" style={{ marginBottom: '28px' }}>
+        <h1 className="profile-page-title" style={{ fontSize: '34px', fontWeight: 800, color: '#0E4A27' }}>
           My Account & Profile
         </h1>
-        <p style={{ fontSize: '20px', color: '#525450', marginTop: '4px' }}>
+        <p className="profile-page-subtitle" style={{ fontSize: '20px', color: '#525450', marginTop: '4px' }}>
           Manage your contact information, farm location, and view your supply purchases.
         </p>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+      <div className="profile-content-stack" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
         {/* ─── Avatar & User Card ─── */}
-        <div className="card" style={{ padding: '28px', display: 'flex', alignItems: 'center', gap: '28px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative' }}>
+        <div className="card profile-user-card" style={{ padding: '28px', display: 'flex', alignItems: 'center', gap: '28px', flexWrap: 'wrap' }}>
+          <div className="profile-avatar-wrap" style={{ position: 'relative' }}>
             <div
+              className="profile-avatar-circle"
               style={{
                 width: '100px',
                 height: '100px',
@@ -210,6 +219,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             <label
+              className="profile-photo-upload-btn"
               style={{
                 position: 'absolute',
                 bottom: '0px',
@@ -233,13 +243,13 @@ export const ProfilePage: React.FC = () => {
             </label>
           </div>
 
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-              <h2 style={{ fontSize: '28px', fontWeight: 800, color: '#1A1C1A', margin: 0 }}>
+          <div className="profile-user-details">
+            <div className="profile-user-header-row" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <h2 className="profile-user-name" style={{ fontSize: '28px', fontWeight: 800, color: '#1A1C1A', margin: 0 }}>
                 {user.firstName} {user.lastName}
               </h2>
               <span
-                className={`badge ${user.role === 'super_admin' || isApproved
+                className={`badge profile-verified-badge ${user.role === 'super_admin' || isApproved
                   ? 'badge-verified'
                   : user.status === 'rejected'
                     ? 'badge-danger'
@@ -263,42 +273,42 @@ export const ProfilePage: React.FC = () => {
               </span>
             </div>
 
-            <p style={{ color: '#525450', fontSize: '18px', margin: '6px 0 8px 0', fontWeight: 600 }}>
+            <p className="profile-user-contact" style={{ color: '#525450', fontSize: '18px', margin: '6px 0 8px 0', fontWeight: 600 }}>
               📧 {user.email} {user.phone ? `• 📞 ${user.phone}` : ''}
             </p>
 
             {(user.barangay || user.municipality || user.province || user.region) && (
-              <p style={{ color: '#0E4A27', fontSize: '15px', margin: '0 0 12px 0', fontWeight: 700 }}>
+              <p className="profile-user-location" style={{ color: '#0E4A27', fontSize: '15px', margin: '0 0 12px 0', fontWeight: 700 }}>
                 📍 {user.role === 'lgu_staff'
                   ? [user.municipality ? `${user.municipality} (All Barangays)` : '', user.province, user.region].filter(Boolean).join(', ')
                   : [user.barangay ? `Brgy. ${user.barangay}` : '', user.municipality, user.province, user.region].filter(Boolean).join(', ')}
               </p>
             )}
 
-            <span className="badge badge-info" style={{ fontSize: '16px' }}>
-              🌾 {roleLabelMap[user.role] ?? user.role}
-            </span>
-
-            {uploading && (
-              <span style={{ fontSize: '16px', color: '#176B3A', marginLeft: '12px', fontWeight: 800 }}>
-                Uploading photo…
+            <div className="profile-user-roles-bar" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <span className="badge badge-info profile-role-badge" style={{ fontSize: '16px' }}>
+                🌾 {roleLabelMap[user.role] ?? user.role}
               </span>
-            )}
+
+              {uploading && (
+                <span className="profile-uploading-text" style={{ fontSize: '16px', color: '#176B3A', marginLeft: '12px', fontWeight: 800 }}>
+                  Uploading photo…
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
-
-
         {/* ─── My Purchases Section ─── */}
         {(user.role === 'farmer' || user.role === 'buyer') && (
-          <div className="card" style={{ padding: '28px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
-              <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+          <div className="card profile-purchases-card" style={{ padding: '28px' }}>
+            <div className="profile-purchases-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
+              <h2 className="profile-section-title" style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
                 🛍️ My Purchases
               </h2>
               <button
                 onClick={() => navigate('/supply/orders')}
-                className="btn btn-secondary"
+                className="btn btn-secondary profile-view-all-btn"
                 style={{ fontSize: '16px' }}
               >
                 View All Purchases →
@@ -306,13 +316,14 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {/* Purchase Tabs */}
-            <div style={{ display: 'flex', gap: '12px', borderBottom: '2px solid #E4E2DC', paddingBottom: '16px', overflowX: 'auto' }}>
+            <div className="profile-purchases-tabs" style={{ display: 'flex', gap: '12px', borderBottom: '2px solid #E4E2DC', paddingBottom: '16px', overflowX: 'auto' }}>
               {purchaseTabs.map((tab) => {
                 const count = getOrdersForTab(tab.key).length;
                 const isActive = activeTab === tab.key;
                 return (
                   <button
                     key={tab.key}
+                    className={`profile-purchase-tab-btn ${isActive ? 'active' : ''}`}
                     onClick={() => setActiveTab(tab.key)}
                     style={{
                       display: 'flex',
@@ -333,6 +344,7 @@ export const ProfilePage: React.FC = () => {
                     <span>{tab.label}</span>
                     {count > 0 && (
                       <span
+                        className="profile-purchase-tab-badge"
                         style={{
                           backgroundColor: isActive ? '#FFFFFF' : '#176B3A',
                           color: isActive ? '#176B3A' : '#FFFFFF',
@@ -351,7 +363,7 @@ export const ProfilePage: React.FC = () => {
             </div>
 
             {/* Tab Orders Content */}
-            <div style={{ marginTop: '24px' }}>
+            <div className="profile-purchases-content" style={{ marginTop: '24px' }}>
               {ordersLoading ? (
                 <div style={{ padding: '24px', textAlign: 'center', color: '#525450', fontSize: '18px', fontWeight: 600 }}>
                   Loading your supply orders…
@@ -372,6 +384,7 @@ export const ProfilePage: React.FC = () => {
                     return (
                       <div
                         key={order.id}
+                        className="profile-order-item-card"
                         style={{
                           padding: '20px 24px',
                           borderRadius: '16px',
@@ -429,8 +442,8 @@ export const ProfilePage: React.FC = () => {
         )}
 
         {/* ─── Personal Information Form Card ─── */}
-        <div className="card" style={{ padding: '28px' }}>
-          <h2 style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', marginBottom: '24px' }}>
+        <div className="card profile-form-card" style={{ padding: '28px' }}>
+          <h2 className="profile-section-title" style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', marginBottom: '24px' }}>
             {user.role === 'super_admin'
               ? 'Personal Information & Office Jurisdiction'
               : user.role === 'lgu_staff'
@@ -443,11 +456,11 @@ export const ProfilePage: React.FC = () => {
           </h2>
 
           <form onSubmit={handleUpdateProfile}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div className="profile-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '20px' }}>
               <div className="form-group">
                 <label className="form-label">First Name</label>
                 <input
-                  className="form-input"
+                  className="form-input profile-form-input"
                   type="text"
                   required
                   value={firstName}
@@ -459,7 +472,7 @@ export const ProfilePage: React.FC = () => {
               <div className="form-group">
                 <label className="form-label">Last Name</label>
                 <input
-                  className="form-input"
+                  className="form-input profile-form-input"
                   type="text"
                   required
                   value={lastName}
@@ -473,7 +486,7 @@ export const ProfilePage: React.FC = () => {
               <div className="form-group" style={{ maxWidth: '420px' }}>
                 <label className="form-label">Contact Phone Number</label>
                 <input
-                  className="form-input"
+                  className="form-input profile-form-input"
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
@@ -485,6 +498,7 @@ export const ProfilePage: React.FC = () => {
 
             {/* Cascading Philippine Location Dropdowns */}
             <div
+              className="profile-location-box"
               style={{
                 marginBottom: '24px',
                 padding: '24px',
@@ -518,6 +532,7 @@ export const ProfilePage: React.FC = () => {
               {user.role === 'lgu_staff' ? (
                 /* ─── LGU Officer Official Jurisdiction Lock (Immutable to prevent data leaks) ─── */
                 <div
+                  className="profile-location-locked-card"
                   style={{
                     background: '#FFFFFF',
                     border: '1.5px solid #86EFAC',
@@ -574,6 +589,7 @@ export const ProfilePage: React.FC = () => {
               ) : isLocationLocked ? (
                 /* ─── Approved User Jurisdiction Lock (Farmers, Buyers, Suppliers) ─── */
                 <div
+                  className="profile-location-locked-card"
                   style={{
                     background: '#FFFFFF',
                     border: '1.5px solid #86EFAC',
@@ -662,7 +678,7 @@ export const ProfilePage: React.FC = () => {
                   : 'Specific Street Address / Building Landmark'}
               </label>
               <textarea
-                className="form-input"
+                className="form-input profile-form-input"
                 rows={3}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
@@ -671,17 +687,100 @@ export const ProfilePage: React.FC = () => {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="btn btn-primary btn-large btn-full"
-              style={{ fontSize: '20px' }}
-            >
-              {saving ? 'Saving changes…' : '✓ Save Profile Changes'}
-            </button>
+            <div className="profile-form-actions">
+              <button
+                type="submit"
+                disabled={saving}
+                className="btn btn-primary btn-large btn-full profile-save-btn"
+                style={{ fontSize: '20px' }}
+              >
+                {saving ? 'Saving changes…' : '✓ Save Profile Changes'}
+              </button>
+
+              {/* Bottom Mobile/Desktop Log Out Button */}
+              <button
+                type="button"
+                className="profile-bottom-logout-btn"
+                onClick={() => setShowLogoutModal(true)}
+              >
+                <span>🚪</span>
+                <span>Log Out of AgriConnect</span>
+              </button>
+            </div>
           </form>
         </div>
       </div>
+
+      {/* ─── Log Out Confirmation Modal ─── */}
+      {showLogoutModal && (
+        <div
+          className="modal-backdrop profile-logout-modal-backdrop"
+          onClick={() => setShowLogoutModal(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px',
+          }}
+        >
+          <div
+            className="modal-card profile-logout-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              padding: '28px',
+              maxWidth: '400px',
+              width: '100%',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              textAlign: 'center',
+              boxSizing: 'border-box',
+            }}
+          >
+            <div style={{ fontSize: '44px', marginBottom: '12px' }}>🚪</div>
+            <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: '0 0 8px 0' }}>
+              Log Out of AgriConnect?
+            </h3>
+            <p style={{ fontSize: '14.5px', color: '#64748B', margin: '0 0 24px 0', lineHeight: 1.5 }}>
+              Are you sure you want to end your current session? You will need your login credentials to sign back in.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowLogoutModal(false)}
+                style={{ flex: 1, padding: '12px', fontSize: '15px', fontWeight: 700, borderRadius: '10px' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn profile-logout-confirm-btn"
+                onClick={handleLogout}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  borderRadius: '10px',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)',
+                  cursor: 'pointer',
+                }}
+              >
+                Yes, Log Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
