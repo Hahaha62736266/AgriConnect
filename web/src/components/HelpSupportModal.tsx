@@ -19,19 +19,20 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px' }}>
+      <div className="modal-content help-support-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px' }}>
         {/* Modal Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#0E4A27', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h2 className="help-modal-title" style={{ fontSize: '24px', fontWeight: 800, color: '#0E4A27', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>❓</span> Need Help with AgriConnect?
             </h2>
-            <p style={{ fontSize: '15px', color: '#6F716C' }}>
+            <p className="help-modal-subtitle" style={{ fontSize: '15px', color: '#6F716C' }}>
               We are here to assist you every step of the way.
             </p>
           </div>
           <button
             onClick={onClose}
+            className="help-modal-close-btn"
             style={{
               background: '#F8F7F3',
               border: 'none',
@@ -48,9 +49,10 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #E4E2DC', paddingBottom: '10px' }}>
+        <div className="help-modal-tabs" style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '1px solid #E4E2DC', paddingBottom: '10px' }}>
           <button
             onClick={() => setActiveTab('options')}
+            className={`help-modal-tab ${activeTab === 'options' ? 'active' : ''}`}
             style={{
               padding: '8px 16px',
               borderRadius: '8px',
@@ -65,6 +67,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
           </button>
           <button
             onClick={() => setActiveTab('howTo')}
+            className={`help-modal-tab ${activeTab === 'howTo' ? 'active' : ''}`}
             style={{
               padding: '8px 16px',
               borderRadius: '8px',
@@ -79,6 +82,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
           </button>
           <button
             onClick={() => setActiveTab('faqs')}
+            className={`help-modal-tab ${activeTab === 'faqs' ? 'active' : ''}`}
             style={{
               padding: '8px 16px',
               borderRadius: '8px',
@@ -97,6 +101,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
         {activeTab === 'options' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div
+              className="help-card-hotline"
               style={{
                 padding: '20px',
                 borderRadius: '16px',
@@ -109,13 +114,13 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               }}
             >
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27' }}>
+                <div className="help-card-hotline-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27' }}>
                   📞 Call Support Hotline
                 </div>
-                <div style={{ fontSize: '15px', color: '#222522', marginTop: '4px' }}>
+                <div className="help-card-hotline-desc" style={{ fontSize: '15px', color: '#222522', marginTop: '4px' }}>
                   Speak directly to our friendly support team. Available 7:00 AM – 7:00 PM daily.
                 </div>
-                <div style={{ fontSize: '16px', fontWeight: 800, color: '#176B3A', marginTop: '6px' }}>
+                <div className="help-card-hotline-num" style={{ fontSize: '16px', fontWeight: 800, color: '#176B3A', marginTop: '6px' }}>
                   0917-123-4567 (Toll Free)
                 </div>
               </div>
@@ -125,6 +130,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
             </div>
 
             <div
+              className="help-card-item"
               style={{
                 padding: '20px',
                 borderRadius: '16px',
@@ -137,10 +143,10 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               }}
             >
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#222522' }}>
+                <div className="help-card-title" style={{ fontSize: '18px', fontWeight: 800, color: '#222522' }}>
                   💬 Chat with Support Agent
                 </div>
-                <div style={{ fontSize: '15px', color: '#6F716C', marginTop: '4px' }}>
+                <div className="help-card-desc" style={{ fontSize: '15px', color: '#6F716C', marginTop: '4px' }}>
                   Send us a text message anytime. Average reply time: 5 minutes.
                 </div>
               </div>
@@ -150,6 +156,7 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
             </div>
 
             <div
+              className="help-card-item"
               style={{
                 padding: '20px',
                 borderRadius: '16px',
@@ -162,10 +169,10 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
               }}
             >
               <div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#222522' }}>
+                <div className="help-card-title" style={{ fontSize: '18px', fontWeight: 800, color: '#222522' }}>
                   🎥 Watch Easy Video Guides
                 </div>
-                <div style={{ fontSize: '15px', color: '#6F716C', marginTop: '4px' }}>
+                <div className="help-card-desc" style={{ fontSize: '15px', color: '#6F716C', marginTop: '4px' }}>
                   Watch 2-minute video demonstrations in Tagalog and Bisaya.
                 </div>
               </div>
@@ -179,29 +186,29 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
         {/* Tab 2: How to Use */}
         {activeTab === 'howTo' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ padding: '16px', borderRadius: '12px', background: '#F8F7F3', border: '1px solid #E4E2DC' }}>
-              <div style={{ fontWeight: 800, fontSize: '17px', color: '#0E4A27' }}>
+            <div className="help-guide-item" style={{ padding: '16px', borderRadius: '12px', background: '#F8F7F3', border: '1px solid #E4E2DC' }}>
+              <div className="help-guide-title" style={{ fontWeight: 800, fontSize: '17px', color: '#0E4A27' }}>
                 1. How to list a crop for sale:
               </div>
-              <div style={{ fontSize: '15px', color: '#222522', marginTop: '6px' }}>
+              <div className="help-guide-text" style={{ fontSize: '15px', color: '#222522', marginTop: '6px' }}>
                 Tap the big green <strong>"+ Add Crop"</strong> button on your dashboard. Type your crop name, price per kilogram, quantity, and tap <strong>"Publish Listing"</strong>.
               </div>
             </div>
 
-            <div style={{ padding: '16px', borderRadius: '12px', background: '#F8F7F3', border: '1px solid #E4E2DC' }}>
-              <div style={{ fontWeight: 800, fontSize: '17px', color: '#0E4A27' }}>
+            <div className="help-guide-item" style={{ padding: '16px', borderRadius: '12px', background: '#F8F7F3', border: '1px solid #E4E2DC' }}>
+              <div className="help-guide-title" style={{ fontWeight: 800, fontSize: '17px', color: '#0E4A27' }}>
                 2. How to check daily crop market prices:
               </div>
-              <div style={{ fontSize: '15px', color: '#222522', marginTop: '6px' }}>
+              <div className="help-guide-text" style={{ fontSize: '15px', color: '#222522', marginTop: '6px' }}>
                 Click on <strong>"Market Prices"</strong> in the menu to view official DA market monitoring prices updated daily for Cagayan de Oro and Bukidnon.
               </div>
             </div>
 
-            <div style={{ padding: '16px', borderRadius: '12px', background: '#F8F7F3', border: '1px solid #E4E2DC' }}>
-              <div style={{ fontWeight: 800, fontSize: '17px', color: '#0E4A27' }}>
+            <div className="help-guide-item" style={{ padding: '16px', borderRadius: '12px', background: '#F8F7F3', border: '1px solid #E4E2DC' }}>
+              <div className="help-guide-title" style={{ fontWeight: 800, fontSize: '17px', color: '#0E4A27' }}>
                 3. How to check government assistance programs:
               </div>
-              <div style={{ fontSize: '15px', color: '#222522', marginTop: '6px' }}>
+              <div className="help-guide-text" style={{ fontSize: '15px', color: '#222522', marginTop: '6px' }}>
                 Click on <strong>"Government Programs"</strong> to view rice farmer cash assistance, fertilizer subsidies, and equipment grants.
               </div>
             </div>
@@ -211,29 +218,29 @@ export const HelpSupportModal: React.FC<HelpSupportModalProps> = ({ isOpen, onCl
         {/* Tab 3: FAQs */}
         {activeTab === 'faqs' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <details style={{ padding: '14px', borderRadius: '10px', background: '#F8F7F3', border: '1px solid #E4E2DC', cursor: 'pointer' }}>
-              <summary style={{ fontWeight: 700, fontSize: '16px', color: '#0E4A27' }}>
+            <details className="help-faq-item" style={{ padding: '14px', borderRadius: '10px', background: '#F8F7F3', border: '1px solid #E4E2DC', cursor: 'pointer' }}>
+              <summary className="help-faq-summary" style={{ fontWeight: 700, fontSize: '16px', color: '#0E4A27' }}>
                 Is AgriConnect free for farmers to use?
               </summary>
-              <p style={{ marginTop: '8px', fontSize: '15px', color: '#222522' }}>
+              <p className="help-faq-answer" style={{ marginTop: '8px', fontSize: '15px', color: '#222522' }}>
                 Yes! AgriConnect is 100% free for all registered Filipino farmers. There are no listing fees or hidden charges.
               </p>
             </details>
 
-            <details style={{ padding: '14px', borderRadius: '10px', background: '#F8F7F3', border: '1px solid #E4E2DC', cursor: 'pointer' }}>
-              <summary style={{ fontWeight: 700, fontSize: '16px', color: '#0E4A27' }}>
+            <details className="help-faq-item" style={{ padding: '14px', borderRadius: '10px', background: '#F8F7F3', border: '1px solid #E4E2DC', cursor: 'pointer' }}>
+              <summary className="help-faq-summary" style={{ fontWeight: 700, fontSize: '16px', color: '#0E4A27' }}>
                 How do I get the "✓ Verified Farmer" badge?
               </summary>
-              <p style={{ marginTop: '8px', fontSize: '15px', color: '#222522' }}>
+              <p className="help-faq-answer" style={{ marginTop: '8px', fontSize: '15px', color: '#222522' }}>
                 Upload your RSBSA ID number or LGU Farmer Certification in your Settings page. Your local agriculture office will verify your record within 24 hours.
               </p>
             </details>
 
-            <details style={{ padding: '14px', borderRadius: '10px', background: '#F8F7F3', border: '1px solid #E4E2DC', cursor: 'pointer' }}>
-              <summary style={{ fontWeight: 700, fontSize: '16px', color: '#0E4A27' }}>
+            <details className="help-faq-item" style={{ padding: '14px', borderRadius: '10px', background: '#F8F7F3', border: '1px solid #E4E2DC', cursor: 'pointer' }}>
+              <summary className="help-faq-summary" style={{ fontWeight: 700, fontSize: '16px', color: '#0E4A27' }}>
                 Can I receive cash payments on delivery (COD)?
               </summary>
-              <p style={{ marginTop: '8px', fontSize: '15px', color: '#222522' }}>
+              <p className="help-faq-answer" style={{ marginTop: '8px', fontSize: '15px', color: '#222522' }}>
                 Yes! Buyers can pay via Cash on Delivery (COD), GCash, or direct bank transfer upon receiving your harvest.
               </p>
             </details>
