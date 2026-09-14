@@ -528,20 +528,21 @@ export const GovernmentProgramsPage: React.FC = () => {
   return (
     <div className="app-container" style={{ paddingBottom: '40px' }}>
       {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '24px' }}>
+      <div className="programs-header-wrap" style={{ marginBottom: '24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
           <span style={{ fontSize: '26px' }}>🏛️</span>
-          <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+          <h1 className="programs-title" style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
             Government Cash Assistance & Grants
           </h1>
         </div>
-        <p style={{ fontSize: '18px', color: '#525450', marginTop: '4px', maxWidth: '800px' }}>
+        <p className="programs-subtitle" style={{ fontSize: '18px', color: '#525450', marginTop: '4px', maxWidth: '800px' }}>
           Official government programs offering cash subsidies, fertilizer vouchers, fuel assistance, and irrigation grants for registered Filipino farmers.
         </p>
       </div>
 
       {/* ─── RSBSA Verification Notice Banner ─── */}
       <div
+        className="programs-rsbsa-banner"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -555,10 +556,10 @@ export const GovernmentProgramsPage: React.FC = () => {
       >
         <div style={{ fontSize: '28px', flexShrink: 0 }}>📋</div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '16px', fontWeight: 800, color: '#14532D', marginBottom: '2px' }}>
+          <div className="programs-rsbsa-title" style={{ fontSize: '16px', fontWeight: 800, color: '#14532D', marginBottom: '2px' }}>
             RSBSA Registration Required for All DA Programs
           </div>
-          <div style={{ fontSize: '14px', color: '#166534', lineHeight: 1.4 }}>
+          <div className="programs-rsbsa-desc" style={{ fontSize: '14px', color: '#166534', lineHeight: 1.4 }}>
             Prepare a clear photo or copy of your <strong>RSBSA Card / Stub</strong> or Farmers Registry Certificate before applying. Your Municipal Agriculture Office cross-checks this document during evaluation.
           </div>
         </div>
@@ -566,6 +567,7 @@ export const GovernmentProgramsPage: React.FC = () => {
 
       {/* ─── Search & Municipality Scope Filter Bar ─── */}
       <div
+        className="programs-search-card"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -581,7 +583,7 @@ export const GovernmentProgramsPage: React.FC = () => {
         }}
       >
         {/* Left: Search Bar */}
-        <div style={{ position: 'relative', flex: '1 1 280px', maxWidth: '440px' }}>
+        <div className="programs-search-box" style={{ position: 'relative', flex: '1 1 280px', maxWidth: '440px' }}>
           <span
             style={{
               position: 'absolute',
@@ -600,6 +602,7 @@ export const GovernmentProgramsPage: React.FC = () => {
             placeholder="Search programs, subsidies, seeds, fertilizer..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="programs-search-input"
             style={{
               width: '100%',
               padding: '9px 12px 9px 36px',
@@ -694,13 +697,14 @@ export const GovernmentProgramsPage: React.FC = () => {
       </div>
 
       {/* ─── Category Filter Tabs ─── */}
-      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginBottom: '28px', paddingBottom: '4px' }}>
+      <div className="programs-categories-scroll" style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginBottom: '28px', paddingBottom: '4px' }}>
         {categories.map((cat) => {
           const isSelected = selectedCat === cat;
           return (
             <button
               key={cat}
               onClick={() => setSelectedCat(cat)}
+              className={`programs-category-chip ${isSelected ? 'active' : ''}`}
               style={{
                 padding: '8px 20px',
                 borderRadius: '24px',
@@ -755,14 +759,14 @@ export const GovernmentProgramsPage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '22px' }}>
+        <div className="programs-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '22px' }}>
           {filteredPrograms.map((prog, idx) => {
             const myApp = appliedMap[prog.id];
             const progImg = prog.imageUrl ? getImageUrl(prog.imageUrl) : getProgramImage(prog.title, idx);
             return (
               <div
                 key={prog.id}
-                className="card card-interactive"
+                className="card card-interactive programs-card"
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
