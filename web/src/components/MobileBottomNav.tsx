@@ -1,13 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { getImageUrl } from '../api';
 
 interface MobileBottomNavProps {
   onOpenAddModal?: () => void;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenAddModal }) => {
+  const { user } = useAuth();
+  const [avatarError, setAvatarError] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.photoUrl]);
 
   const handleOpenModal = () => {
     if (onOpenAddModal) {
@@ -174,11 +182,52 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onOpenAddModal
             fontSize: '13px',
           })}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-          </svg>
-          <span>Profile</span>
+          {({ isActive }) => (
+            <>
+              <div
+                className={`mobile-nav-avatar ${isActive ? 'active' : ''}`}
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  border: isActive ? '2px solid #176B3A' : '1.5px solid #CBD5E1',
+                  boxShadow: isActive ? '0 0 0 1px rgba(23, 107, 58, 0.25)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#EAF6EE',
+                  color: '#176B3A',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  flexShrink: 0,
+                  aspectRatio: '1 / 1',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {!avatarError && user?.photoUrl ? (
+                  <img
+                    src={getImageUrl(user.photoUrl)}
+                    alt={user ? `${user.firstName} ${user.lastName}` : 'Profile'}
+                    onError={() => setAvatarError(true)}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '50%',
+                      display: 'block',
+                      aspectRatio: '1 / 1',
+                    }}
+                  />
+                ) : (
+                  <span>
+                    {(user?.firstName?.[0] || 'U').toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <span>Profile</span>
+            </>
+          )}
         </NavLink>
       </nav>
 

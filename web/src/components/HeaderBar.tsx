@@ -202,27 +202,27 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
+            justifyContent: 'center',
+            width: '40px',
             height: '40px',
-            padding: '0 14px',
+            padding: 0,
             borderRadius: '10px',
             border: '1px solid #E4E2DC',
             background: '#EAF6EE',
             color: '#176B3A',
-            fontWeight: 700,
             cursor: 'pointer',
-            fontSize: '15px',
             flexShrink: 0,
+            transition: 'all 0.15s ease',
           }}
           className="mobile-menu-btn"
           aria-label="Open Navigation Menu"
+          title="Open Navigation Menu"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="3" y1="12" x2="21" y2="12" />
             <line x1="3" y1="6" x2="21" y2="6" />
             <line x1="3" y1="18" x2="21" y2="18" />
           </svg>
-          <span>Menu</span>
         </button>
 
         {/* Search Field */}
@@ -458,6 +458,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         {/* User Profile Dropdown */}
         <div
           ref={profileDropdownRef}
+          className="header-profile-dropdown-wrapper"
           style={{ position: 'relative' }}
         >
           {/* Avatar Trigger Button */}
