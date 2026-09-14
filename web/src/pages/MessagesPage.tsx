@@ -741,22 +741,23 @@ export const MessagesPage: React.FC = () => {
                   style={{
                     background: 'linear-gradient(90deg, #F0FDF4 0%, #FFFFFF 100%)',
                     borderBottom: '1px solid #DCFCE7',
-                    padding: '10px 18px',
+                    padding: '10px 16px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: '12px',
                     flexShrink: 0,
+                    minWidth: 0,
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
                     {activeConversation.context.image ? (
                       <img
                         src={getImageUrl(activeConversation.context.image)}
                         alt={activeConversation.context.title}
                         style={{
-                          width: '46px',
-                          height: '46px',
+                          width: '42px',
+                          height: '42px',
                           borderRadius: '8px',
                           objectFit: 'cover',
                           border: '1px solid #BBF7D0',
@@ -766,23 +767,23 @@ export const MessagesPage: React.FC = () => {
                     ) : (
                       <div
                         style={{
-                          width: '46px',
-                          height: '46px',
+                          width: '42px',
+                          height: '42px',
                           borderRadius: '8px',
                           background: '#DCFCE7',
                           color: '#15803D',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          fontSize: '20px',
+                          fontSize: '18px',
                           flexShrink: 0,
                         }}
                       >
                         📦
                       </div>
                     )}
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                         <span
                           style={{
                             fontSize: '10px',
@@ -792,6 +793,7 @@ export const MessagesPage: React.FC = () => {
                             background: '#DCFCE7',
                             color: '#15803D',
                             textTransform: 'uppercase',
+                            flexShrink: 0,
                           }}
                         >
                           {activeConversation.context.type.replace('_', ' ')}
@@ -804,12 +806,13 @@ export const MessagesPage: React.FC = () => {
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
+                            minWidth: 0,
                           }}
                         >
                           {activeConversation.context.title}
                         </span>
                       </div>
-                      <div style={{ fontSize: '12px', color: '#0E4A27', fontWeight: 800, marginTop: '2px' }}>
+                      <div style={{ fontSize: '13px', color: '#0E4A27', fontWeight: 800, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         ₱{activeConversation.context.price?.toLocaleString()}
                         {activeConversation.context.unit ? ` / ${activeConversation.context.unit}` : ''}
                       </div>
@@ -838,15 +841,16 @@ export const MessagesPage: React.FC = () => {
                         fontSize: '12px',
                         fontWeight: 700,
                         cursor: 'pointer',
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      <span>📎</span> <span className="msg-share-btn-text">Share Item in Chat</span>
+                      <span>📎</span> <span className="msg-share-btn-text">Share Item</span>
                     </button>
                     {activeConversation.context.type === 'produce' && (
                       <button
                         onClick={() => navigate('/produce')}
                         style={{
-                          padding: '6px 14px',
+                          padding: '6px 12px',
                           borderRadius: '8px',
                           border: 'none',
                           background: '#0E4A27',
@@ -854,16 +858,17 @@ export const MessagesPage: React.FC = () => {
                           fontSize: '12px',
                           fontWeight: 800,
                           cursor: 'pointer',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        ⚡ View / Buy Listing
+                        ⚡ View Listing
                       </button>
                     )}
                     {activeConversation.context.type === 'supply' && (
                       <button
                         onClick={() => navigate('/supply')}
                         style={{
-                          padding: '6px 14px',
+                          padding: '6px 12px',
                           borderRadius: '8px',
                           border: 'none',
                           background: '#0E4A27',
@@ -871,9 +876,10 @@ export const MessagesPage: React.FC = () => {
                           fontSize: '12px',
                           fontWeight: 800,
                           cursor: 'pointer',
+                          whiteSpace: 'nowrap',
                         }}
                       >
-                        ⚡ View Supply Item
+                        ⚡ View Supply
                       </button>
                     )}
                   </div>
