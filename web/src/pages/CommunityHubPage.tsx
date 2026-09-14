@@ -513,13 +513,13 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
   return (
     <div className="app-container" style={{ paddingBottom: '60px' }}>
       {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
+      <div className="community-header-wrap" style={{ marginBottom: '24px' }}>
+        <div className="community-header-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+            <h1 className="community-title" style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
               {activeTab === 'community' ? 'Agricultural Community & Media Feed' : 'Agricultural Learning Hub & Field Guides'}
             </h1>
-            <p style={{ fontSize: '16px', color: '#525450', marginTop: '6px', marginBottom: 0, maxWidth: '780px', lineHeight: 1.5 }}>
+            <p className="community-subtitle" style={{ fontSize: '16px', color: '#525450', marginTop: '6px', marginBottom: 0, maxWidth: '780px', lineHeight: 1.5 }}>
               {activeTab === 'community'
                 ? 'Share crop videos, field photos, discuss wholesale market prices, and connect with farmers, suppliers, and agronomists across regions.'
                 : 'Practical, step-by-step agricultural handbooks, pest identification sheets, and crop management manuals.'}
@@ -529,6 +529,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
 
         {/* ─── Top Segregated Navigation Tabs ─── */}
         <div
+          className="community-tabs-bar segmented-tabs-bar"
           style={{
             display: 'inline-flex',
             background: '#EAECE9',
@@ -539,6 +540,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
         >
           <button
             onClick={() => handleTabChange('community')}
+            className={`segmented-tab-btn ${activeTab === 'community' ? 'active' : ''}`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -561,6 +563,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
 
           <button
             onClick={() => handleTabChange('guides')}
+            className={`segmented-tab-btn ${activeTab === 'guides' ? 'active' : ''}`}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -598,7 +601,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
 
           {/* ─── Facebook-Style Rich Feed Composer Card ─── */}
           <div
-            className="card"
+            className={`card community-composer-card ${composerExpanded ? 'expanded' : 'collapsed'}`}
             style={{
               padding: '20px',
               marginBottom: '24px',
@@ -610,8 +613,9 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
           >
             <form onSubmit={handlePublishPost}>
               {/* Top Row: User Avatar & Input / Textarea */}
-              <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
+              <div className="community-composer-row" style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
                 <div
+                  className="community-composer-avatar"
                   style={{
                     width: '46px',
                     height: '46px',
@@ -639,9 +643,10 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                   )}
                 </div>
 
-                <div style={{ flex: 1 }}>
+                <div className="community-composer-main" style={{ flex: 1 }}>
                   {!composerExpanded ? (
                     <div
+                      className="community-composer-pill"
                       onClick={() => setComposerExpanded(true)}
                       style={{
                         background: '#F8FAFC',
@@ -662,7 +667,8 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                         e.currentTarget.style.borderColor = '#CBD5E1';
                       }}
                     >
-                      <span>What's happening on your farm, {user?.firstName || 'farmer'}? Share photo, video or advice...</span>
+                      <span className="community-composer-placeholder-full">What's happening on your farm, {user?.firstName || 'farmer'}? Share photo, video or advice...</span>
+                      <span className="community-composer-placeholder-compact">What's happening on your farm? Share update...</span>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -671,6 +677,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                         placeholder="Post Title (optional)"
                         value={composerTitle}
                         onChange={(e) => setComposerTitle(e.target.value)}
+                        className="community-composer-title-input"
                         style={{
                           width: '100%',
                           padding: '10px 14px',
@@ -687,6 +694,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                         placeholder={`What's happening on your farm, ${user?.firstName || 'farmer'}? Write details, ask questions, or describe your video/photo...`}
                         value={composerBody}
                         onChange={(e) => setComposerBody(e.target.value)}
+                        className="community-composer-body-input"
                         style={{
                           width: '100%',
                           padding: '12px 14px',
@@ -798,6 +806,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
 
               {/* Bottom Quick Attachment & Post Controls */}
               <div
+                className="community-composer-actions"
                 style={{
                   display: 'flex',
                   justifyContent: 'space-between',
@@ -810,10 +819,11 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                 }}
               >
                 {/* Left Attachment Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="community-composer-tools" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
                     onClick={() => triggerFileSelect('image/*')}
+                    className="community-composer-tool-btn community-composer-btn-photo"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -838,6 +848,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                   <button
                     type="button"
                     onClick={() => triggerFileSelect('video/*')}
+                    className="community-composer-tool-btn community-composer-btn-video"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -862,7 +873,11 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                   {/* Category Selector */}
                   <select
                     value={composerCategory}
-                    onChange={(e) => setComposerCategory(e.target.value as PostCategory)}
+                    onChange={(e) => {
+                      setComposerCategory(e.target.value as PostCategory);
+                      setComposerExpanded(true);
+                    }}
+                    className="community-composer-category-select"
                     style={{
                       padding: '8px 12px',
                       borderRadius: '12px',
@@ -883,7 +898,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                 </div>
 
                 {/* Right Post Trigger Button */}
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="community-composer-submit-wrap" style={{ display: 'flex', gap: '8px' }}>
                   {composerExpanded && (
                     <button
                       type="button"
@@ -891,7 +906,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                         setComposerExpanded(false);
                         clearMediaAttachment();
                       }}
-                      className="btn btn-secondary"
+                      className="btn btn-secondary community-composer-cancel-btn"
                       style={{ padding: '8px 16px', borderRadius: '12px', fontSize: '14px' }}
                     >
                       Cancel
@@ -900,7 +915,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                   <button
                     type="submit"
                     disabled={publishingPost || (!composerBody.trim() && !mediaFile)}
-                    className="btn btn-primary"
+                    className="btn btn-primary community-composer-post-btn"
                     style={{
                       padding: '8px 22px',
                       borderRadius: '12px',
@@ -920,6 +935,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
 
           {/* ─── Streamlined Category Filter Bar ─── */}
           <div
+            className="community-filter-bar"
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -929,7 +945,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
               gap: '12px',
             }}
           >
-            <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', flexWrap: 'wrap' }}>
+            <div className="community-category-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '2px', flexWrap: 'wrap' }}>
               {[
                 { key: 'all', label: 'All Feeds' },
                 { key: 'crop_advice', label: '🌱 Crop Care' },
@@ -941,6 +957,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                 <button
                   key={cat.key}
                   onClick={() => setForumCategory(cat.key)}
+                  className={`community-category-pill ${forumCategory === cat.key ? 'active' : ''}`}
                   style={{
                     padding: '8px 18px',
                     borderRadius: '20px',
@@ -1517,26 +1534,29 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
       {activeTab === 'guides' && (
         <div>
           {/* Guides Search & Category Filters */}
-          <div className="card" style={{ padding: '24px', marginBottom: '32px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '18px' }}>
-              <div>
-                <label className="form-label" style={{ fontWeight: 800 }}>Search Agricultural Guides</label>
-                <input
-                  type="text"
-                  value={guidesSearch}
-                  onChange={(e) => setGuidesSearch(e.target.value)}
-                  placeholder="e.g. armyworm, fertilizer, tomato blight, drip irrigation..."
-                  className="form-input"
-                  style={{ fontSize: '17px', height: '52px' }}
-                />
+          <div className="card guides-filter-card" style={{ padding: '24px', marginBottom: '32px' }}>
+            <div className="guides-search-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px', marginBottom: '18px' }}>
+              <div className="guides-search-col">
+                <label className="form-label guides-filter-label" style={{ fontWeight: 800 }}>Search Agricultural Guides</label>
+                <div className="guides-search-box" style={{ position: 'relative' }}>
+                  <span className="guides-search-icon" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: '#94a3b8' }}>🔍</span>
+                  <input
+                    type="text"
+                    value={guidesSearch}
+                    onChange={(e) => setGuidesSearch(e.target.value)}
+                    placeholder="Search guides, pests, crops, manuals..."
+                    className="form-input guides-search-input"
+                    style={{ fontSize: '17px', height: '52px', paddingLeft: '40px' }}
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="form-label" style={{ fontWeight: 800 }}>Category Topic</label>
+              <div className="guides-topic-col">
+                <label className="form-label guides-filter-label" style={{ fontWeight: 800 }}>Category Topic</label>
                 <select
                   value={selectedGuideCategory}
                   onChange={(e) => setSelectedGuideCategory(e.target.value)}
-                  className="form-input"
+                  className="form-input guides-topic-select"
                   style={{ fontSize: '17px', height: '52px' }}
                 >
                   <option value="all">All Guide Topics (4)</option>
@@ -1549,7 +1569,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
             </div>
 
             {/* Quick Filter Tags */}
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div className="guides-category-scroll" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               {[
                 { key: 'all', label: 'All Guides' },
                 { key: 'pest', label: '🐛 Pest Control' },
@@ -1560,6 +1580,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                 <button
                   key={pill.key}
                   onClick={() => setSelectedGuideCategory(pill.key)}
+                  className={`guides-category-chip ${selectedGuideCategory === pill.key ? 'active' : ''}`}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '20px',
@@ -1578,11 +1599,12 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
           </div>
 
           {/* Guides Catalog Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '26px' }}>
+          <div className="guides-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '26px' }}>
             {filteredGuides.map((guide) => (
               <div
                 key={guide.id}
-                className="card"
+                className="card guide-catalog-card"
+                onClick={() => setActiveGuideModal(guide)}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -1591,11 +1613,13 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                   borderTop: `6px solid ${guide.badgeColor}`,
                   borderRadius: '18px',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                  cursor: 'pointer',
                 }}
               >
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <div className="guide-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <span
+                      className="guide-card-badge"
                       style={{
                         padding: '4px 12px',
                         borderRadius: '12px',
@@ -1607,24 +1631,24 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                     >
                       {guide.categoryLabel}
                     </span>
-                    <span style={{ fontSize: '14px', color: '#525450', fontWeight: 600 }}>
+                    <span className="guide-card-time" style={{ fontSize: '14px', color: '#525450', fontWeight: 600 }}>
                       ⏱️ {guide.readTime}
                     </span>
                   </div>
 
-                  <h3 style={{ fontSize: '22px', fontWeight: 800, color: '#0E4A27', marginBottom: '10px', lineHeight: 1.3 }}>
+                  <h3 className="guide-card-title" style={{ fontSize: '22px', fontWeight: 800, color: '#0E4A27', marginBottom: '10px', lineHeight: 1.3 }}>
                     {guide.title}
                   </h3>
 
-                  <div style={{ fontSize: '14px', color: '#525450', marginBottom: '14px', fontWeight: 600 }}>
+                  <div className="guide-card-author" style={{ fontSize: '14px', color: '#525450', marginBottom: '14px', fontWeight: 600 }}>
                     ✍️ By <strong>{guide.author}</strong> ({guide.authorRole})
                   </div>
 
-                  <p style={{ fontSize: '16px', color: '#334155', lineHeight: 1.5, marginBottom: '18px' }}>
+                  <p className="guide-card-summary" style={{ fontSize: '16px', color: '#334155', lineHeight: 1.5, marginBottom: '18px' }}>
                     {guide.summary}
                   </p>
 
-                  <div style={{ background: '#F8FAF8', padding: '14px', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
+                  <div className="guide-card-checklist" style={{ background: '#F8FAF8', padding: '14px', borderRadius: '12px', marginBottom: '20px', border: '1px solid #E2E8F0' }}>
                     <div style={{ fontSize: '13px', fontWeight: 800, color: '#0E4A27', textTransform: 'uppercase', marginBottom: '6px' }}>
                       Key Field Action Checklist:
                     </div>
@@ -1637,11 +1661,15 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                 </div>
 
                 <button
-                  onClick={() => setActiveGuideModal(guide)}
-                  className="btn btn-primary btn-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveGuideModal(guide);
+                  }}
+                  className="btn btn-primary btn-full guide-card-btn"
                   style={{ fontSize: '16px', fontWeight: 800 }}
                 >
-                  Read Full Guide & Protocol →
+                  <span className="guide-card-btn-text-full">Read Full Guide & Protocol →</span>
+                  <span className="guide-card-btn-text-compact">Read Guide →</span>
                 </button>
               </div>
             ))}
