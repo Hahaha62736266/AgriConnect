@@ -478,7 +478,8 @@ export const ProduceMarketplacePage: React.FC = () => {
                     className="marketplace-card-seller"
                     title={`Farmer: ${item.farmerName || item.sellerName || 'Verified Farmer'} • 📍 ${item.location || 'Northern Mindanao'}`}
                   >
-                    <span>Farmer: {item.farmerName || item.sellerName || 'Verified Farmer'}{item.location ? ` • 📍 ${item.location}` : ' • 📍 Northern Mindanao'}</span>
+                    <span className="marketplace-seller-name-full">Farmer: {item.farmerName || item.sellerName || 'Verified Farmer'}{item.location ? ` • 📍 ${item.location}` : ' • 📍 Northern Mindanao'}</span>
+                    <span className="marketplace-seller-name-compact">🧑‍🌾 {item.farmerName || item.sellerName || 'Verified Farmer'}</span>
                   </div>
 
                   {/* Row 2: Product Name */}
@@ -511,6 +512,12 @@ export const ProduceMarketplacePage: React.FC = () => {
                     ) : (
                       <span style={{ color: '#DC2626' }}>✕ Out of Stock</span>
                     )}
+                  </div>
+
+                  {/* Row 5.5: Location Origin Line */}
+                  <div className="marketplace-card-location" title={item.location || 'Northern Mindanao'}>
+                    <span className="marketplace-loc-pin">📍</span>
+                    <span className="marketplace-loc-text">{item.location || 'Northern Mindanao'}</span>
                   </div>
 
                   {/* Row 6: Action Buttons pinned to bottom */}

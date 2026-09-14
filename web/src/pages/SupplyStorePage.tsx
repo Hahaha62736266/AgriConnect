@@ -515,7 +515,8 @@ export const SupplyStorePage: React.FC = () => {
                     className="marketplace-card-seller"
                     title={`Supplier: ${item.supplierName || 'Verified Supplier'} • 📍 ${item.location || 'Northern Mindanao'}`}
                   >
-                    <span>Supplier: {item.supplierName || 'Verified Supplier'} • 📍 {item.location || 'Northern Mindanao'}</span>
+                    <span className="marketplace-seller-name-full">Supplier: {item.supplierName || 'Verified Supplier'} • 📍 {item.location || 'Northern Mindanao'}</span>
+                    <span className="marketplace-seller-name-compact">🏪 {item.supplierName || 'Verified Supplier'}</span>
                   </div>
 
                   {/* Row 2: Product Name */}
@@ -548,6 +549,12 @@ export const SupplyStorePage: React.FC = () => {
                     ) : (
                       <span style={{ color: '#DC2626' }}>✕ Out of Stock</span>
                     )}
+                  </div>
+
+                  {/* Row 5.5: Location Origin Line */}
+                  <div className="marketplace-card-location" title={item.location || 'Northern Mindanao'}>
+                    <span className="marketplace-loc-pin">📍</span>
+                    <span className="marketplace-loc-text">{item.location || 'Northern Mindanao'}</span>
                   </div>
 
                   {/* Row 6: Action Buttons pinned to bottom */}
