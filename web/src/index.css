@@ -618,6 +618,57 @@ header [role="button"] {
   body {
     padding-bottom: var(--bottomnav-height);
   }
+
+  /* ─── Mobile Top Header Navigation UX Polish ─── */
+  header.app-header-bar,
+  header {
+    height: auto !important;
+    min-height: calc(54px + env(safe-area-inset-top, 0px)) !important;
+    padding-top: max(env(safe-area-inset-top, 0px), 8px) !important;
+    padding-bottom: 8px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    gap: 8px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  }
+
+  .header-left-group {
+    gap: 8px !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .header-right-group {
+    gap: 6px !important;
+    flex: 0 0 auto !important;
+  }
+
+  .mobile-menu-btn,
+  .header-cart-btn,
+  .header-chat-btn,
+  .notif-bell-btn {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 9px !important;
+    font-size: 16px !important;
+  }
+
+  .header-search-wrap {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  .header-search-input {
+    height: 36px !important;
+    font-size: 13px !important;
+    padding-left: 34px !important;
+    padding-right: 10px !important;
+    border-radius: 9px !important;
+  }
+
+  .header-search-input::placeholder {
+    font-size: 12.5px !important;
+  }
 }
 
 /* ─── Top-Right Toast Animations ───────────────────────────────── */

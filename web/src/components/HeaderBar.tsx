@@ -146,6 +146,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
 
   return (
     <header
+      className="app-header-bar"
       style={{
         height: 'var(--topbar-height)',
         background: '#FFFFFF',
@@ -160,7 +161,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       }}
     >
       {/* Left: Sidebar Toggle Buttons & Search Field */}
-      <div style={{ flex: '1', display: 'flex', alignItems: 'center', minWidth: 0, gap: '14px' }}>
+      <div className="header-left-group" style={{ flex: '1', display: 'flex', alignItems: 'center', minWidth: 0, gap: '14px' }}>
         {/* Desktop Toggle Button */}
         <button
           onClick={onToggleSidebar}
@@ -387,12 +388,13 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
       </div>
 
       {/* Right: Notifications & User Profile */}
-      <div style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
+      <div className="header-right-group" style={{ flex: '1', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '10px' }}>
         {/* Shopping Cart Button (Purchasing roles only: Farmer, Buyer) */}
         {(user?.role === 'farmer' || user?.role === 'buyer') && (
           <button
             onClick={() => navigate('/supply/cart')}
             title={`Shopping Cart (${cartCount} items)`}
+            className="header-cart-btn"
             style={{
               position: 'relative',
               display: 'flex',
@@ -443,6 +445,7 @@ export const HeaderBar: React.FC<HeaderBarProps> = ({
         {/* Messages / Chat Button */}
         <button
           onClick={() => navigate('/messages')}
+          className="header-chat-btn"
           style={{
             position: 'relative',
             background: '#F8F7F3',
