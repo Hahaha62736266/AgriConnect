@@ -34,6 +34,7 @@ type Program struct {
 	Province            string        `bson:"province,omitempty"     json:"province,omitempty"`
 	Municipality        string        `bson:"municipality,omitempty" json:"municipality,omitempty"`
 	Deadline            time.Time     `bson:"deadline"               json:"deadline"`
+	ImageUrl            string        `bson:"image_url,omitempty"    json:"imageUrl,omitempty"`
 	Status              ProgramStatus `bson:"status"                 json:"status"` // "open" or "closed"
 	CreatedBy           bson.ObjectID `bson:"created_by"             json:"createdBy,omitempty"`
 	CreatedAt           time.Time     `bson:"created_at"             json:"createdAt"`
@@ -75,6 +76,7 @@ type CreateProgramRequest struct {
 	Municipality        string   `json:"municipality,omitempty"`
 	EligibilityCriteria []string `json:"eligibilityCriteria"`
 	RequiredDocuments   []string `json:"requiredDocuments"`
+	ImageUrl            string   `json:"imageUrl,omitempty"`
 	Deadline            string   `json:"deadline"` // YYYY-MM-DD
 }
 

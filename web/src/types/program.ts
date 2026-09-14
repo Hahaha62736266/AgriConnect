@@ -7,6 +7,7 @@ export interface GovernmentProgram {
   title: string;
   description: string;
   agency: string;
+  imageUrl?: string;
   municipality?: string;
   province?: string;
   region?: string;
@@ -45,6 +46,7 @@ export interface CreateProgramPayload {
   title: string;
   description: string;
   agency: string;
+  imageUrl?: string;
   municipality?: string;
   province?: string;
   region?: string;

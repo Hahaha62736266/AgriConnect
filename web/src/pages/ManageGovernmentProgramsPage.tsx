@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { programApi } from '../api/program';
-import { getImageUrl } from '../api';
+import { api, getImageUrl } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getRegions, getProvinces, getMunicipalities } from '../data/philippineLocations';
@@ -63,6 +63,35 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
   const [deadline, setDeadline] = useState(new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]);
   const [creating, setCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // Attached Image state for Program
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toastError('File Too Large', 'Please select an image smaller than 10MB.');
+      return;
+    }
+    setImageFile(file);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // Review modal state
   const [reviewApp, setReviewApp] = useState<ProgramApplication | null>(null);
@@ -193,11 +222,25 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
     }
     setCreating(true);
     try {
+      let uploadedImageUrl: string | undefined = undefined;
+      if (imageFile) {
+        setUploadingImage(true);
+        try {
+          const uploadRes = await api.uploadImage(imageFile);
+          uploadedImageUrl = uploadRes.url;
+        } catch (uploadErr) {
+          console.warn('Image upload failed, continuing with program creation:', uploadErr);
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
       const munToSave = assignedMunicipality || targetMunicipality || 'Malaybalay City';
       await programApi.createProgram({
         title,
         description,
         agency,
+        imageUrl: uploadedImageUrl,
         municipality: munToSave,
         province: user?.province || 'Bukidnon',
         region: user?.region || 'Region X - Northern Mindanao',
@@ -209,11 +252,13 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
       setShowCreateForm(false);
       setTitle('');
       setDescription('');
+      handleRemoveImage();
       fetchPrograms();
     } catch (err: any) {
       toastError('Failed to Create Program', err.response?.data?.error || 'Could not publish program.');
     } finally {
       setCreating(false);
+      setUploadingImage(false);
     }
   };
 
@@ -254,8 +299,11 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
   };
 
   // Curated imagery matching agricultural initiatives
-  const getProgramImage = (program: GovernmentProgram, index: number): string => {
-    const t = (program.title || '').toLowerCase();
+  const getProgramImage = (program: GovernmentProgram | null, index: number): string => {
+    if (program?.imageUrl) {
+      return getImageUrl(program.imageUrl);
+    }
+    const t = (program?.title || '').toLowerCase();
     if (t.includes('rice') || t.includes('puhunan') || t.includes('cash') || t.includes('rffa') || t.includes('palay')) {
       return index % 2 === 0
         ? 'https://images.unsplash.com/photo-1586771107445-d3ca888129ff?auto=format&fit=crop&w=600&q=80' // rice grain in hands
@@ -337,7 +385,12 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
             {/* Only LGU Staff has permission to post new programs */}
             {isLguStaff && (
               <button
-                onClick={() => setShowCreateForm((v) => !v)}
+                onClick={() => {
+                  setShowCreateForm((v) => {
+                    if (v) handleRemoveImage();
+                    return !v;
+                  });
+                }}
                 className={showCreateForm ? 'btn btn-secondary' : 'btn btn-primary'}
                 style={{
                   padding: '9px 16px',
@@ -580,7 +633,7 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setShowCreateForm(false)}
+                onClick={() => { setShowCreateForm(false); handleRemoveImage(); }}
                 style={{ background: '#F1F5F9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer' }}
               >
                 ✕
@@ -641,6 +694,119 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
                 />
               </div>
 
+              {/* ─── Attach Program Photo / Banner (Optional) ─── */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
+                  Program Banner / Photo <span style={{ fontWeight: 500, color: '#64748B' }}>(Optional)</span>
+                </label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: 'none' }}
+                />
+
+                {!imagePreview ? (
+                  <div
+                    className="program-upload-dropzone"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      border: '2px dashed #86EFAC',
+                      borderRadius: '12px',
+                      padding: '16px 20px',
+                      textAlign: 'center',
+                      backgroundColor: '#F0FDF4',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ fontSize: '26px' }}>🖼️</div>
+                    <div style={{ textAlign: 'left' }}>
+                      <div className="program-upload-title" style={{ fontWeight: 700, color: '#166534', fontSize: '13px' }}>
+                        Click to attach program photo or banner
+                      </div>
+                      <div className="program-upload-desc" style={{ fontSize: '11px', color: '#64748B', marginTop: '1px' }}>
+                        Upload official poster, infographic, or photo (JPG, PNG, WEBP up to 10MB)
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="program-upload-preview-box"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      padding: '10px 14px',
+                      borderRadius: '12px',
+                      border: '1.5px solid #BBF7D0',
+                      backgroundColor: '#F0FDF4',
+                    }}
+                  >
+                    <img
+                      src={imagePreview}
+                      alt="Program Banner Preview"
+                      style={{
+                        width: '64px',
+                        height: '52px',
+                        borderRadius: '8px',
+                        objectFit: 'cover',
+                        border: '1px solid #86EFAC',
+                      }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        className="program-upload-filename"
+                        style={{
+                          fontWeight: 700,
+                          fontSize: '13px',
+                          color: '#0F172A',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {imageFile?.name || 'Attached Photo'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                        <span className="program-upload-badge" style={{ fontSize: '11px', color: '#16A34A', fontWeight: 700 }}>
+                          ✓ Ready to attach with program
+                        </span>
+                        {imageFile && (
+                          <span style={{ fontSize: '11px', color: '#64748B' }}>
+                            • {(imageFile.size / (1024 * 1024)).toFixed(2)} MB
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="program-upload-remove-btn"
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #FECACA',
+                        backgroundColor: '#FFFFFF',
+                        color: '#DC2626',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                        minHeight: 'unset',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      ✕ Remove
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', marginBottom: '18px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '5px' }}>
@@ -680,11 +846,11 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={creating}
+                disabled={creating || uploadingImage}
                 className="btn btn-primary"
                 style={{ padding: '10px 22px', borderRadius: '10px', fontWeight: 800, fontSize: '13px' }}
               >
-                {creating ? 'Publishing...' : '✓ Publish Program Listing'}
+                {creating || uploadingImage ? 'Publishing Program & Image...' : '✓ Publish Program Listing'}
               </button>
             </form>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { apiClient } from '../api';
+import { apiClient, getImageUrl } from '../api';
 import { programApi } from '../api/program';
 import type { ProgramApplication, ApplicationStatus } from '../types/program';
 import { useToast } from '../contexts/ToastContext';
@@ -10,6 +10,7 @@ interface UnifiedProgram {
   title: string;
   organization: string;
   description: string;
+  imageUrl?: string;
   municipality?: string;
   province?: string;
   region?: string;
@@ -147,6 +148,7 @@ export const GovernmentProgramsPage: React.FC = () => {
               title: p.title,
               organization: p.agency || 'Department of Agriculture',
               description: p.description,
+              imageUrl: p.imageUrl,
               municipality: p.municipality || 'All Municipalities',
               province: p.province,
               region: p.region,
@@ -756,7 +758,7 @@ export const GovernmentProgramsPage: React.FC = () => {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '22px' }}>
           {filteredPrograms.map((prog, idx) => {
             const myApp = appliedMap[prog.id];
-            const progImg = getProgramImage(prog.title, idx);
+            const progImg = prog.imageUrl ? getImageUrl(prog.imageUrl) : getProgramImage(prog.title, idx);
             return (
               <div
                 key={prog.id}
@@ -1105,7 +1107,7 @@ export const GovernmentProgramsPage: React.FC = () => {
             {/* Modal Cover Image Banner */}
             <div style={{ position: 'relative', height: '170px', borderRadius: '16px', overflow: 'hidden', marginBottom: '22px', background: '#E2E8F0' }}>
               <img
-                src={getProgramImage(selectedProgram.title, 0)}
+                src={selectedProgram.imageUrl ? getImageUrl(selectedProgram.imageUrl) : getProgramImage(selectedProgram.title, 0)}
                 alt={selectedProgram.title}
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />

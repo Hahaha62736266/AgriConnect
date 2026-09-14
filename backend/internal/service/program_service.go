@@ -70,6 +70,7 @@ func (s *ProgramService) CreateProgram(ctx context.Context, creatorID string, re
 		Title:               req.Title,
 		Description:         req.Description,
 		Agency:              req.Agency,
+		ImageUrl:            req.ImageUrl,
 		Region:              region,
 		Province:            province,
 		Municipality:        municipality,

@@ -2028,6 +2028,50 @@ div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
   color: #CBD5E1 !important;
 }
 
+/* ─── Program Upload Dropzone Dark Mode ──────────────────────────── */
+[data-theme='dark'] .program-upload-dropzone {
+  background-color: #122317 !important;
+  border-color: #1E6E3C !important;
+}
+
+[data-theme='dark'] .program-upload-dropzone:hover {
+  background-color: #182B1E !important;
+  border-color: #4ADE80 !important;
+}
+
+[data-theme='dark'] .program-upload-title {
+  color: #4ADE80 !important;
+}
+
+[data-theme='dark'] .program-upload-desc {
+  color: #94A3B8 !important;
+}
+
+[data-theme='dark'] .program-upload-preview-box {
+  background-color: #122317 !important;
+  border-color: #1E6E3C !important;
+}
+
+[data-theme='dark'] .program-upload-filename {
+  color: #F1F5F9 !important;
+}
+
+[data-theme='dark'] .program-upload-badge {
+  color: #86EFAC !important;
+}
+
+[data-theme='dark'] .program-upload-remove-btn {
+  background-color: #2C1818 !important;
+  border-color: #5C2626 !important;
+  color: #F87171 !important;
+}
+
+[data-theme='dark'] .program-upload-remove-btn:hover {
+  background-color: #3B1E1E !important;
+  border-color: #7F1D1D !important;
+  color: #FCA5A5 !important;
+}
+
 /* ─── Strictly Exclude Dark Mode from Login Page ─── */
 [data-theme='dark'] .login-page-root,
 .login-page-root {
