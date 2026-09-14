@@ -464,7 +464,7 @@ export const ProduceTransactionsPage: React.FC = () => {
   return (
     <div className="app-container" style={{ paddingBottom: '60px' }}>
       {/* ─── Order Category Navigation Switcher ─── */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', flexWrap: 'wrap' }}>
+      <div className="orders-channel-switcher segmented-tabs-bar" style={{ display: 'flex', gap: '10px', marginBottom: '22px', flexWrap: 'wrap' }}>
 
         {/* Sales Orders tab (farmer's default view) / Buyer Produce Purchases */}
         <button
@@ -474,6 +474,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             setSelectedTab('All Orders');
             navigate('/produce/orders', { replace: true });
           }}
+          className={`segmented-tab-btn ${!isViewingPurchases ? 'active' : ''}`}
           style={{
             padding: '10px 22px',
             borderRadius: '24px',
@@ -490,7 +491,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             transition: 'all 0.15s ease',
           }}
         >
-          <span>{isFarmer ? '🌾 Crop Sales Orders' : '🌱 My Produce Purchases'}</span>
+          <span>{isFarmer ? '🌾 Crop Sales' : '🌱 My Purchases'}</span>
           <span style={{
             backgroundColor: !isViewingPurchases ? '#176B3A' : '#cbd5e1',
             color: '#ffffff',
@@ -512,6 +513,7 @@ export const ProduceTransactionsPage: React.FC = () => {
               setSelectedTab('All Orders');
               navigate('/produce/orders?view=purchases', { replace: true });
             }}
+            className={`segmented-tab-btn ${isViewingPurchases ? 'active' : ''}`}
             style={{
               padding: '10px 22px',
               borderRadius: '24px',
@@ -528,7 +530,7 @@ export const ProduceTransactionsPage: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
           >
-            <span>🛒 My Crop Purchases</span>
+            <span>🛒 Purchases</span>
             <span style={{
               backgroundColor: isViewingPurchases ? '#7C3AED' : '#cbd5e1',
               color: '#ffffff',
@@ -545,6 +547,7 @@ export const ProduceTransactionsPage: React.FC = () => {
         <button
           type="button"
           onClick={() => navigate('/supply/orders')}
+          className="segmented-tab-btn"
           style={{
             padding: '10px 22px',
             borderRadius: '24px',
@@ -568,7 +571,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             e.currentTarget.style.color = '#64748b';
           }}
         >
-          <span>🏪 My Supply Purchases</span>
+          <span>🏪 Supplies</span>
           {supplyOrdersCount !== null && (
             <span style={{
               backgroundColor: '#cbd5e1',
@@ -585,15 +588,15 @@ export const ProduceTransactionsPage: React.FC = () => {
       </div>
 
       {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="orders-header-wrap" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
             <span style={{ fontSize: '32px' }}>{isViewingPurchases ? '🛒' : (isFarmer ? '🌾' : '🛒')}</span>
-            <h1 style={{ fontSize: '32px', fontWeight: 800, color: isViewingPurchases ? '#4C1D95' : '#0E4A27', margin: 0 }}>
+            <h1 className="orders-header-title" style={{ fontSize: '32px', fontWeight: 800, color: isViewingPurchases ? '#4C1D95' : '#0E4A27', margin: 0 }}>
               {isViewingPurchases ? 'My Crop Purchases' : (isFarmer ? 'Crop Sales & Buyer Orders' : 'My Produce Purchases')}
             </h1>
           </div>
-          <p style={{ fontSize: '16px', color: '#525450', margin: 0 }}>
+          <p className="orders-header-subtitle" style={{ fontSize: '16px', color: '#525450', margin: 0 }}>
             {isViewingPurchases
               ? 'Track produce you purchased from other farmers. View order status and contact the seller.'
               : (isFarmer
@@ -611,6 +614,7 @@ export const ProduceTransactionsPage: React.FC = () => {
 
       {/* ─── Top KPI Metric Summary Cards ─── */}
       <div
+        className="orders-kpi-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -709,6 +713,7 @@ export const ProduceTransactionsPage: React.FC = () => {
 
       {/* ─── Search & Status Filters Bar ─── */}
       <div
+        className="orders-filter-card"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -723,7 +728,7 @@ export const ProduceTransactionsPage: React.FC = () => {
         }}
       >
         {/* Filter Tabs with Counter Badges */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '4px' }}>
+        <div className="orders-filter-tabs" style={{ display: 'flex', gap: '8px', overflowX: 'auto', flexWrap: 'nowrap', paddingBottom: '4px' }}>
           {tabs.map((tab) => {
             const isSelected = selectedTab === tab;
             let count = activeOrders.length;
@@ -736,6 +741,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             return (
               <button
                 key={tab}
+                className={`orders-filter-tab-btn ${isSelected ? 'active' : ''}`}
                 onClick={() => setSelectedTab(tab)}
                 style={{
                   display: 'flex',
@@ -772,12 +778,13 @@ export const ProduceTransactionsPage: React.FC = () => {
         </div>
 
         {/* Search Input Box */}
-        <div style={{ position: 'relative', minWidth: '280px', flex: '1 1 280px', maxWidth: '400px' }}>
+        <div className="orders-search-box" style={{ position: 'relative', minWidth: '280px', flex: '1 1 280px', maxWidth: '400px' }}>
           <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '16px' }}>
             🔍
           </span>
           <input
             type="text"
+            className="orders-search-input"
             placeholder="Search crop, buyer, phone, or order ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -827,6 +834,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             return (
               <div
                 key={ord.id}
+                className="card order-manage-card"
                 style={{
                   background: '#FFFFFF',
                   borderRadius: '18px',
@@ -839,6 +847,7 @@ export const ProduceTransactionsPage: React.FC = () => {
               >
                 {/* Order Card Header */}
                 <div
+                  className="order-card-header"
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -850,7 +859,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                     marginBottom: '18px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div className="order-id-group" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     <div
                       onClick={(e) => handleCopyId(ord.id, e)}
                       title={`Click to copy full ID: ${ord.id}`}
@@ -882,6 +891,7 @@ export const ProduceTransactionsPage: React.FC = () => {
 
                   {/* Rich Status Badge */}
                   <div
+                    className="order-status-badge"
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -911,6 +921,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                 {/* ─── Live Fulfillment Timeline (Shopee Style) ─── */}
                 {ord.status !== 'Cancelled' && (
                   <div
+                    className="order-timeline-box"
                     style={{
                       backgroundColor: '#F8FAFC',
                       padding: '16px 20px',
@@ -919,7 +930,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                       marginBottom: '20px',
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div className="order-timeline-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         Live Crop Order Timeline
                       </span>
@@ -931,7 +942,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+                    <div className="order-timeline-steps" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
                       {[
                         { stepNum: 1, title: '1. Order Placed' },
                         { stepNum: 2, title: '2. Harvest Confirmed' },
@@ -957,6 +968,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                         return (
                           <div
                             key={s.stepNum}
+                            className="order-timeline-step"
                             style={{
                               display: 'flex',
                               flexDirection: 'column',
@@ -967,6 +979,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                             }}
                           >
                             <div
+                              className="order-timeline-circle"
                               style={{
                                 width: '32px',
                                 height: '32px',
@@ -985,6 +998,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                               {stepDone ? (s.stepNum === 4 ? '✓' : s.stepNum) : s.stepNum}
                             </div>
                             <span
+                              className="order-timeline-label"
                               style={{
                                 fontSize: '12px',
                                 fontWeight: isCurrent ? 800 : 600,
@@ -1004,6 +1018,7 @@ export const ProduceTransactionsPage: React.FC = () => {
 
                 {/* Order Card Main Content Grid */}
                 <div
+                  className="order-card-body-grid"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: 'minmax(260px, 1.2fr) minmax(280px, 1.8fr)',
@@ -1012,7 +1027,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                   }}
                 >
                   {/* Left Column: Crop & Quantity */}
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                  <div className="order-product-col" style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     <div
                       style={{
                         width: '60px',
@@ -1064,7 +1079,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                   </div>
 
                   {/* Right Column: Buyer / Seller Info depending on viewMode */}
-                  <div style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
+                  <div className="order-party-box" style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
                     {/* Party Identity */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                       <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isViewingAsBuyer ? '#4C1D95' : '#0E4A27', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800 }}>
@@ -1235,6 +1250,7 @@ export const ProduceTransactionsPage: React.FC = () => {
 
                 {/* Order Card Footer */}
                 <div
+                  className="order-card-footer"
                   style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -1246,8 +1262,8 @@ export const ProduceTransactionsPage: React.FC = () => {
                     borderTop: '1px solid #F1F5F9',
                   }}
                 >
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <div className="order-pricing-summary">
+                    <div className="order-pricing-meta" style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span>Subtotal: <strong>₱{(ord.subtotal ?? (ord.total - (ord.shippingFee || 0))).toLocaleString()}</strong></span>
                       <span>•</span>
                       <span>
@@ -1258,183 +1274,198 @@ export const ProduceTransactionsPage: React.FC = () => {
                           : (ord.status === 'Pending' ? '🚚 Delivery: Fee Pending Farmer Confirmation' : '🚚 Delivery: ₱0')}
                       </span>
                     </div>
-                    <div style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', marginTop: '2px' }}>
+                    <div className="order-total-amount" style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', marginTop: '2px' }}>
                       ₱{ord.total.toLocaleString()}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    {/* Chat with other party */}
-                    {((isViewingPurchases && ord.farmerId) || (isFarmer && !isViewingPurchases && ord.buyerId) || (isBuyer && ord.farmerId)) && (
-                      <button
-                        type="button"
-                        onClick={() => handleChatOrderParty(ord)}
-                        style={{
-                          padding: '10px 16px',
-                          borderRadius: '10px',
-                          backgroundColor: '#EFFDF5',
-                          color: '#0E4A27',
-                          fontWeight: 700,
-                          fontSize: '14px',
-                          border: '1.5px solid #16A34A',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                        title={isViewingPurchases ? `Chat with Farmer (${ord.farmerName || 'Farmer'})` : (isFarmer ? `Chat with Buyer (${ord.buyerName})` : `Chat with Farmer (${ord.farmerName || 'Farmer'})`)}
-                      >
-                        <span>💬</span>
-                        <span>{isViewingPurchases ? 'Chat Farmer' : (isFarmer ? 'Chat Buyer' : 'Chat Farmer')}</span>
-                      </button>
+                  <div className="order-action-buttons" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    {/* Primary Decisions / Status Area */}
+                    {(ord.status === 'Pending' || ord.status === 'Quoted' || ord.status === 'Confirmed') && (
+                      <div className="order-actions-primary-row">
+                        {ord.status === 'Pending' && isFarmer && !isViewingPurchases && (
+                          <button
+                            type="button"
+                            className="order-primary-btn"
+                            disabled={isUpdatingStatus}
+                            onClick={() => {
+                              if (ord.deliveryMethod === 'pickup') {
+                                handleUpdateStatus(ord.id, 'confirmed', 0);
+                              } else {
+                                setOrderToSetShipping(ord);
+                                setShippingFeeInput(ord.shippingFee || 0);
+                              }
+                            }}
+                            style={{
+                              padding: '10px 20px',
+                              borderRadius: '10px',
+                              backgroundColor: '#16A34A',
+                              color: '#FFFFFF',
+                              fontWeight: 700,
+                              fontSize: '15px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 2px 4px rgba(22,163,74,0.2)',
+                            }}
+                          >
+                            <span>✓</span>
+                            <span>Accept & Confirm Order</span>
+                          </button>
+                        )}
+
+                        {ord.status === 'Pending' && (isBuyer || isViewingPurchases) && (
+                          <span
+                            className="order-status-waiting"
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              color: '#D97706',
+                              backgroundColor: '#FEF3C7',
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>⏳</span>
+                            <span>Waiting for Farmer Confirmation</span>
+                          </span>
+                        )}
+
+                        {ord.status === 'Quoted' && isFarmer && !isViewingPurchases && (
+                          <span
+                            className="order-status-waiting"
+                            style={{
+                              fontSize: '13px',
+                              fontWeight: 700,
+                              color: '#D97706',
+                              backgroundColor: '#FEF3C7',
+                              padding: '8px 14px',
+                              borderRadius: '10px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>⏳</span>
+                            <span>Awaiting Buyer Quote Approval</span>
+                          </span>
+                        )}
+
+                        {ord.status === 'Confirmed' && (
+                          <button
+                            type="button"
+                            className="order-primary-btn"
+                            disabled={isUpdatingStatus}
+                            onClick={() => handleUpdateStatus(ord.id, 'completed')}
+                            style={{
+                              padding: '10px 20px',
+                              borderRadius: '10px',
+                              backgroundColor: (isFarmer && !isViewingPurchases) ? '#16A34A' : '#2563EB',
+                              color: '#FFFFFF',
+                              fontWeight: 700,
+                              fontSize: '14px',
+                              border: 'none',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: (isFarmer && !isViewingPurchases)
+                                ? '0 2px 6px rgba(22,163,74,0.25)'
+                                : '0 2px 6px rgba(37,99,235,0.25)',
+                            }}
+                          >
+                            <span>{(isFarmer && !isViewingPurchases) ? '💵' : '✓'}</span>
+                            <span>
+                              {isUpdatingStatus
+                                ? 'Updating...'
+                                : (isFarmer && !isViewingPurchases)
+                                ? `Confirm Payment Received (₱${ord.total.toLocaleString()})`
+                                : 'Confirm Produce Received & Paid'}
+                            </span>
+                          </button>
+                        )}
+
+                        {/* Direct Cancel Order button for Pending Orders */}
+                        {ord.status === 'Pending' && (
+                          <button
+                            type="button"
+                            className="order-cancel-btn"
+                            disabled={isUpdatingStatus}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOrderToCancel(ord);
+                            }}
+                            style={{
+                              padding: '10px 16px',
+                              borderRadius: '10px',
+                              border: '1.5px solid #FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              fontWeight: 700,
+                              fontSize: '14px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <span>✕</span>
+                            <span>Cancel Order</span>
+                          </button>
+                        )}
+                      </div>
                     )}
 
-                    {ord.status === 'Pending' && isFarmer && !isViewingPurchases && (
+                    {/* Secondary Utility Actions */}
+                    <div className="order-actions-secondary-row">
+                      {/* Chat with other party */}
+                      {((isViewingPurchases && ord.farmerId) || (isFarmer && !isViewingPurchases && ord.buyerId) || (isBuyer && ord.farmerId)) && (
+                        <button
+                          type="button"
+                          className="order-chat-btn"
+                          onClick={() => handleChatOrderParty(ord)}
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: '10px',
+                            backgroundColor: '#EFFDF5',
+                            color: '#0E4A27',
+                            fontWeight: 700,
+                            fontSize: '14px',
+                            border: '1.5px solid #16A34A',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                          title={isViewingPurchases ? `Chat with Farmer (${ord.farmerName || 'Farmer'})` : (isFarmer ? `Chat with Buyer (${ord.buyerName})` : `Chat with Farmer (${ord.farmerName || 'Farmer'})`)}
+                        >
+                          <span>💬</span>
+                          <span>{isViewingPurchases ? 'Chat Farmer' : (isFarmer ? 'Chat Buyer' : 'Chat Farmer')}</span>
+                        </button>
+                      )}
+
                       <button
-                        type="button"
-                        disabled={isUpdatingStatus}
-                        onClick={() => {
-                          if (ord.deliveryMethod === 'pickup') {
-                            handleUpdateStatus(ord.id, 'confirmed', 0);
-                          } else {
-                            setOrderToSetShipping(ord);
-                            setShippingFeeInput(ord.shippingFee || 0);
-                          }
-                        }}
+                        className="order-btn-details"
+                        onClick={() => setSelectedOrder(ord)}
                         style={{
-                          padding: '10px 20px',
+                          padding: '10px 18px',
                           borderRadius: '10px',
-                          backgroundColor: '#16A34A',
-                          color: '#FFFFFF',
+                          border: '1.5px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          color: '#0F172A',
                           fontWeight: 700,
                           fontSize: '15px',
-                          border: 'none',
                           cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: '0 2px 4px rgba(22,163,74,0.2)',
                         }}
                       >
-                        <span>✓</span>
-                        <span>Accept & Confirm Order</span>
+                        View Order Details →
                       </button>
-                    )}
-
-                    {ord.status === 'Pending' && (isBuyer || isViewingPurchases) && (
-                      <span
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          color: '#D97706',
-                          backgroundColor: '#FEF3C7',
-                          padding: '8px 14px',
-                          borderRadius: '10px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>⏳</span>
-                        <span>Waiting for Farmer Confirmation</span>
-                      </span>
-                    )}
-
-                    {ord.status === 'Quoted' && isFarmer && !isViewingPurchases && (
-                      <span
-                        style={{
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          color: '#D97706',
-                          backgroundColor: '#FEF3C7',
-                          padding: '8px 14px',
-                          borderRadius: '10px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>⏳</span>
-                        <span>Awaiting Buyer Quote Approval</span>
-                      </span>
-                    )}
-
-                    {ord.status === 'Confirmed' && (
-                      <button
-                        type="button"
-                        disabled={isUpdatingStatus}
-                        onClick={() => handleUpdateStatus(ord.id, 'completed')}
-                        style={{
-                          padding: '10px 20px',
-                          borderRadius: '10px',
-                          backgroundColor: (isFarmer && !isViewingPurchases) ? '#16A34A' : '#2563EB',
-                          color: '#FFFFFF',
-                          fontWeight: 700,
-                          fontSize: '14px',
-                          border: 'none',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          boxShadow: (isFarmer && !isViewingPurchases)
-                            ? '0 2px 6px rgba(22,163,74,0.25)'
-                            : '0 2px 6px rgba(37,99,235,0.25)',
-                        }}
-                      >
-                        <span>{(isFarmer && !isViewingPurchases) ? '💵' : '✓'}</span>
-                        <span>
-                          {isUpdatingStatus
-                            ? 'Updating...'
-                            : (isFarmer && !isViewingPurchases)
-                            ? `Confirm Payment Received (₱${ord.total.toLocaleString()})`
-                            : 'Confirm Produce Received & Paid'}
-                        </span>
-                      </button>
-                    )}
-
-                    {/* Direct Cancel Order button for Pending Orders */}
-                    {ord.status === 'Pending' && (
-                      <button
-                        type="button"
-                        disabled={isUpdatingStatus}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setOrderToCancel(ord);
-                        }}
-                        style={{
-                          padding: '10px 16px',
-                          borderRadius: '10px',
-                          border: '1.5px solid #FECACA',
-                          backgroundColor: '#FEF2F2',
-                          color: '#DC2626',
-                          fontWeight: 700,
-                          fontSize: '14px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>✕</span>
-                        <span>Cancel Order</span>
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => setSelectedOrder(ord)}
-                      style={{
-                        padding: '10px 18px',
-                        borderRadius: '10px',
-                        border: '1.5px solid #CBD5E1',
-                        backgroundColor: '#FFFFFF',
-                        color: '#0F172A',
-                        fontWeight: 700,
-                        fontSize: '15px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      View Order Details →
-                    </button>
+                    </div>
                   </div>
                 </div>
               </div>
