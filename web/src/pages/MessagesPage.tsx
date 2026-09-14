@@ -14,6 +14,7 @@ export const MessagesPage: React.FC = () => {
   const {
     conversations,
     activeConversation,
+    setActiveConversation,
     openConversation,
     refreshConversations,
     refreshUnreadCount,
@@ -215,7 +216,7 @@ export const MessagesPage: React.FC = () => {
 
   return (
     <div
-      className="messages-hub-page"
+      className={`messages-hub-page msg-page-container ${activeConversation ? 'has-active-conv' : 'no-active-conv'}`}
       style={{
         maxWidth: '1440px',
         margin: '0 auto',
@@ -229,6 +230,7 @@ export const MessagesPage: React.FC = () => {
     >
       {/* ─── Top Header Bar ─── */}
       <div
+        className="msg-header-banner"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -237,10 +239,11 @@ export const MessagesPage: React.FC = () => {
           flexShrink: 0,
         }}
       >
-        <div>
+        <div className="msg-header-left">
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '26px' }}>💬</span>
             <h1
+              className="msg-header-title"
               style={{
                 fontSize: '24px',
                 fontWeight: 900,
@@ -252,6 +255,7 @@ export const MessagesPage: React.FC = () => {
               Negotiation & Messages Hub
             </h1>
             <span
+              className="msg-header-badge"
               style={{
                 background: '#EFFDF5',
                 color: '#15803D',
@@ -265,14 +269,15 @@ export const MessagesPage: React.FC = () => {
               {conversations.length} {conversations.length === 1 ? 'chat' : 'chats'}
             </span>
           </div>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: '3px 0 0 36px' }}>
+          <p className="msg-header-desc" style={{ fontSize: '13px', color: '#64748B', margin: '3px 0 0 36px' }}>
             Coordinate crop purchases, agricultural inputs, and direct delivery terms with verified participants.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div className="msg-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={() => refreshConversations()}
+            className="msg-refresh-btn"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -292,6 +297,7 @@ export const MessagesPage: React.FC = () => {
           </button>
           <button
             onClick={() => navigate('/produce')}
+            className="market-btn"
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -314,6 +320,7 @@ export const MessagesPage: React.FC = () => {
 
       {/* ─── Main 3-Column Desktop Chat Experience ─── */}
       <div
+        className={`msg-grid-container ${activeConversation ? 'has-active-conv' : 'no-active-conv'}`}
         style={{
           flex: 1,
           display: 'grid',
@@ -328,6 +335,7 @@ export const MessagesPage: React.FC = () => {
       >
         {/* ─── COLUMN 1: Inbox Sidebar ─── */}
         <div
+          className="msg-col-sidebar"
           style={{
             borderRight: '1px solid #E2E8F0',
             display: 'flex',
@@ -616,7 +624,7 @@ export const MessagesPage: React.FC = () => {
         </div>
 
         {/* ─── COLUMN 2: Active Chat Room ─── */}
-        <div style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', overflow: 'hidden' }}>
+        <div className="msg-col-chat" style={{ display: 'flex', flexDirection: 'column', background: '#FFFFFF', overflow: 'hidden' }}>
           {activeConversation ? (
             <>
               {/* Active Chat Top Header */}
@@ -631,7 +639,15 @@ export const MessagesPage: React.FC = () => {
                   flexShrink: 0,
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveConversation(null)}
+                    className="msg-mobile-back-btn"
+                    title="Back to conversations list"
+                  >
+                    ← Back
+                  </button>
                   <div
                     style={{
                       width: '42px',
@@ -689,7 +705,7 @@ export const MessagesPage: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
                       <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#22C55E' }}></span>
-                      <span style={{ fontSize: '12px', color: '#64748B' }}>Verified AgriConnect Member · Online</span>
+                      <span className="msg-header-status" style={{ fontSize: '12px', color: '#64748B' }}>Verified AgriConnect Member · Online</span>
                     </div>
                   </div>
                 </div>
@@ -713,7 +729,7 @@ export const MessagesPage: React.FC = () => {
                     title="Toggle Item & Seller Information Panel"
                   >
                     <span>ℹ️</span>
-                    <span>{showInspector ? 'Hide Details' : 'View Item Info'}</span>
+                    <span className="msg-details-btn-text">{showInspector ? 'Hide Details' : 'View Item Info'}</span>
                   </button>
                 </div>
               </div>
@@ -721,6 +737,7 @@ export const MessagesPage: React.FC = () => {
               {/* Sticky Commerce Negotiation Banner */}
               {activeConversation.context && activeConversation.context.title && (
                 <div
+                  className="msg-commerce-banner"
                   style={{
                     background: 'linear-gradient(90deg, #F0FDF4 0%, #FFFFFF 100%)',
                     borderBottom: '1px solid #DCFCE7',
@@ -823,7 +840,7 @@ export const MessagesPage: React.FC = () => {
                         cursor: 'pointer',
                       }}
                     >
-                      📎 Share Item in Chat
+                      <span>📎</span> <span className="msg-share-btn-text">Share Item in Chat</span>
                     </button>
                     {activeConversation.context.type === 'produce' && (
                       <button
@@ -865,6 +882,7 @@ export const MessagesPage: React.FC = () => {
 
               {/* Message Stream Area */}
               <div
+                className="msg-stream-area"
                 style={{
                   flex: 1,
                   overflowY: 'auto',
@@ -879,6 +897,7 @@ export const MessagesPage: React.FC = () => {
                   <React.Fragment key={gIdx}>
                     {/* Date Divider Pill */}
                     <div
+                      className="msg-date-divider"
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -887,6 +906,7 @@ export const MessagesPage: React.FC = () => {
                       }}
                     >
                       <span
+                        className="msg-date-pill"
                         style={{
                           background: '#E2E8F0',
                           color: '#475569',
@@ -906,6 +926,7 @@ export const MessagesPage: React.FC = () => {
                       return (
                         <div
                           key={msg.id}
+                          className={`msg-item-wrap ${isMe ? 'is-me' : 'is-other'}`}
                           style={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -930,6 +951,7 @@ export const MessagesPage: React.FC = () => {
                           {/* Embedded Product Card */}
                           {msg.productCard && msg.productCard.title && (
                             <div
+                              className="msg-product-card-inline"
                               style={{
                                 background: '#FFFFFF',
                                 border: '1px solid #E2E8F0',
@@ -983,6 +1005,7 @@ export const MessagesPage: React.FC = () => {
                           {/* Chat Message Bubble */}
                           {msg.content && (
                             <div
+                              className={`msg-bubble ${isMe ? 'bubble-me' : 'bubble-other'}`}
                               style={{
                                 background: isMe ? 'linear-gradient(135deg, #0E4A27 0%, #15803D 100%)' : '#FFFFFF',
                                 color: isMe ? '#FFFFFF' : '#0F172A',
@@ -1037,6 +1060,7 @@ export const MessagesPage: React.FC = () => {
 
               {/* Dynamic Quick Reply Chips */}
               <div
+                className="msg-quick-reply-bar"
                 style={{
                   padding: '8px 16px',
                   background: '#FFFFFF',
@@ -1051,6 +1075,7 @@ export const MessagesPage: React.FC = () => {
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(chip)}
+                    className="msg-quick-reply-chip"
                     style={{
                       background: '#F8FAFC',
                       color: '#334155',
@@ -1082,6 +1107,7 @@ export const MessagesPage: React.FC = () => {
 
               {/* Modern Message Input Area */}
               <div
+                className="msg-input-area"
                 style={{
                   padding: '12px 18px',
                   borderTop: '1px solid #E2E8F0',
@@ -1106,6 +1132,7 @@ export const MessagesPage: React.FC = () => {
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
+                  className="msg-attach-btn"
                   style={{
                     width: '40px',
                     height: '40px',
@@ -1139,6 +1166,7 @@ export const MessagesPage: React.FC = () => {
                     }
                   }}
                   disabled={isSending}
+                  className="msg-input-field"
                   style={{
                     flex: 1,
                     padding: '11px 16px',
@@ -1164,6 +1192,7 @@ export const MessagesPage: React.FC = () => {
                 <button
                   onClick={() => handleSendMessage()}
                   disabled={!inputText.trim() || isSending}
+                  className="msg-send-btn"
                   style={{
                     height: '42px',
                     padding: '0 20px',
@@ -1182,7 +1211,7 @@ export const MessagesPage: React.FC = () => {
                     flexShrink: 0,
                   }}
                 >
-                  <span>Send</span>
+                  <span className="msg-send-text">Send</span>
                   <span style={{ fontSize: '14px' }}>➤</span>
                 </button>
               </div>
@@ -1248,6 +1277,7 @@ export const MessagesPage: React.FC = () => {
         {/* ─── COLUMN 3: Context & Participant Inspector ─── */}
         {showInspector && activeConversation && (
           <div
+            className="msg-col-inspector"
             style={{
               borderLeft: '1px solid #E2E8F0',
               background: '#F8FAFC',
