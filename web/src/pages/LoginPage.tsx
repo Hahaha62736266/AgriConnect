@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
-import agriConnectLogo from '../assets/AgriConnect.svg';
 import agriConnectPng from '../assets/AgriConnect.png';
 import { ForgotPasswordModal } from '../components/ForgotPasswordModal';
 import { ContactLguModal } from '../components/ContactLguModal';
@@ -293,11 +292,11 @@ export const LoginPage: React.FC = () => {
           {/* Mobile Brand Header */}
           <div className="login-mobile-brand">
             <img
-              src={agriConnectLogo}
+              src={agriConnectPng}
               alt="AgriConnect Logo"
               style={{
-                width: '40px',
-                height: '40px',
+                width: '42px',
+                height: '42px',
                 borderRadius: '10px',
                 objectFit: 'contain',
                 flexShrink: 0,
