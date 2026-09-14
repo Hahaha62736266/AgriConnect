@@ -328,7 +328,7 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {/* Stylized Brand Logo Wordmark matching UMA header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="login-desktop-wordmark" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <div
               style={{
                 fontSize: '32px',

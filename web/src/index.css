@@ -2306,8 +2306,8 @@ div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
   font-size: 12px;
 }
 
-/* Tablet & Mobile Screens (<= 960px) */
-@media (max-width: 960px) {
+/* ─── Tablet & Mobile Responsiveness (iPad Pro, iPad Air, iPod / Mobile) ─── */
+@media (max-width: 1024px) {
   .login-page-root {
     flex-direction: column !important;
     height: auto !important;
@@ -2316,6 +2316,7 @@ div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
     overflow-y: auto !important;
     overflow-x: hidden !important;
     width: 100% !important;
+    background: #F8FAFC !important;
   }
 
   .login-hero-panel {
@@ -2327,73 +2328,23 @@ div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
     width: 100% !important;
     min-height: 100dvh !important;
     height: auto !important;
-    padding: 32px 20px 48px 20px !important;
-    align-items: center !important;
-    justifyContent: center !important;
-    box-sizing: border-box !important;
-  }
-
-  .login-form-container {
-    width: 100% !important;
-    max-width: 400px !important;
-    box-sizing: border-box !important;
-  }
-
-  .login-mobile-brand {
+    padding: clamp(24px, 4vh, 48px) 18px 48px 18px !important;
     display: flex !important;
     align-items: center !important;
-    gap: 12px !important;
-    margin-bottom: 20px !important;
-    padding-bottom: 16px !important;
-    border-bottom: 1px solid #F1F5F9 !important;
-  }
-
-  /* Prevent mobile Safari iOS auto-zoom on input focus */
-  .login-form-container input {
-    font-size: 16px !important;
-  }
-}
-
-/* Small mobile devices (<= 440px) */
-@media (max-width: 440px) {
-  .login-form-panel {
-    padding: 20px 16px 36px 16px !important;
-  }
-}
-
-/* Tablet & Mobile Screens (<= 960px) */
-@media (max-width: 960px) {
-  .login-page-root {
-    flex-direction: column !important;
-    height: auto !important;
-    min-height: 100dvh !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    width: 100% !important;
-  }
-
-  .login-hero-panel {
-    display: none !important;
-  }
-
-  .login-form-panel {
-    flex: 1 0 auto !important;
-    width: 100% !important;
-    min-height: 100dvh !important;
-    height: auto !important;
-    padding: 32px 18px 48px 18px !important;
-    align-items: center !important;
     justifyContent: center !important;
+    background: transparent !important;
     box-sizing: border-box !important;
   }
 
-  .login-form-card {
+  /* Elegant Card Presentation for Tablets (iPad Pro, iPad Air, iPad Mini) */
+  .login-form-container {
     width: 100% !important;
     max-width: 440px !important;
-    padding: 30px 22px !important;
-    border-radius: 22px !important;
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08) !important;
+    background: #FFFFFF !important;
+    border-radius: 20px !important;
+    padding: clamp(28px, 4vh, 40px) clamp(22px, 4vw, 36px) !important;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid #E2E8F0 !important;
     box-sizing: border-box !important;
   }
 
@@ -2406,26 +2357,38 @@ div[style*="overflowX: auto"]::-webkit-scrollbar-thumb {
     border-bottom: 1px solid #F1F5F9 !important;
   }
 
+  /* Prevent duplicate AgriConnect branding wordmark on mobile and tablet devices */
+  .login-desktop-wordmark {
+    display: none !important;
+  }
+
   /* Prevent mobile Safari iOS auto-zoom on input focus */
-  .login-form-card input {
+  .login-form-container input {
     font-size: 16px !important;
   }
 }
 
-/* Small mobile devices (<= 440px) */
+/* iPod Touch & Small Mobile Devices (<= 440px) */
 @media (max-width: 440px) {
+  .login-page-root {
+    background: #FFFFFF !important;
+  }
+
   .login-form-panel {
-    padding: 16px 12px 36px 12px !important;
+    padding: 16px 14px 36px 14px !important;
   }
 
-  .login-form-card {
-    padding: 24px 16px !important;
-    border-radius: 18px !important;
+  .login-form-container {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 12px 4px 20px 4px !important;
+    background: transparent !important;
+    max-width: 100% !important;
   }
 
-  .login-remember-row {
-    flex-direction: column !important;
-    align-items: flex-start !important;
+  .login-dual-actions {
+    flex-wrap: wrap !important;
     gap: 10px !important;
   }
 }
