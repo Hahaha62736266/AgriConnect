@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ChatProvider } from './contexts/ChatContext';
-import { FloatingChatDock } from './components/chat/FloatingChatDock';
+// import { FloatingChatDock } from './components/chat/FloatingChatDock';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AppLayout } from './components/AppLayout';
 import { LoginPage } from './pages/LoginPage';
@@ -36,7 +36,7 @@ export const App: React.FC = () => {
       <AuthProvider>
         <ToastProvider>
           <ChatProvider>
-            <FloatingChatDock />
+            {/* FloatingChatDock excluded from UI in all views as requested */}
             <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
