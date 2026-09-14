@@ -676,7 +676,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
                 </span>
-                <span>Help & Supports</span>
+                <span>Contact Support</span>
               </button>
 
               {/* Log out */}

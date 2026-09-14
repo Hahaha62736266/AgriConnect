@@ -24,8 +24,15 @@ export const chatApi = {
   },
 
   listMessages: async (conversationId: string): Promise<ChatMessage[]> => {
-    const res = await apiClient.get<ChatMessage[]>(`/api/chat/conversations/${conversationId}/messages`);
-    return res.data;
+    if (!conversationId || conversationId.startsWith('support_')) {
+      return [];
+    }
+    try {
+      const res = await apiClient.get<ChatMessage[]>(`/api/chat/conversations/${conversationId}/messages`);
+      return res.data;
+    } catch {
+      return [];
+    }
   },
 
   sendMessage: async (conversationId: string, payload: SendMessagePayload): Promise<ChatMessage> => {
@@ -34,7 +41,12 @@ export const chatApi = {
   },
 
   markAsRead: async (conversationId: string): Promise<void> => {
-    await apiClient.put(`/api/chat/conversations/${conversationId}/read`);
+    if (!conversationId || conversationId.startsWith('support_')) return;
+    try {
+      await apiClient.put(`/api/chat/conversations/${conversationId}/read`);
+    } catch {
+      // ignore
+    }
   },
 
   getUnreadCount: async (): Promise<number> => {

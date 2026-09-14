@@ -65,6 +65,10 @@ export const api = {
     });
     return res.data;
   },
+  getSupportContacts: async (role?: string): Promise<User[]> => {
+    const res = await apiClient.get<User[]>('/api/users/support-contacts', { params: { role } });
+    return res.data;
+  },
 };
 
 export const getImageUrl = (path?: string, fallback: string = ''): string => {
