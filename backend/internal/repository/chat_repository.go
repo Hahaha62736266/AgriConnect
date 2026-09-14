@@ -137,6 +137,58 @@ func (r *ChatRepository) ListUserConversations(ctx context.Context, userID bson.
 	return convs, nil
 }
 
+// ListLGUConversations returns conversations for LGU staff (direct chats + LGU municipal support threads).
+func (r *ChatRepository) ListLGUConversations(ctx context.Context, userID bson.ObjectID, municipality, province string) ([]models.Conversation, error) {
+	filter := bson.M{
+		"$or": []bson.M{
+			{"participant_ids": userID},
+			{"participants.role": string(models.RoleLGUStaff)},
+		},
+	}
+	opts := options.Find().SetSort(bson.M{"updated_at": -1}).SetLimit(50)
+
+	cursor, err := r.conversationCol.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("list lgu conversations: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var convs []models.Conversation
+	if err := cursor.All(ctx, &convs); err != nil {
+		return nil, fmt.Errorf("decode lgu conversations: %w", err)
+	}
+	if convs == nil {
+		convs = []models.Conversation{}
+	}
+	return convs, nil
+}
+
+// ListSuperAdminConversations returns conversations for Super Admin (direct chats + platform support threads).
+func (r *ChatRepository) ListSuperAdminConversations(ctx context.Context, userID bson.ObjectID) ([]models.Conversation, error) {
+	filter := bson.M{
+		"$or": []bson.M{
+			{"participant_ids": userID},
+			{"participants.role": string(models.RoleSuperAdmin)},
+		},
+	}
+	opts := options.Find().SetSort(bson.M{"updated_at": -1}).SetLimit(50)
+
+	cursor, err := r.conversationCol.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, fmt.Errorf("list admin conversations: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var convs []models.Conversation
+	if err := cursor.All(ctx, &convs); err != nil {
+		return nil, fmt.Errorf("decode admin conversations: %w", err)
+	}
+	if convs == nil {
+		convs = []models.Conversation{}
+	}
+	return convs, nil
+}
+
 // GetConversationByID retrieves a conversation by ID.
 func (r *ChatRepository) GetConversationByID(ctx context.Context, convID bson.ObjectID) (*models.Conversation, error) {
 	var conv models.Conversation

@@ -124,16 +124,27 @@ func (s *ChatService) FindOrCreateConversation(
 	return conv, nil
 }
 
-// ListConversations returns all conversations for a user.
+// ListConversations returns all conversations for a user (or municipal inbox for LGU Staff).
 func (s *ChatService) ListConversations(ctx context.Context, userIDStr string) ([]models.Conversation, error) {
 	uOID, err := bson.ObjectIDFromHex(userIDStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid user ID: %w", err)
 	}
+
+	currentUser, err := s.userRepo.FindByID(ctx, uOID)
+	if err == nil && currentUser != nil {
+		if currentUser.Role == models.RoleLGUStaff {
+			return s.chatRepo.ListLGUConversations(ctx, uOID, currentUser.Municipality, currentUser.Province)
+		}
+		if currentUser.Role == models.RoleSuperAdmin {
+			return s.chatRepo.ListSuperAdminConversations(ctx, uOID)
+		}
+	}
+
 	return s.chatRepo.ListUserConversations(ctx, uOID)
 }
 
-// GetConversationByID returns a conversation if the user is a participant.
+// GetConversationByID returns a conversation if the user is a participant or role-authorized.
 func (s *ChatService) GetConversationByID(ctx context.Context, convIDStr, userIDStr string) (*models.Conversation, error) {
 	cOID, err := bson.ObjectIDFromHex(convIDStr)
 	if err != nil {
@@ -149,11 +160,21 @@ func (s *ChatService) GetConversationByID(ctx context.Context, convIDStr, userID
 		return nil, err
 	}
 
+	currentUser, _ := s.userRepo.FindByID(ctx, uOID)
+
 	isParticipant := false
 	for _, p := range conv.ParticipantIDs {
 		if p == uOID {
 			isParticipant = true
 			break
+		}
+	}
+	if !isParticipant && currentUser != nil {
+		for _, part := range conv.Participants {
+			if part.Role == currentUser.Role {
+				isParticipant = true
+				break
+			}
 		}
 	}
 	if !isParticipant {
@@ -165,12 +186,16 @@ func (s *ChatService) GetConversationByID(ctx context.Context, convIDStr, userID
 
 // ListMessages fetches messages in a conversation.
 func (s *ChatService) ListMessages(ctx context.Context, convIDStr, userIDStr string) ([]models.ChatMessage, error) {
-	_, err := s.GetConversationByID(ctx, convIDStr, userIDStr)
+	cOID, err := bson.ObjectIDFromHex(convIDStr)
+	if err != nil {
+		return []models.ChatMessage{}, nil
+	}
+
+	_, err = s.GetConversationByID(ctx, convIDStr, userIDStr)
 	if err != nil {
 		return nil, err
 	}
 
-	cOID, _ := bson.ObjectIDFromHex(convIDStr)
 	return s.chatRepo.ListMessages(ctx, cOID, 100)
 }
 
@@ -244,7 +269,7 @@ func (s *ChatService) SendMessage(
 func (s *ChatService) MarkAsRead(ctx context.Context, convIDStr, userIDStr string) error {
 	cOID, err := bson.ObjectIDFromHex(convIDStr)
 	if err != nil {
-		return fmt.Errorf("invalid conversation ID: %w", err)
+		return nil
 	}
 	uOID, err := bson.ObjectIDFromHex(userIDStr)
 	if err != nil {

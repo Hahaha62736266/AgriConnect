@@ -170,3 +170,20 @@ func (s *UserService) ChangePassword(ctx context.Context, userID string, req mod
 
 	return s.repo.Update(ctx, oid, bson.M{"password": hashed})
 }
+
+// ListSupportContacts returns approved support accounts (super_admin or lgu_staff).
+func (s *UserService) ListSupportContacts(ctx context.Context, currentUserID string, roleFilter string) ([]models.User, error) {
+	filter := bson.M{}
+
+	if roleFilter != "" {
+		filter["role"] = roleFilter
+	} else {
+		filter["role"] = bson.M{"$in": []models.Role{models.RoleSuperAdmin, models.RoleLGUStaff}}
+	}
+
+	if currentUID, err := bson.ObjectIDFromHex(currentUserID); err == nil {
+		filter["_id"] = bson.M{"$ne": currentUID}
+	}
+
+	return s.repo.FindUsers(ctx, filter)
+}

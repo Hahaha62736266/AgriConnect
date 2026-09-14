@@ -79,6 +79,7 @@ func New(
 		r.Put("/me", userHandler.UpdateProfile)
 		r.Put("/me/photo", userHandler.UploadPhoto)
 		r.Put("/me/password", userHandler.ChangePassword)
+		r.Get("/support-contacts", userHandler.ListSupportContacts)
 	})
 
 	// General file/image upload route

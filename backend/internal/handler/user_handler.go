@@ -115,3 +115,21 @@ func (h *UserHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "password changed successfully"})
 }
+
+// ListSupportContacts handles GET /api/users/support-contacts
+func (h *UserHandler) ListSupportContacts(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+	if userID == "" {
+		writeError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	roleFilter := r.URL.Query().Get("role")
+	contacts, err := h.userService.ListSupportContacts(r.Context(), userID, roleFilter)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, contacts)
+}
