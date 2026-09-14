@@ -119,17 +119,17 @@ export const FarmFinancialTrackerPage: React.FC = () => {
   return (
     <div className="app-container" style={{ paddingBottom: '50px' }}>
       {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="finance-header-wrap" style={{ marginBottom: '24px' }}>
+        <div className="finance-header-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h1 style={{ fontSize: '30px', fontWeight: 800, color: '#0E4A27', letterSpacing: '-0.02em', margin: 0 }}>
+            <h1 className="finance-title" style={{ fontSize: '30px', fontWeight: 800, color: '#0E4A27', letterSpacing: '-0.02em', margin: 0 }}>
               {activeTab === 'finances'
                 ? 'Farm Earnings & Expenses'
                 : activeTab === 'calendar'
                 ? 'Planting & Farm Calendar'
                 : 'Financial Transaction Records'}
             </h1>
-            <p style={{ fontSize: '15px', color: '#525450', lineHeight: 1.5, marginTop: '6px', margin: '6px 0 0 0' }}>
+            <p className="finance-subtitle" style={{ fontSize: '15px', color: '#525450', lineHeight: 1.5, marginTop: '6px', margin: '6px 0 0 0' }}>
               {activeTab === 'finances'
                 ? 'Track crop sales revenue, supply input costs, and net farm profits.'
                 : activeTab === 'calendar'
@@ -140,6 +140,7 @@ export const FarmFinancialTrackerPage: React.FC = () => {
 
           {/* ─── Top Segregated Navigation Tabs ─── */}
           <div
+            className="finance-tabs-nav segmented-tabs-bar"
             style={{
               display: 'inline-flex',
               background: '#F1F3F0',
@@ -152,6 +153,7 @@ export const FarmFinancialTrackerPage: React.FC = () => {
           >
             <button
               onClick={() => handleTabChange('finances')}
+              className={`segmented-tab-btn ${activeTab === 'finances' ? 'active' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -174,6 +176,7 @@ export const FarmFinancialTrackerPage: React.FC = () => {
 
             <button
               onClick={() => handleTabChange('calendar')}
+              className={`segmented-tab-btn ${activeTab === 'calendar' ? 'active' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -196,6 +199,7 @@ export const FarmFinancialTrackerPage: React.FC = () => {
 
             <button
               onClick={() => handleTabChange('records')}
+              className={`segmented-tab-btn ${activeTab === 'records' ? 'active' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -225,55 +229,55 @@ export const FarmFinancialTrackerPage: React.FC = () => {
       {activeTab === 'finances' && (
         <div>
           {/* Financial Summary Cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '28px' }}>
+          <div className="finance-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '28px' }}>
             {/* Money Earned */}
-            <div className="card" style={{ borderLeft: '5px solid #16A34A', background: '#FFFFFF', padding: '22px 24px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#525450', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="card finance-summary-card finance-card-income" style={{ borderLeft: '5px solid #16A34A', background: '#FFFFFF', padding: '22px 24px' }}>
+              <div className="finance-card-label" style={{ fontSize: '13px', fontWeight: 800, color: '#525450', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>💚</span>
                 <span>Total Money Earned (Sales)</span>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#16A34A', letterSpacing: '-0.02em', margin: '8px 0 4px 0', lineHeight: 1.2 }}>
+              <div className="finance-card-value" style={{ fontSize: '32px', fontWeight: 800, color: '#16A34A', letterSpacing: '-0.02em', margin: '8px 0 4px 0', lineHeight: 1.2 }}>
                 ₱{finances.income.toLocaleString()}
               </div>
-              <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 600 }}>
+              <div className="finance-card-sub" style={{ fontSize: '13px', color: '#15803d', fontWeight: 600 }}>
                 ↑ 14.2% higher than last harvest cycle
               </div>
             </div>
 
             {/* Money Spent */}
-            <div className="card" style={{ borderLeft: '5px solid #DC2626', background: '#FFFFFF', padding: '22px 24px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#525450', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="card finance-summary-card finance-card-expense" style={{ borderLeft: '5px solid #DC2626', background: '#FFFFFF', padding: '22px 24px' }}>
+              <div className="finance-card-label" style={{ fontSize: '13px', fontWeight: 800, color: '#525450', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>❤️</span>
                 <span>Total Money Spent (Inputs)</span>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#DC2626', letterSpacing: '-0.02em', margin: '8px 0 4px 0', lineHeight: 1.2 }}>
+              <div className="finance-card-value" style={{ fontSize: '32px', fontWeight: 800, color: '#DC2626', letterSpacing: '-0.02em', margin: '8px 0 4px 0', lineHeight: 1.2 }}>
                 ₱{finances.expenses.toLocaleString()}
               </div>
-              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+              <div className="finance-card-sub" style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
                 Spent on seeds, fertilizers, fuel, transport
               </div>
             </div>
 
             {/* Net Profit */}
-            <div className="card" style={{ borderLeft: '5px solid #0E4A27', background: '#EAF6EE', padding: '22px 24px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: '#176B3A', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="card finance-summary-card finance-card-net" style={{ borderLeft: '5px solid #0E4A27', background: '#EAF6EE', padding: '22px 24px' }}>
+              <div className="finance-card-label" style={{ fontSize: '13px', fontWeight: 800, color: '#176B3A', letterSpacing: '0.04em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <span>💵</span>
                 <span>Net Farm Profit</span>
               </div>
-              <div style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', letterSpacing: '-0.02em', margin: '8px 0 4px 0', lineHeight: 1.2 }}>
+              <div className="finance-card-value" style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', letterSpacing: '-0.02em', margin: '8px 0 4px 0', lineHeight: 1.2 }}>
                 ₱{finances.netIncome.toLocaleString()}
               </div>
-              <div style={{ fontSize: '13px', color: '#166534', fontWeight: 700 }}>
+              <div className="finance-card-sub" style={{ fontSize: '13px', color: '#166534', fontWeight: 700 }}>
                 ✓ Healthy cash balance
               </div>
             </div>
           </div>
 
           {/* Quick Action Buttons */}
-          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '32px' }}>
+          <div className="finance-action-buttons" style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '32px' }}>
             <button
               onClick={() => { setFinanceType('income'); setShowAddFinance(true); }}
-              className="btn btn-primary"
+              className="btn btn-primary finance-action-btn"
               style={{ padding: '11px 22px', fontSize: '14px', fontWeight: 700, borderRadius: '12px' }}
             >
               + Add Money Earned (Sales)
@@ -281,7 +285,7 @@ export const FarmFinancialTrackerPage: React.FC = () => {
 
             <button
               onClick={() => { setFinanceType('expense'); setShowAddFinance(true); }}
-              className="btn btn-secondary"
+              className="btn btn-secondary finance-action-btn"
               style={{ padding: '11px 22px', fontSize: '14px', fontWeight: 700, borderRadius: '12px' }}
             >
               + Add Money Spent (Expense)
@@ -289,14 +293,14 @@ export const FarmFinancialTrackerPage: React.FC = () => {
           </div>
 
           {/* Recent 3 Transactions Teaser */}
-          <div className="card" style={{ padding: '24px' }}>
+          <div className="card finance-tx-card" style={{ padding: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+              <h3 className="finance-tx-header-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
                 Recent Cash Activity
               </h3>
               <button
                 onClick={() => handleTabChange('records')}
-                className="btn btn-secondary"
+                className="btn btn-secondary finance-view-all-btn"
                 style={{ fontSize: '13px', padding: '6px 14px', borderRadius: '10px' }}
               >
                 View All Records ({transactions.length}) →
@@ -307,6 +311,7 @@ export const FarmFinancialTrackerPage: React.FC = () => {
               {transactions.slice(0, 3).map((t) => (
                 <div
                   key={t.id}
+                  className="finance-tx-row"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -317,8 +322,9 @@ export const FarmFinancialTrackerPage: React.FC = () => {
                     border: '1px solid #E2E8F0',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1 }}>
                     <div
+                      className="finance-tx-icon"
                       style={{
                         width: '38px',
                         height: '38px',
@@ -330,17 +336,18 @@ export const FarmFinancialTrackerPage: React.FC = () => {
                         justifyContent: 'center',
                         fontSize: '17px',
                         fontWeight: 800,
+                        flexShrink: 0,
                       }}
                     >
                       {t.type === 'income' ? '↓' : '↑'}
                     </div>
-                    <div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#1A1C1A' }}>{t.title}</div>
-                      <div style={{ fontSize: '13px', color: '#64748b' }}>{t.date}</div>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="finance-tx-title" style={{ fontSize: '15px', fontWeight: 700, color: '#1A1C1A' }}>{t.title}</div>
+                      <div className="finance-tx-date" style={{ fontSize: '13px', color: '#64748b' }}>{t.date}</div>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '17px', fontWeight: 800, color: t.type === 'income' ? '#176B3A' : '#BA3C3C' }}>
+                  <div className="finance-tx-amount" style={{ fontSize: '17px', fontWeight: 800, color: t.type === 'income' ? '#176B3A' : '#BA3C3C', marginLeft: '12px', flexShrink: 0 }}>
                     {t.type === 'income' ? '+' : '-'}₱{t.amount.toLocaleString()}
                   </div>
                 </div>
@@ -355,29 +362,30 @@ export const FarmFinancialTrackerPage: React.FC = () => {
       ══════════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'calendar' && (
         <section id="calendar">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '16px' }}>
+          <div className="finance-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+              <h2 className="finance-section-title" style={{ fontSize: '20px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
                 Scheduled Farm Activities & Milestones
               </h2>
-              <p style={{ fontSize: '14px', color: '#525450', marginTop: '4px', margin: '4px 0 0 0' }}>
+              <p className="finance-section-sub" style={{ fontSize: '14px', color: '#525450', marginTop: '4px', margin: '4px 0 0 0' }}>
                 Dates for seedling transplanting, fertilization cycles, and planned harvest windows.
               </p>
             </div>
 
             <button
               onClick={() => setShowAddActivity(true)}
-              className="btn btn-primary"
+              className="btn btn-primary finance-add-activity-btn"
               style={{ padding: '10px 20px', fontSize: '14px', fontWeight: 700, borderRadius: '12px' }}
             >
               + Add Farm Activity
             </button>
           </div>
 
-          <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+          <div className="card finance-calendar-card" style={{ padding: '0', overflow: 'hidden' }}>
             {activities.map((act, idx) => (
               <div
                 key={act.id}
+                className="finance-calendar-item"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -386,8 +394,9 @@ export const FarmFinancialTrackerPage: React.FC = () => {
                   borderBottom: idx < activities.length - 1 ? '1.5px solid #E4E2DC' : 'none',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0, flex: 1 }}>
                   <div
+                    className="finance-calendar-icon"
                     style={{
                       width: '46px',
                       height: '46px',
@@ -398,21 +407,22 @@ export const FarmFinancialTrackerPage: React.FC = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontSize: '22px',
+                      flexShrink: 0,
                     }}
                   >
                     {act.icon}
                   </div>
-                  <div>
-                    <div style={{ fontSize: '16px', fontWeight: 700, color: '#1A1C1A' }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div className="finance-calendar-title" style={{ fontSize: '16px', fontWeight: 700, color: '#1A1C1A' }}>
                       {act.title}
                     </div>
-                    <div style={{ fontSize: '13px', color: '#176B3A', fontWeight: 700, marginTop: '2px' }}>
+                    <div className="finance-calendar-date" style={{ fontSize: '13px', color: '#176B3A', fontWeight: 700, marginTop: '2px' }}>
                       📅 Scheduled: {act.date}
                     </div>
                   </div>
                 </div>
 
-                <span className="badge badge-verified" style={{ fontSize: '13px', padding: '5px 12px' }}>
+                <span className="badge badge-verified finance-calendar-badge" style={{ fontSize: '13px', padding: '5px 12px', flexShrink: 0 }}>
                   {act.status}
                 </span>
               </div>
@@ -426,27 +436,27 @@ export const FarmFinancialTrackerPage: React.FC = () => {
       ══════════════════════════════════════════════════════════════════════════ */}
       {activeTab === 'records' && (
         <section id="records">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '16px' }}>
+          <div className="finance-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px', flexWrap: 'wrap', gap: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+              <h2 className="finance-section-title" style={{ fontSize: '20px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
                 Complete Financial Ledger
               </h2>
-              <p style={{ fontSize: '14px', color: '#525450', marginTop: '4px', margin: '4px 0 0 0' }}>
+              <p className="finance-section-sub" style={{ fontSize: '14px', color: '#525450', marginTop: '4px', margin: '4px 0 0 0' }}>
                 All documented earnings and expenses for this farming period.
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="finance-ledger-actions" style={{ display: 'flex', gap: '10px' }}>
               <button
                 onClick={() => { setFinanceType('income'); setShowAddFinance(true); }}
-                className="btn btn-primary"
+                className="btn btn-primary finance-ledger-btn"
                 style={{ padding: '9px 18px', fontSize: '13px', fontWeight: 700, borderRadius: '10px' }}
               >
                 + Add Sale
               </button>
               <button
                 onClick={() => { setFinanceType('expense'); setShowAddFinance(true); }}
-                className="btn btn-secondary"
+                className="btn btn-secondary finance-ledger-btn"
                 style={{ padding: '9px 18px', fontSize: '13px', fontWeight: 700, borderRadius: '10px' }}
               >
                 + Add Expense
@@ -454,9 +464,9 @@ export const FarmFinancialTrackerPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <div className="card finance-ledger-card" style={{ padding: '0', overflow: 'hidden' }}>
+            <div className="finance-ledger-table-wrap" style={{ overflowX: 'auto' }}>
+              <table className="finance-ledger-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#F8F7F3', borderBottom: '2px solid #E4E2DC' }}>
                     <th style={{ padding: '14px 18px', fontSize: '12px', fontWeight: 800, color: '#0E4A27', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Type</th>
