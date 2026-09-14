@@ -132,10 +132,10 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
   return (
     <div className="app-container" style={{ paddingBottom: '60px' }}>
       {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="market-prices-header-wrap" style={{ marginBottom: '24px' }}>
+        <div className="market-prices-header-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <div className="market-prices-badges" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
               <span
                 style={{
                   fontSize: '12px',
@@ -167,10 +167,10 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
               </span>
             </div>
 
-            <h1 style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', margin: 0, lineHeight: 1.25 }}>
+            <h1 className="market-prices-title" style={{ fontSize: '30px', fontWeight: 800, color: '#0F172A', margin: 0, lineHeight: 1.25 }}>
               {activeTab === 'prices' ? 'Official Market Prices' : 'Commodity Price Trends & Analytics'}
             </h1>
-            <p style={{ fontSize: '14px', color: '#64748B', marginTop: '6px', maxWidth: '720px', lineHeight: 1.5 }}>
+            <p className="market-prices-subtitle" style={{ fontSize: '14px', color: '#64748B', marginTop: '6px', maxWidth: '720px', lineHeight: 1.5 }}>
               {activeTab === 'prices'
                 ? 'Daily official wholesale and retail pricing index monitored by DA-AMAS and regional agricultural trading posts.'
                 : 'Analyze historical volatility, price trajectory movements, and seasonal agricultural selling windows.'}
@@ -179,6 +179,7 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
 
           {/* Top Segregated Navigation Tabs */}
           <div
+            className="price-tabs-nav segmented-tabs-bar"
             style={{
               display: 'inline-flex',
               background: '#F1F5F9',
@@ -190,6 +191,7 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
           >
             <button
               onClick={() => handleTabChange('prices')}
+              className={`segmented-tab-btn ${activeTab === 'prices' ? 'active' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -213,6 +215,7 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
 
             <button
               onClick={() => handleTabChange('trends')}
+              className={`segmented-tab-btn ${activeTab === 'trends' ? 'active' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -239,6 +242,7 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
 
       {/* ─── Fast Interactive Commodity Selector Bar ─── */}
       <div
+        className="price-filter-card"
         style={{
           marginBottom: '20px',
           background: '#FFFFFF',
@@ -248,19 +252,20 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
           boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
         }}
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ fontSize: '12px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+        <div className="price-filter-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+          <div className="price-filter-label" style={{ fontSize: '12px', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
             🌾 Select Commodity to Monitor:
           </div>
 
           {/* Region Quick Selector Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B' }}>
+          <div className="price-region-selector-wrap" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="price-region-label" style={{ fontSize: '12px', fontWeight: 700, color: '#64748B' }}>
               📍 Regional Market:
             </span>
             <select
               value={selectedRegion}
               onChange={(e) => setSelectedRegion(e.target.value)}
+              className="price-region-select"
               style={{
                 padding: '6px 12px',
                 borderRadius: '10px',
@@ -284,7 +289,7 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
         </div>
 
         {/* Scrollable Quick Crop Chips */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+        <div className="price-crops-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
           {cropsList.map((crop) => {
             const isSelected = selectedCrop.cleanName === crop.cleanName;
             return (
@@ -325,6 +330,7 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
         <div>
           {/* Price Overview 3-Card Grid */}
           <div
+            className="price-summary-grid"
             style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
@@ -334,7 +340,7 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
           >
             {/* Card 1: Official DA-AMAS Benchmark */}
             <div
-              className="card"
+              className="card price-summary-card price-card-benchmark"
               style={{
                 padding: '22px 24px',
                 borderRadius: '18px',
