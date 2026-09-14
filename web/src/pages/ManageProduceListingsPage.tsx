@@ -368,29 +368,31 @@ export const ManageProduceListingsPage: React.FC = () => {
   return (
     <div className="app-container" style={{ paddingBottom: '40px' }}>
       {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="manage-header-wrap" style={{ marginBottom: '24px' }}>
+        <div className="manage-header-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+            <h1 className="manage-title" style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
               My Farm Listings (Crops & Livestock)
             </h1>
-            <p style={{ fontSize: '16px', color: '#525450', marginTop: '6px', margin: 0 }}>
+            <p className="manage-subtitle" style={{ fontSize: '16px', color: '#525450', marginTop: '6px', margin: 0 }}>
               Manage and list real harvests, livestock, and farm goods you are selling on the AgriConnect Marketplace.
             </p>
           </div>
 
           <button
             onClick={() => openAddModal()}
-            className="btn btn-primary btn-large"
+            className="btn btn-primary btn-large manage-add-btn"
             style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 24px', fontSize: '15px', fontWeight: 800 }}
           >
-            <span>+ Add Listing for Sale</span>
+            <span className="manage-add-btn-full">+ Add Listing for Sale</span>
+            <span className="manage-add-btn-compact">+ Add</span>
           </button>
         </div>
       </div>
 
       {/* ─── Search & Category Filter Bar ─── */}
       <div
+        className="manage-search-card"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -404,7 +406,7 @@ export const ManageProduceListingsPage: React.FC = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
+          <div className="manage-search-box" style={{ flex: 1, minWidth: '240px', position: 'relative' }}>
             <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '16px', color: '#94a3b8' }}>
               🔍
             </span>
@@ -413,21 +415,22 @@ export const ManageProduceListingsPage: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search your listings by name, location, or notes..."
-              className="form-input"
+              className="form-input manage-search-input"
               style={{ paddingLeft: '38px', paddingRight: '14px', height: '42px', fontSize: '14px', width: '100%' }}
             />
           </div>
 
-          <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748b' }}>
+          <div className="manage-count-label" style={{ fontSize: '13px', fontWeight: 700, color: '#64748b' }}>
             Showing {filteredMyListings.length} of {myListings.length} listing{myListings.length !== 1 ? 's' : ''}
           </div>
         </div>
 
         {/* Category Pills */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+        <div className="manage-categories-scroll" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
           <button
             type="button"
             onClick={() => setFilterCategory('All')}
+            className={`manage-category-chip ${filterCategory === 'All' ? 'active' : ''}`}
             style={{
               padding: '6px 14px',
               borderRadius: '20px',
@@ -457,6 +460,7 @@ export const ManageProduceListingsPage: React.FC = () => {
                 key={cat.id}
                 type="button"
                 onClick={() => setFilterCategory(cat.name)}
+                className={`manage-category-chip ${isSelected ? 'active' : ''}`}
                 style={{
                   padding: '6px 14px',
                   borderRadius: '20px',
@@ -856,7 +860,7 @@ export const ManageProduceListingsPage: React.FC = () => {
             return (
               <div
                 key={item.id}
-                className="card"
+                className="card manage-listing-card"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -868,19 +872,21 @@ export const ManageProduceListingsPage: React.FC = () => {
                   boxShadow: '0 2px 10px rgba(0,0,0,0.04)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1, minWidth: '300px' }}>
+                <div className="manage-listing-main" style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1, minWidth: '280px' }}>
                   <img
                     src={photoUrl}
                     alt={item.cropName}
+                    className="manage-listing-img"
                     style={{ width: '95px', height: '95px', borderRadius: '14px', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }}
                   />
-                  <div>
+                  <div className="manage-listing-info" style={{ minWidth: 0, flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <h3 style={{ fontSize: '20px', fontWeight: 800, color: '#1A1C1A', margin: 0 }}>
+                      <h3 className="manage-listing-title" style={{ fontSize: '20px', fontWeight: 800, color: '#1A1C1A', margin: 0 }}>
                         {item.cropName}
                       </h3>
                       {item.category && (
                         <span
+                          className="manage-listing-cat-badge"
                           style={{
                             fontSize: '12px',
                             fontWeight: 700,
@@ -899,16 +905,16 @@ export const ManageProduceListingsPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27', margin: '4px 0' }}>
+                    <div className="manage-listing-price" style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27', margin: '4px 0' }}>
                       ₱{item.pricePerUnit} per {item.unit || 'kg'} • {item.quantity} {item.unit || 'kg'} available
                     </div>
-                    <div style={{ fontSize: '14px', color: '#525450', fontWeight: 500 }}>
+                    <div className="manage-listing-meta" style={{ fontSize: '14px', color: '#525450', fontWeight: 500 }}>
                       📍 {item.location || 'Region X'} • Ready: {item.harvestDate ? String(item.harvestDate).split('T')[0] : 'Ready'}
                     </div>
 
                     {/* Highlight Tags */}
                     {itemTags.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                      <div className="manage-listing-tags" style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
                         {itemTags.map((t) => (
                           <span
                             key={t}
@@ -929,16 +935,16 @@ export const ManageProduceListingsPage: React.FC = () => {
                     )}
 
                     {cleanDesc && (
-                      <p style={{ fontSize: '13px', color: '#64748b', margin: '6px 0 0 0', lineHeight: 1.4 }}>
+                      <p className="manage-listing-desc" style={{ fontSize: '13px', color: '#64748b', margin: '6px 0 0 0', lineHeight: 1.4 }}>
                         {cleanDesc}
                       </p>
                     )}
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div className="manage-listing-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <span
-                    className={isLive ? 'badge badge-verified' : isSoldOut ? 'badge badge-danger' : 'badge badge-warning'}
+                    className={`manage-listing-status-badge ${isLive ? 'badge badge-verified' : isSoldOut ? 'badge badge-danger' : 'badge badge-warning'}`}
                     style={{ fontSize: '14px', padding: '6px 14px', borderRadius: '20px' }}
                   >
                     {isLive ? '✓ Live & Selling' : isSoldOut ? '📦 Sold Out' : '⏸ Temporarily Paused'}
@@ -946,7 +952,7 @@ export const ManageProduceListingsPage: React.FC = () => {
 
                   <button
                     onClick={() => togglePauseStatus(item)}
-                    className="btn btn-secondary"
+                    className="btn btn-secondary manage-btn-action"
                     style={{ fontSize: '14px', padding: '8px 16px', fontWeight: 700 }}
                   >
                     {isLive ? 'Pause Sale' : 'Resume Sale'}
@@ -954,7 +960,7 @@ export const ManageProduceListingsPage: React.FC = () => {
 
                   <button
                     onClick={() => openEditModal(item)}
-                    className="btn btn-accent"
+                    className="btn btn-accent manage-btn-action"
                     style={{ fontSize: '14px', padding: '8px 16px', fontWeight: 700 }}
                   >
                     Edit Details
@@ -962,6 +968,7 @@ export const ManageProduceListingsPage: React.FC = () => {
 
                   <button
                     onClick={() => setListingToDelete(item)}
+                    className="manage-btn-delete"
                     style={{
                       padding: '8px 14px',
                       borderRadius: '8px',
@@ -973,12 +980,6 @@ export const ManageProduceListingsPage: React.FC = () => {
                       cursor: 'pointer',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px',
-                      transition: 'all 0.15s ease',
-                    }}
-                    title="Delete listing permanently"
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#ffe4e6';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = '#fff1f2';
