@@ -362,69 +362,37 @@ export const SupplyStorePage: React.FC = () => {
 
   return (
     <div className="app-container" style={{ paddingBottom: '40px' }}>
-      {/* ─── Marketplace Channel Switcher ─── */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', flexWrap: 'wrap' }}>
+      {/* ─── Marketplace Channel Switcher (Segmented Control) ─── */}
+      <div className="marketplace-channel-switcher">
         <button
           type="button"
           onClick={() => navigate('/produce')}
-          style={{
-            padding: '10px 22px',
-            borderRadius: '24px',
-            border: '2px solid #e2e8f0',
-            backgroundColor: '#ffffff',
-            color: '#64748b',
-            fontWeight: 700,
-            fontSize: '15px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = '#176B3A';
-            e.currentTarget.style.color = '#0E4A27';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = '#e2e8f0';
-            e.currentTarget.style.color = '#64748b';
-          }}
+          className="marketplace-channel-btn"
+          aria-label="Fresh Produce and Crops marketplace"
         >
-          <span style={{ fontSize: '12px', fontWeight: 600, color: '#94a3b8' }}>←</span>
-          <span>🌾 Fresh Produce & Crops</span>
+          <span className="channel-icon">🌾</span>
+          <span className="channel-label">Fresh Produce</span>
         </button>
 
         <button
           type="button"
           onClick={() => navigate('/supply')}
-          style={{
-            padding: '10px 22px',
-            borderRadius: '24px',
-            border: '2px solid #ca8a04',
-            backgroundColor: '#FBF6EE',
-            color: '#854d0e',
-            fontWeight: 800,
-            fontSize: '15px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: '0 2px 8px rgba(202, 138, 4, 0.15)',
-            transition: 'all 0.15s ease',
-          }}
+          className="marketplace-channel-btn active supply-active"
+          aria-label="Farm Supplies and Inputs store"
         >
-          <span>🏪 Farm Supplies & Inputs</span>
+          <span className="channel-icon">🏪</span>
+          <span className="channel-label">Farm Supplies</span>
         </button>
       </div>
 
-      {/* ─── Page Header ─── */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h1 style={{ fontSize: '28px', fontWeight: 800, color: '#0E4A27', margin: 0, lineHeight: 1.2 }}>
+      {/* ─── Page Header / Sub-banner ─── */}
+      <div className="marketplace-header-wrap">
+        <div className="marketplace-header-inner">
+          <div className="marketplace-header-text">
+            <h1 className="marketplace-header-title">
               Agri-Supply Store
             </h1>
-            <p style={{ fontSize: '15px', color: '#64748B', marginTop: '6px', margin: '6px 0 0 0' }}>
+            <p className="marketplace-header-subtitle">
               {user?.role === 'supplier'
                 ? 'Manage your agricultural inputs, track buyer orders, and expand your catalog.'
                 : user?.role === 'lgu_staff'
@@ -434,68 +402,52 @@ export const SupplyStorePage: React.FC = () => {
           </div>
 
           {user?.role === 'supplier' && (
-            <div style={{ display: 'flex', gap: '14px' }}>
-              <button
-                className="btn btn-primary btn-large"
-                onClick={openAddSupplyModal}
-                style={{ fontSize: '14px', fontWeight: 800 }}
-              >
-                + Add Supply Product
-              </button>
-            </div>
+            <button
+              className="btn btn-primary marketplace-manage-btn"
+              onClick={openAddSupplyModal}
+            >
+              + Add Supply Product
+            </button>
           )}
         </div>
       </div>
 
       {/* ─── Search Field & Category Pills ─── */}
-      <div className="card" style={{ padding: '18px 20px', marginBottom: '24px', borderRadius: '18px', border: '1.5px solid #E2E8F0', background: '#FFFFFF' }}>
+      <div className="marketplace-search-card">
         {/* Search Field */}
-        <div style={{ marginBottom: '14px' }}>
+        <div className="marketplace-search-wrapper">
+          <span className="marketplace-search-icon">🔍</span>
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search for fertilizers, seeds, machinery, tools..."
             aria-label="Search supply store"
-            className="form-input"
-            style={{ fontSize: '15px', minHeight: '48px', padding: '10px 16px', borderRadius: '12px', border: '1.5px solid #CBD5E1' }}
+            className="form-input marketplace-search-input"
           />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="marketplace-search-clear"
+              aria-label="Clear search text"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
         {/* Category Pills */}
-        <div
-          style={{
-            display: 'flex',
-            gap: '8px',
-            overflowX: 'auto',
-            paddingBottom: '2px',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          }}
-        >
+        <div className="marketplace-categories-scroll">
           {categories.map((cat) => {
             const isSelected = activeCategory === cat.key;
             return (
               <button
                 key={cat.key}
                 onClick={() => setActiveCategory(cat.key)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 18px',
-                  borderRadius: '24px',
-                  border: `1.5px solid ${isSelected ? '#176B3A' : '#CBD5E1'}`,
-                  background: isSelected ? '#176B3A' : '#FFFFFF',
-                  color: isSelected ? '#FFFFFF' : '#334155',
-                  fontWeight: 700,
-                  fontSize: '13.5px',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'all 0.15s ease',
-                }}
+                className={`marketplace-category-chip ${isSelected ? 'active' : ''}`}
               >
-                <span style={{ fontSize: '16px' }}>{cat.icon}</span>
+                <span style={{ fontSize: '15px' }}>{cat.icon}</span>
                 <span>{cat.label}</span>
               </button>
             );
@@ -522,13 +474,7 @@ export const SupplyStorePage: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-            gap: '28px',
-          }}
-        >
+        <div className="marketplace-grid">
           {products.map((item) => {
             const qtyInCart = cartItemsMap[item.id] || 0;
             const isRecentlyAdded = recentlyAddedId === item.id;
@@ -545,104 +491,59 @@ export const SupplyStorePage: React.FC = () => {
             return (
               <div
                 key={item.id}
-                className="card card-interactive"
-                style={{ padding: '0', overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+                className="card card-interactive marketplace-card"
                 onClick={() => {
                   setViewProduct(item);
                   setViewQuantity(1);
                 }}
               >
-                <div style={{ position: 'relative', height: '200px', background: '#EAF6EE' }}>
+                <div className="marketplace-card-image-box">
                   <img
                     src={getImageUrl(item.images?.[0], categoryImages[item.category] ?? 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=600&q=80')}
                     alt={item.name}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                   {qtyInCart > 0 && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: '12px',
-                        right: '12px',
-                        background: '#176B3A',
-                        color: '#FFFFFF',
-                        padding: '4px 10px',
-                        borderRadius: '20px',
-                        fontSize: '13px',
-                        fontWeight: 800,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-                      }}
-                    >
-                      🛒 {qtyInCart} {item.unit || 'units'} in cart
+                    <div className="marketplace-cart-badge">
+                      🛒 {qtyInCart} <span className="marketplace-cart-badge-text">{item.unit || 'units'} in cart</span>
                     </div>
                   )}
                 </div>
 
-                <div style={{ padding: '20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="marketplace-card-body">
                   {/* Row 1: Overline Seller Identity & Location */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '20px', marginBottom: '6px' }}>
-                    <span
-                      title={`Supplier: ${item.supplierName || 'Verified Supplier'} • 📍 ${item.location || 'Northern Mindanao'}`}
-                      style={{ fontSize: '13px', color: '#525450', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                    >
-                      Supplier: {item.supplierName || 'Verified Supplier'} • 📍 {item.location || 'Northern Mindanao'}
-                    </span>
+                  <div
+                    className="marketplace-card-seller"
+                    title={`Supplier: ${item.supplierName || 'Verified Supplier'} • 📍 ${item.location || 'Northern Mindanao'}`}
+                  >
+                    <span>Supplier: {item.supplierName || 'Verified Supplier'} • 📍 {item.location || 'Northern Mindanao'}</span>
                   </div>
 
                   {/* Row 2: Product Name */}
-                  <h3
-                    title={item.name}
-                    style={{
-                      fontSize: '18px',
-                      fontWeight: 800,
-                      color: '#1A1C1A',
-                      minHeight: '26px',
-                      maxHeight: '48px',
-                      lineHeight: '1.3',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      margin: '0 0 6px 0',
-                    }}
-                  >
+                  <h3 className="marketplace-card-title" title={item.name}>
                     {item.name}
                   </h3>
 
-                  {/* Row 3: Secondary Details Slot (Description 2-line clamp) */}
+                  {/* Row 3: Secondary Details Slot (Desktop only) */}
                   <p
+                    className="marketplace-card-desc"
                     title={item.description}
-                    style={{
-                      fontSize: '13px',
-                      color: '#64748B',
-                      lineHeight: '19px',
-                      minHeight: '19px',
-                      maxHeight: '38px',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      wordBreak: 'break-word',
-                      margin: '0 0 10px 0',
-                    }}
                   >
                     {item.description || 'Certified agricultural input from verified supplier.'}
                   </p>
 
                   {/* Row 4: Price Slot */}
-                  <div style={{ fontSize: '24px', fontWeight: 800, color: '#0E4A27', marginBottom: '6px', display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: 'auto' }}>
+                  <div className="marketplace-card-price">
                     <span>₱{item.price.toLocaleString()}</span>
-                    <span style={{ fontSize: '14px', color: '#525450', fontWeight: 600 }}>/ {item.unit}</span>
+                    <span className="marketplace-card-price-unit">/ {item.unit}</span>
                   </div>
 
                   {/* Row 5: Stock Status Badge */}
-                  <div style={{ height: '22px', display: 'flex', alignItems: 'center', fontSize: '13.5px', fontWeight: 800, marginBottom: '16px' }}>
+                  <div className="marketplace-card-stock">
                     {item.stockQuantity > 0 ? (
-                      <span style={{ color: '#16A34A', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ color: '#16A34A', display: 'flex', alignItems: 'center', gap: '3px' }}>
                         <span>✓</span>
-                        <span>In Stock ({item.stockQuantity} {item.unit})</span>
+                        <span className="marketplace-stock-text">In Stock ({item.stockQuantity} {item.unit})</span>
+                        <span className="marketplace-stock-compact">{item.stockQuantity} {item.unit}</span>
                       </span>
                     ) : (
                       <span style={{ color: '#DC2626' }}>✕ Out of Stock</span>
@@ -650,7 +551,7 @@ export const SupplyStorePage: React.FC = () => {
                   </div>
 
                   {/* Row 6: Action Buttons pinned to bottom */}
-                  <div style={{ marginTop: 'auto' }} onClick={(e) => e.stopPropagation()}>
+                  <div className="marketplace-card-actions" onClick={(e) => e.stopPropagation()}>
                     {isOwnProduct ? (
                       <button
                         type="button"
@@ -658,58 +559,25 @@ export const SupplyStorePage: React.FC = () => {
                           setViewProduct(item);
                           setViewQuantity(1);
                         }}
-                        style={{
-                          width: '100%',
-                          padding: '10px',
-                          textAlign: 'center',
-                          backgroundColor: '#F1F5F9',
-                          border: '1.5px solid #CBD5E1',
-                          borderRadius: '10px',
-                          fontWeight: 700,
-                          color: '#475569',
-                          fontSize: '13.5px',
-                          cursor: 'pointer',
-                          transition: 'all 0.15s ease',
-                        }}
+                        className="marketplace-btn-own"
                       >
-                        🏪 Your Product (View)
+                        🏪 <span className="marketplace-btn-manage-full">Your Product (View)</span><span className="marketplace-btn-manage-compact">View</span>
                       </button>
                     ) : !isPurchaser ? (
-                      <div style={{
-                        padding: '10px',
-                        textAlign: 'center',
-                        backgroundColor: '#F8FAFC',
-                        borderRadius: '10px',
-                        fontWeight: 700,
-                        color: '#64748B',
-                        fontSize: '13.5px',
-                        border: '1.5px solid #E2E8F0',
-                      }}>
-                        🏪 Catalog View
+                      <div className="marketplace-btn-view">
+                        🏪 <span className="marketplace-btn-view-full">Catalog View</span><span className="marketplace-btn-view-compact">Catalog</span>
                       </div>
                     ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1.1fr 1fr', gap: '6px' }}>
+                      <div className="marketplace-action-grid">
                         {/* Chat with Supplier button */}
                         <button
                           type="button"
                           onClick={() => handleChatWithSupplier(item)}
-                          className="btn btn-secondary"
-                          style={{
-                            padding: '10px 12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px',
-                            cursor: 'pointer',
-                            fontWeight: 800,
-                            fontSize: '13px',
-                            borderColor: '#176B3A',
-                            color: '#0E4A27',
-                            background: '#EFFDF5',
-                          }}
+                          className="btn btn-secondary marketplace-btn-chat"
                           title={`Chat with ${item.supplierName || 'Supplier'}`}
                         >
-                          💬 Chat
+                          <span>💬</span>
+                          <span className="marketplace-btn-text"> Chat</span>
                         </button>
 
                         {/* Add to Cart button */}
@@ -717,22 +585,21 @@ export const SupplyStorePage: React.FC = () => {
                           type="button"
                           onClick={(e) => handleDirectAddToCart(item, 1, e)}
                           disabled={isOutOfStock || isMaxInCart}
-                          className="btn btn-secondary"
+                          className="btn btn-secondary marketplace-btn-cart"
                           style={{
-                            backgroundColor: isRecentlyAdded ? '#EAF6EE' : '#F8F7F3',
-                            borderColor: isRecentlyAdded ? '#10B981' : qtyInCart > 0 ? '#176B3A' : '#D8D6CF',
+                            backgroundColor: isRecentlyAdded ? '#EAF6EE' : undefined,
+                            borderColor: isRecentlyAdded ? '#10B981' : qtyInCart > 0 ? '#176B3A' : undefined,
                             color: isOutOfStock ? '#94A3B8' : '#0E4A27',
-                            fontWeight: 800,
-                            fontSize: '13px',
-                            padding: '10px 6px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '4px',
-                            cursor: isOutOfStock || isMaxInCart ? 'not-allowed' : 'pointer',
                           }}
+                          title={isMaxInCart ? 'Max in cart' : 'Add to cart'}
                         >
-                          {isRecentlyAdded ? '✓ Added!' : isMaxInCart ? 'Max in Cart' : qtyInCart > 0 ? `🛒 Add (+1)` : '🛒 Cart'}
+                          <span>{isRecentlyAdded ? '✓' : '🛒'}</span>
+                          <span className="marketplace-btn-text">
+                            {isRecentlyAdded ? ' Added!' : isMaxInCart ? ' Max' : qtyInCart > 0 ? ` (+1)` : ' Cart'}
+                          </span>
+                          <span className="marketplace-btn-compact-count">
+                            {qtyInCart > 0 ? ` ${qtyInCart}` : ''}
+                          </span>
                         </button>
 
                         {/* Buy Now button */}
@@ -740,20 +607,10 @@ export const SupplyStorePage: React.FC = () => {
                           type="button"
                           onClick={(e) => handleOpenSupplyBuyNow(item, 1, e)}
                           disabled={isOutOfStock}
-                          className="btn btn-primary"
-                          style={{
-                            fontWeight: 800,
-                            fontSize: '13px',
-                            padding: '10px 6px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '3px',
-                            cursor: isOutOfStock ? 'not-allowed' : 'pointer',
-                            opacity: isOutOfStock ? 0.5 : 1,
-                          }}
+                          className="btn btn-primary marketplace-btn-buy"
                         >
-                          ⚡ Buy
+                          <span>⚡</span>
+                          <span> Buy</span>
                         </button>
                       </div>
                     )}

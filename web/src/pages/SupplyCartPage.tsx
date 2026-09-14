@@ -717,10 +717,11 @@ export const SupplyCartPage: React.FC = () => {
         </div>
 
         {/* Unified Cart Tabs */}
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px' }}>
+        <div className="cart-channel-switcher segmented-tabs-bar" style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px' }}>
           <button
             type="button"
             onClick={() => setActiveTab('supplies')}
+            className={`segmented-tab-btn ${activeTab === 'supplies' ? 'active supply-active' : ''}`}
             style={{
               padding: '10px 22px',
               borderRadius: '24px',
@@ -752,6 +753,7 @@ export const SupplyCartPage: React.FC = () => {
           <button
             type="button"
             onClick={() => setActiveTab('produce')}
+            className={`segmented-tab-btn ${activeTab === 'produce' ? 'active produce-active' : ''}`}
             style={{
               padding: '10px 22px',
               borderRadius: '24px',
