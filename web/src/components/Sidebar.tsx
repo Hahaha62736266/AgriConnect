@@ -396,10 +396,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div
           style={{
-            height: 'var(--topbar-height)',
+            minHeight: 'var(--topbar-height)',
+            height: mobileOpen ? 'auto' : 'var(--topbar-height)',
             display: 'flex',
             alignItems: 'center',
-            padding: isDisplayCollapsed ? '0 16px' : '0 20px',
+            padding: mobileOpen
+              ? 'calc(env(safe-area-inset-top, 0px) + 14px) 16px 14px 16px'
+              : isDisplayCollapsed
+              ? '0 16px'
+              : '0 20px',
             borderBottom: '1px solid #E4E2DC',
             justifyContent: isDisplayCollapsed ? 'center' : 'space-between',
             flexShrink: 0,
@@ -411,16 +416,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
+              gap: mobileOpen ? '10px' : '12px',
               textDecoration: 'none',
+              minWidth: 0,
             }}
           >
             <img
               src={agriConnectLogo}
               alt="AgriConnect Logo"
               style={{
-                width: '42px',
-                height: '42px',
+                width: mobileOpen ? '36px' : '42px',
+                height: mobileOpen ? '36px' : '42px',
                 objectFit: 'contain',
                 mixBlendMode: 'multiply',
                 flexShrink: 0,
@@ -428,23 +434,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
               }}
             />
             {!isDisplayCollapsed && (
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: '20px',
+                    fontSize: mobileOpen ? '18px' : '20px',
                     fontWeight: 800,
-                    lineHeight: 1.1,
+                    lineHeight: 1.15,
                     letterSpacing: '-0.3px',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   <span style={{ color: '#16523a' }}>Agri</span><span style={{ color: '#599e36' }}>Connect</span>
                 </div>
                 <div
                   style={{
-                    fontSize: '12px',
+                    fontSize: mobileOpen ? '11px' : '12px',
                     fontWeight: 600,
                     color: '#1c513d',
                     marginTop: '2px',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Connect. Grow. Prosper.
@@ -471,6 +479,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
                 flexShrink: 0,
+                alignSelf: 'center',
               }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
