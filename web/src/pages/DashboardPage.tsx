@@ -435,6 +435,7 @@ export const DashboardPage: React.FC = () => {
     <div className="app-container" style={{ paddingBottom: '40px' }}>
       {/* ─── Compact Greeting & Location Banner ─── */}
       <div
+        className="dashboard-welcome-banner"
         style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -450,15 +451,16 @@ export const DashboardPage: React.FC = () => {
         }}
       >
         <div>
-          <h1 style={{ fontSize: '20px', fontWeight: 800, color: '#0E4A27', margin: 0, lineHeight: 1.2 }}>
+          <h1 className="dashboard-welcome-title" style={{ fontSize: '20px', fontWeight: 800, color: '#0E4A27', margin: 0, lineHeight: 1.2 }}>
             Hello, {userName}! 👋
           </h1>
-          <p style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: '4px 0 0 0', fontWeight: 500 }}>
+          <p className="dashboard-welcome-sub" style={{ fontSize: '13px', color: '#64748B', marginTop: '4px', margin: '4px 0 0 0', fontWeight: 500 }}>
             {subtitleMap[role] || subtitleMap.farmer}
           </p>
         </div>
 
         <div
+          className="dashboard-location-badge"
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -485,11 +487,12 @@ export const DashboardPage: React.FC = () => {
 
       {/* ─── Section 1: PRIMARY ACTION CARDS ─── */}
       <section style={{ marginBottom: '28px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '12px' }}>
+        <h2 className="dashboard-section-title" style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '12px' }}>
           Quick Actions & Tools
         </h2>
 
         <div
+          className="dashboard-actions-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
@@ -505,11 +508,11 @@ export const DashboardPage: React.FC = () => {
               <div className="big-action-icon-box" style={{ background: card.bg }}>
                 {card.icon}
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div className="big-action-title">{card.title}</div>
                 <div className="big-action-subtitle">{card.subtitle}</div>
               </div>
-              <span style={{ color: '#CBD5E1', fontSize: '15px', fontWeight: 700 }}>→</span>
+              <span className="big-action-arrow" style={{ color: '#CBD5E1', fontSize: '15px', fontWeight: 700 }}>→</span>
             </button>
           ))}
         </div>
@@ -517,11 +520,12 @@ export const DashboardPage: React.FC = () => {
 
       {/* ─── Section 2: SUMMARY STATS SECTION (REAL LIVE DATA) ─── */}
       <section style={{ marginBottom: '28px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '12px' }}>
+        <h2 className="dashboard-section-title" style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A', marginBottom: '12px' }}>
           {summary.title}
         </h2>
 
         <div
+          className="dashboard-summary-grid"
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -531,7 +535,7 @@ export const DashboardPage: React.FC = () => {
           {summary.cards.map((c, idx) => (
             <div
               key={idx}
-              className="card"
+              className="card dashboard-summary-card"
               style={{
                 borderLeft: `4px solid ${c.color}`,
                 border: '1px solid #E2E8F0',
@@ -542,13 +546,13 @@ export const DashboardPage: React.FC = () => {
                 boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03)',
               }}
             >
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+              <div className="dashboard-stat-label" style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                 {c.label}
               </div>
-              <div style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', margin: '6px 0 2px 0', lineHeight: 1.2 }}>
+              <div className="dashboard-stat-value" style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', margin: '6px 0 2px 0', lineHeight: 1.2 }}>
                 {c.value}
               </div>
-              <div style={{ fontSize: '12px', color: c.color, fontWeight: 600 }}>
+              <div className="dashboard-stat-sub" style={{ fontSize: '12px', color: c.color, fontWeight: 600 }}>
                 {c.sub}
               </div>
             </div>
@@ -558,19 +562,19 @@ export const DashboardPage: React.FC = () => {
 
       {/* ─── Section 3: REAL CROP PRICES ─── */}
       <section style={{ marginBottom: '32px' }}>
-        <div className="card" style={{ padding: '22px 24px', borderRadius: '18px', border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
+        <div className="card dashboard-prices-card" style={{ padding: '22px 24px', borderRadius: '18px', border: '1px solid #E2E8F0', background: '#FFFFFF' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
+              <h2 className="dashboard-prices-title" style={{ fontSize: '18px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
                 Today's Crop Prices
               </h2>
-              <p style={{ fontSize: '13px', color: '#64748B', margin: '2px 0 0 0' }}>
+              <p className="dashboard-prices-sub" style={{ fontSize: '13px', color: '#64748B', margin: '2px 0 0 0' }}>
                 Verified official prices recorded across Department of Agriculture trading posts
               </p>
             </div>
             <Link
               to="/market-prices"
-              className="btn btn-secondary"
+              className="btn btn-secondary dashboard-prices-view-btn"
               style={{ fontSize: '13px', padding: '7px 16px', borderRadius: '10px', fontWeight: 700 }}
             >
               View All Prices →
@@ -590,6 +594,7 @@ export const DashboardPage: React.FC = () => {
               {marketPrices.map((item) => (
                 <div
                   key={item.id}
+                  className="dashboard-price-row"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -602,9 +607,9 @@ export const DashboardPage: React.FC = () => {
                     gap: '8px',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                     <span style={{ fontSize: '22px' }}>{getCropIcon(item.cropName)}</span>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>{item.cropName}</div>
                       <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
                         📍 {item.marketLocation || item.region}
