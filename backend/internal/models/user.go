@@ -54,10 +54,21 @@ type User struct {
 	Barangay     string        `bson:"barangay,omitempty"     json:"barangay,omitempty"`
 	Address      string        `bson:"address,omitempty"      json:"address,omitempty"`
 	PhotoURL     string        `bson:"photo_url,omitempty"     json:"photoUrl,omitempty"`
-	IsVerified   bool          `bson:"is_verified"             json:"isVerified"`
-	Status       string        `bson:"status"                  json:"status"`
-	CreatedAt    time.Time     `bson:"created_at"              json:"createdAt"`
-	UpdatedAt    time.Time     `bson:"updated_at"              json:"updatedAt"`
+	// Payment & Payout receiving accounts
+	GCashNumber     string `bson:"gcash_number,omitempty"     json:"gcashNumber,omitempty"`
+	GCashName       string `bson:"gcash_name,omitempty"       json:"gcashName,omitempty"`
+	GCashQrURL      string `bson:"gcash_qr_url,omitempty"     json:"gcashQrUrl,omitempty"`
+	MayaNumber      string `bson:"maya_number,omitempty"      json:"mayaNumber,omitempty"`
+	MayaName        string `bson:"maya_name,omitempty"        json:"mayaName,omitempty"`
+	MayaQrURL       string `bson:"maya_qr_url,omitempty"      json:"mayaQrUrl,omitempty"`
+	BankName        string `bson:"bank_name,omitempty"        json:"bankName,omitempty"`
+	BankAccountNo   string `bson:"bank_account_no,omitempty"  json:"bankAccountNo,omitempty"`
+	BankAccountName string `bson:"bank_account_name,omitempty" json:"bankAccountName,omitempty"`
+
+	IsVerified bool      `bson:"is_verified"             json:"isVerified"`
+	Status     string    `bson:"status"                  json:"status"`
+	CreatedAt  time.Time `bson:"created_at"              json:"createdAt"`
+	UpdatedAt  time.Time `bson:"updated_at"              json:"updatedAt"`
 }
 
 // RegisterRequest is the JSON body for POST /api/auth/register.
@@ -95,6 +106,17 @@ type UpdateProfileRequest struct {
 	Municipality *string `json:"municipality,omitempty"`
 	Barangay     *string `json:"barangay,omitempty"`
 	Address      *string `json:"address,omitempty"`
+
+	// Payment receiving account updates
+	GCashNumber     *string `json:"gcashNumber,omitempty"`
+	GCashName       *string `json:"gcashName,omitempty"`
+	GCashQrURL      *string `json:"gcashQrUrl,omitempty"`
+	MayaNumber      *string `json:"mayaNumber,omitempty"`
+	MayaName        *string `json:"mayaName,omitempty"`
+	MayaQrURL       *string `json:"mayaQrUrl,omitempty"`
+	BankName        *string `json:"bankName,omitempty"`
+	BankAccountNo   *string `json:"bankAccountNo,omitempty"`
+	BankAccountName *string `json:"bankAccountName,omitempty"`
 }
 
 // ChangePasswordRequest is the JSON body for PUT /api/users/me/password.

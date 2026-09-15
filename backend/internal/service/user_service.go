@@ -88,6 +88,34 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID string, req mode
 		update["address"] = *req.Address
 	}
 
+	if req.GCashNumber != nil {
+		update["gcash_number"] = *req.GCashNumber
+	}
+	if req.GCashName != nil {
+		update["gcash_name"] = *req.GCashName
+	}
+	if req.GCashQrURL != nil {
+		update["gcash_qr_url"] = *req.GCashQrURL
+	}
+	if req.MayaNumber != nil {
+		update["maya_number"] = *req.MayaNumber
+	}
+	if req.MayaName != nil {
+		update["maya_name"] = *req.MayaName
+	}
+	if req.MayaQrURL != nil {
+		update["maya_qr_url"] = *req.MayaQrURL
+	}
+	if req.BankName != nil {
+		update["bank_name"] = *req.BankName
+	}
+	if req.BankAccountNo != nil {
+		update["bank_account_no"] = *req.BankAccountNo
+	}
+	if req.BankAccountName != nil {
+		update["bank_account_name"] = *req.BankAccountName
+	}
+
 	if len(update) == 0 {
 		return s.repo.FindByID(ctx, oid)
 	}

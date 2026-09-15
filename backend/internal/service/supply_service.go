@@ -263,10 +263,15 @@ func (s *SupplyService) CreateOrder(ctx context.Context, buyerID string, req mod
 			}
 			return req.PaymentMethod
 		}(),
-		// All orders start as unpaid regardless of method.
-		// COD: supplier marks paid on delivery.
-		// Online: payment gateway webhook will flip this to "paid".
-		PaymentStatus: models.PaymentStatusPending,
+		PaymentRefNo:    req.PaymentRefNo,
+		PaymentProofURL: req.PaymentProofURL,
+		// If buyer submitted e-wallet/bank payment with a ref number, mark as verification pending
+		PaymentStatus: func() models.PaymentStatus {
+			if (req.PaymentMethod == models.PaymentGCash || req.PaymentMethod == models.PaymentMaya || req.PaymentMethod == models.PaymentBankTransfer) && req.PaymentRefNo != "" {
+				return models.PaymentStatusVerificationPending
+			}
+			return models.PaymentStatusPending
+		}(),
 	}
 
 	if err := s.supplyRepo.CreateOrder(ctx, order); err != nil {
