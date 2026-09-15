@@ -13,6 +13,16 @@ export interface User {
   barangay?: string;
   address?: string;
   photoUrl?: string;
+  // Payment receiving accounts
+  gcashNumber?: string;
+  gcashName?: string;
+  gcashQrUrl?: string;
+  mayaNumber?: string;
+  mayaName?: string;
+  mayaQrUrl?: string;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
   isVerified?: boolean;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   createdAt: string;
@@ -50,4 +60,13 @@ export interface UpdateProfilePayload {
   municipality?: string;
   barangay?: string;
   address?: string;
+  gcashNumber?: string;
+  gcashName?: string;
+  gcashQrUrl?: string;
+  mayaNumber?: string;
+  mayaName?: string;
+  mayaQrUrl?: string;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
 }

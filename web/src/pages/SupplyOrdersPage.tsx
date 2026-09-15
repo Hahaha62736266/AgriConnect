@@ -38,10 +38,11 @@ const statusBadges: Record<SupplyOrderStatus, { label: string; bg: string; color
 
 // ── Payment status badge config ──────────────────────────────────────────────
 const paymentStatusBadges: Record<PaymentStatus, { label: string; bg: string; color: string; icon: string }> = {
-  pending_payment: { label: 'Awaiting Payment', bg: '#fef9c3', color: '#92400e', icon: '⏳' },
-  paid:            { label: 'Paid',             bg: '#dcfce7', color: '#166534', icon: '✅' },
-  failed:          { label: 'Payment Failed',   bg: '#fee2e2', color: '#991b1b', icon: '❌' },
-  refunded:        { label: 'Refunded',         bg: '#f1f5f9', color: '#475569', icon: '↩️' },
+  pending_payment:             { label: 'Awaiting Payment',               bg: '#fef9c3', color: '#92400e', icon: '⏳' },
+  payment_pending_verification: { label: 'Payment Pending Verification', bg: '#e0f2fe', color: '#0369a1', icon: '🔍' },
+  paid:                        { label: 'Paid',                           bg: '#dcfce7', color: '#166534', icon: '✅' },
+  failed:                      { label: 'Payment Failed',                 bg: '#fee2e2', color: '#991b1b', icon: '❌' },
+  refunded:                    { label: 'Refunded',                       bg: '#f1f5f9', color: '#475569', icon: '↩️' },
 };
 
 // ── Payment method display config ────────────────────────────────────────────
@@ -884,6 +885,12 @@ export const SupplyOrdersPage: React.FC = () => {
                         {payBadge.icon} {payBadge.label}
                       </span>
                     </div>
+                    {order.paymentRefNo && (
+                      <div style={{ fontSize: '12px', color: '#0369A1', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>🧾 Ref No:</span>
+                        <span style={{ fontFamily: 'monospace', background: '#E0F2FE', padding: '1px 6px', borderRadius: '4px' }}>#{order.paymentRefNo}</span>
+                      </div>
+                    )}
                     {order.paymentNote && (
                       <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', marginTop: '4px' }}>
                         {order.paymentNote}

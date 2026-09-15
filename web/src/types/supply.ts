@@ -126,7 +126,12 @@ export type PaymentMethod = 'cod' | 'gcash' | 'maya' | 'bank_transfer' | 'card';
  * - failed: online payment attempt was declined
  * - refunded: payment was reversed
  */
-export type PaymentStatus = 'pending_payment' | 'paid' | 'failed' | 'refunded';
+export type PaymentStatus =
+  | 'pending_payment'
+  | 'payment_pending_verification'
+  | 'paid'
+  | 'failed'
+  | 'refunded';
 
 export interface SupplyProduct {
   id: string;
@@ -180,6 +185,8 @@ export interface SupplyOrder {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   paymentNote?: string;
+  paymentRefNo?: string;
+  paymentProofUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -190,6 +197,8 @@ export interface CreateSupplyOrderPayload {
   deliveryAddress?: string;
   /** Defaults to 'cod' on the backend if omitted. */
   paymentMethod: PaymentMethod;
+  paymentRefNo?: string;
+  paymentProofUrl?: string;
 }
 
 export interface UpdatePaymentStatusPayload {

@@ -64,30 +64,27 @@ const getPaymentOptions = (isPickup: boolean): {
     },
     {
       id: 'gcash',
-      label: 'GCash',
+      label: 'GCash Direct QR',
       icon: '📱',
-      desc: 'Send via GCash e-wallet.',
-      comingSoon: true,
+      desc: 'Scan QR code & enter 13-digit Ref No.',
     },
     {
       id: 'maya',
-      label: 'Maya',
+      label: 'Maya Direct',
       icon: '💜',
-      desc: 'Pay with Maya (formerly PayMaya).',
-      comingSoon: true,
+      desc: 'Send via Maya e-wallet & enter Ref No.',
     },
     {
       id: 'bank_transfer',
-      label: 'Bank Transfer',
+      label: 'Bank Transfer (InstaPay)',
       icon: '🏦',
-      desc: 'InstaPay / PESONet transfer.',
-      comingSoon: true,
+      desc: 'Direct transfer to seller bank account.',
     },
     {
       id: 'card',
       label: 'Credit / Debit Card',
       icon: '💳',
-      desc: 'Visa, Mastercard via secure gateway.',
+      desc: 'Visa, Mastercard via PayMongo gateway.',
       comingSoon: true,
     },
   ];
@@ -113,6 +110,8 @@ export const SupplyCartPage: React.FC = () => {
   const [deliveryAddress, setDeliveryAddress] = useState(userAddr);
   const [contactPhone, setContactPhone] = useState(user?.phone || '');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
+  const [paymentRefNo, setPaymentRefNo] = useState('');
+  const paymentProofUrl = '';
 
   const [ordering, setOrdering] = useState(false);
   const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
@@ -544,6 +543,14 @@ export const SupplyCartPage: React.FC = () => {
         return;
       }
 
+      if ((paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && !paymentRefNo.trim()) {
+        toastWarning(
+          'Reference Number Required',
+          'Please enter your payment Reference Number (e.g. 13-digit GCash/Maya Ref No) before submitting.'
+        );
+        return;
+      }
+
       setOrdering(true);
       try {
         await supplyApi.createOrder({
@@ -551,6 +558,8 @@ export const SupplyCartPage: React.FC = () => {
           deliveryMethod,
           deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : undefined,
           paymentMethod,
+          paymentRefNo: paymentRefNo.trim() || undefined,
+          paymentProofUrl: paymentProofUrl || undefined,
         });
 
         // Remove only the checked-out items from cart (Shopee style)
@@ -560,7 +569,7 @@ export const SupplyCartPage: React.FC = () => {
 
         const successText = paymentMethod === 'cod'
           ? (deliveryMethod === 'pickup' ? 'Order placed! Pay upon in-store pickup. Redirecting to My Supply Orders…' : 'Order placed! Pay upon delivery. Redirecting to My Supply Orders…')
-          : 'Order placed! Check My Supply Orders for payment instructions.';
+          : 'Order submitted with Payment Reference Number! Awaiting seller payment verification.';
         toastSuccess('Order Placed!', successText);
         setTimeout(() => navigate('/supply/orders'), 2200);
       } catch (err: any) {
@@ -594,6 +603,14 @@ export const SupplyCartPage: React.FC = () => {
         return;
       }
 
+      if ((paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && !paymentRefNo.trim()) {
+        toastWarning(
+          'Reference Number Required',
+          'Please enter your payment Reference Number (e.g. 13-digit GCash/Maya Ref No).'
+        );
+        return;
+      }
+
       setOrdering(true);
       const successfulItemIds: string[] = [];
       const failedErrors: string[] = [];
@@ -601,7 +618,8 @@ export const SupplyCartPage: React.FC = () => {
       try {
         for (const item of selectedProduceItems) {
           try {
-            const contactMsg = `Fulfillment: ${deliveryMethod === 'delivery' ? `Delivery to ${deliveryAddress.trim()}` : 'Farm-Gate Pickup'} • Phone: ${contactPhone.trim()} • Payment: ${paymentMethod === 'cod' ? 'Cash on Delivery/Pickup' : 'GCash'}`;
+            const refNoText = paymentRefNo.trim() ? ` • Ref No: ${paymentRefNo.trim()}` : '';
+            const contactMsg = `Fulfillment: ${deliveryMethod === 'delivery' ? `Delivery to ${deliveryAddress.trim()}` : 'Farm-Gate Pickup'} • Phone: ${contactPhone.trim()} • Payment: ${paymentMethod.toUpperCase()}${refNoText}`;
             await produceApi.initiateTransaction({
               listingId: item.id,
               quantity: item.quantity,
@@ -1210,6 +1228,57 @@ export const SupplyCartPage: React.FC = () => {
                     })}
                   </div>
                 </div>
+
+                {/* E-Wallet & Bank Reference Number Box */}
+                {(paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && (
+                  <div
+                    style={{
+                      marginBottom: '20px',
+                      padding: '16px',
+                      borderRadius: '12px',
+                      background: '#F0F9FF',
+                      border: '1.5px solid #0284C7',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0C4A6E', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>📱</span>
+                      <span>
+                        {paymentMethod === 'gcash' ? 'GCash Payment Details' : paymentMethod === 'maya' ? 'Maya Payment Details' : 'Bank Transfer Details'}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: '#0369A1', lineHeight: 1.45 }}>
+                      Please send payment of <strong>₱{currentTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> via your {paymentMethod.toUpperCase()} app, then enter the Reference Number below:
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#0F172A', marginBottom: '4px' }}>
+                        Transaction Reference Number *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={paymentRefNo}
+                        onChange={(e) => setPaymentRefNo(e.target.value)}
+                        placeholder={paymentMethod === 'gcash' ? 'e.g. 1029384756123 (13 digits)' : 'Enter transaction Ref / Auth No.'}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: '1.5px solid #0284C7',
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          color: '#0C4A6E',
+                          background: '#FFFFFF',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Multiple Suppliers Warning for Supplies */}
                 {activeTab === 'supplies' && hasMultipleSelectedSuppliers && (

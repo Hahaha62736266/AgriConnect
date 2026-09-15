@@ -36,6 +36,7 @@ const paymentMethodLabels: Record<PaymentMethod, { label: string; icon: string }
 
 const paymentStatusBadges: Record<PaymentStatus, { label: string; badgeClass: string; icon: string }> = {
   pending_payment: { label: '⏳ Awaiting Payment', badgeClass: 'badge-warning', icon: '⏳' },
+  payment_pending_verification: { label: '🔍 Pending Verification', badgeClass: 'badge-info', icon: '🔍' },
   paid: { label: '✅ Payment Completed', badgeClass: 'badge-success', icon: '✅' },
   failed: { label: '❌ Payment Failed', badgeClass: 'badge-danger', icon: '❌' },
   refunded: { label: '↩️ Payment Refunded', badgeClass: 'badge-info', icon: '↩️' },
@@ -53,6 +54,15 @@ export const ProfilePage: React.FC = () => {
   const [municipality, setMunicipality] = useState(user?.municipality || '');
   const [barangay, setBarangay] = useState(user?.barangay || '');
   const [address, setAddress] = useState(user?.address || '');
+  const [gcashNumber, setGcashNumber] = useState(user?.gcashNumber || '');
+  const [gcashName, setGcashName] = useState(user?.gcashName || '');
+  const [gcashQrUrl, setGcashQrUrl] = useState(user?.gcashQrUrl || '');
+  const [mayaNumber, setMayaNumber] = useState(user?.mayaNumber || '');
+  const [mayaName, setMayaName] = useState(user?.mayaName || '');
+  const [bankName, setBankName] = useState(user?.bankName || '');
+  const [bankAccountNo, setBankAccountNo] = useState(user?.bankAccountNo || '');
+  const [bankAccountName, setBankAccountName] = useState(user?.bankAccountName || '');
+  const [uploadingQr, setUploadingQr] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -64,6 +74,14 @@ export const ProfilePage: React.FC = () => {
       setMunicipality(user.municipality || '');
       setBarangay(user.barangay || '');
       setAddress(user.address || '');
+      setGcashNumber(user.gcashNumber || '');
+      setGcashName(user.gcashName || '');
+      setGcashQrUrl(user.gcashQrUrl || '');
+      setMayaNumber(user.mayaNumber || '');
+      setMayaName(user.mayaName || '');
+      setBankName(user.bankName || '');
+      setBankAccountNo(user.bankAccountNo || '');
+      setBankAccountName(user.bankAccountName || '');
     }
   }, [user]);
 
@@ -77,6 +95,21 @@ export const ProfilePage: React.FC = () => {
     logout();
     toastSuccess('Logged Out', 'You have been safely logged out.');
     navigate('/login');
+  };
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingQr(true);
+    try {
+      const res = await api.uploadImage(file);
+      setGcashQrUrl(res.url);
+      toastSuccess('QR Code Uploaded', 'Your GCash QR Code image has been attached.');
+    } catch {
+      toastError('Upload Failed', 'Could not upload QR Code image.');
+    } finally {
+      setUploadingQr(false);
+    }
   };
 
   // Purchases state
@@ -124,9 +157,17 @@ export const ProfilePage: React.FC = () => {
         municipality,
         barangay,
         address,
+        gcashNumber,
+        gcashName,
+        gcashQrUrl,
+        mayaNumber,
+        mayaName,
+        bankName,
+        bankAccountNo,
+        bankAccountName,
       });
       await refreshProfile();
-      toastSuccess('Profile Updated', 'Your profile details have been saved successfully!');
+      toastSuccess('Profile Updated', 'Your profile and payment account details have been saved!');
     } catch (err: any) {
       toastError('Update Failed', err.response?.data?.error || 'Failed to update profile.');
     } finally {
@@ -685,6 +726,156 @@ export const ProfilePage: React.FC = () => {
                 placeholder="Purok, Sitio, Street name, House/Lot No., Landmark"
                 style={{ fontSize: '18px', resize: 'vertical' }}
               />
+            </div>
+
+            {/* ─── Payment & Payout Receiving Accounts Section ─── */}
+            <div
+              style={{
+                marginBottom: '28px',
+                padding: '24px',
+                borderRadius: '16px',
+                backgroundColor: '#F0F9FF',
+                border: '1.5px solid #BAE6FD',
+              }}
+            >
+              <div style={{ fontSize: '19px', fontWeight: 800, color: '#0369A1', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>💳</span> Payment Receiving Accounts (GCash / Maya / Bank)
+              </div>
+              <p style={{ color: '#0369A1', fontSize: '14px', margin: '0 0 16px 0', lineHeight: 1.45 }}>
+                Configure your e-wallet & bank details. When buyers pay for your produce or supplies via GCash or Maya, your QR code and account details will be shown directly at checkout!
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                {/* GCash Details */}
+                <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
+                  <div style={{ fontWeight: 800, color: '#005CE6', fontSize: '15px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    📱 GCash Account
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>
+                        GCash Mobile Number
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="0917XXXXXXX"
+                        value={gcashNumber}
+                        onChange={(e) => setGcashNumber(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>
+                        Registered Account Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Juan Dela Cruz"
+                        value={gcashName}
+                        onChange={(e) => setGcashName(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                        GCash QR Code Image
+                      </label>
+                      {gcashQrUrl ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <img src={getImageUrl(gcashQrUrl)} alt="GCash QR" style={{ width: '60px', height: '60px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #CBD5E1' }} />
+                          <label style={{ fontSize: '12px', color: '#005CE6', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
+                            {uploadingQr ? 'Uploading...' : 'Change QR Code'}
+                            <input type="file" accept="image/*" onChange={handleQrUpload} style={{ display: 'none' }} disabled={uploadingQr} />
+                          </label>
+                        </div>
+                      ) : (
+                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 12px', borderRadius: '8px', background: '#EFF6FF', border: '1px dashed #3B82F6', color: '#1D4ED8', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                          📸 {uploadingQr ? 'Uploading QR...' : 'Upload GCash QR Code Image'}
+                          <input type="file" accept="image/*" onChange={handleQrUpload} style={{ display: 'none' }} disabled={uploadingQr} />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Maya Details */}
+                <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
+                  <div style={{ fontWeight: 800, color: '#7C3AED', fontSize: '15px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    💜 Maya Account
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>
+                        Maya Mobile Number
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="0918XXXXXXX"
+                        value={mayaNumber}
+                        onChange={(e) => setMayaNumber(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>
+                        Account Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Juan Dela Cruz"
+                        value={mayaName}
+                        onChange={(e) => setMayaName(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bank Details */}
+                <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
+                  <div style={{ fontWeight: 800, color: '#0F172A', fontSize: '15px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🏦 Bank Account (InstaPay / PESONet)
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>
+                        Bank Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. BDO, BPI, Landbank, DBP"
+                        value={bankName}
+                        onChange={(e) => setBankName(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>
+                        Account Number
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 001234567890"
+                        value={bankAccountNo}
+                        onChange={(e) => setBankAccountNo(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '2px' }}>
+                        Account Holder Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Juan Dela Cruz"
+                        value={bankAccountName}
+                        onChange={(e) => setBankAccountName(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '14px' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="profile-form-actions">
