@@ -204,3 +204,24 @@ func (h *SupplyHandler) RespondToQuote(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, order)
 }
+
+// SubmitPaymentRef handles PUT /api/supply/orders/{id}/payment-ref (Buyer).
+func (h *SupplyHandler) SubmitPaymentRef(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r.Context())
+	orderID := chi.URLParam(r, "id")
+
+	var req models.SubmitPaymentRefRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	order, err := h.supplyService.SubmitPaymentRef(r.Context(), userID, orderID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, order)
+}
+

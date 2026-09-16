@@ -303,3 +303,24 @@ func (r *SupplyRepository) UpdatePaymentStatus(ctx context.Context, orderID bson
 	}
 	return nil
 }
+
+// SubmitPaymentRef updates payment_ref_no, payment_proof_url, and payment_status to verification_pending.
+func (r *SupplyRepository) SubmitPaymentRef(ctx context.Context, orderID bson.ObjectID, refNo string, proofURL string) error {
+	fields := bson.M{
+		"payment_ref_no": refNo,
+		"payment_status": models.PaymentStatusVerificationPending,
+		"updated_at":     time.Now(),
+	}
+	if proofURL != "" {
+		fields["payment_proof_url"] = proofURL
+	}
+	res, err := r.ordersColl.UpdateByID(ctx, orderID, bson.M{"$set": fields})
+	if err != nil {
+		return fmt.Errorf("submit payment ref: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return ErrOrderNotFound
+	}
+	return nil
+}
+

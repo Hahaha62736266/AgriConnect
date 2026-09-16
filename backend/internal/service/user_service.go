@@ -35,6 +35,36 @@ func (s *UserService) GetProfile(ctx context.Context, userID string) (*models.Us
 	return s.repo.FindByID(ctx, oid)
 }
 
+// GetPublicProfile retrieves non-sensitive public user info & payment receiving accounts.
+func (s *UserService) GetPublicProfile(ctx context.Context, userID string) (*models.PublicUserProfile, error) {
+	u, err := s.GetProfile(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.PublicUserProfile{
+		ID:              u.ID.Hex(),
+		FirstName:       u.FirstName,
+		LastName:        u.LastName,
+		Role:            u.Role,
+		Phone:           u.Phone,
+		Region:          u.Region,
+		Province:        u.Province,
+		Municipality:    u.Municipality,
+		Barangay:        u.Barangay,
+		Address:         u.Address,
+		GCashNumber:     u.GCashNumber,
+		GCashName:       u.GCashName,
+		GCashQrURL:      u.GCashQrURL,
+		MayaNumber:      u.MayaNumber,
+		MayaName:        u.MayaName,
+		MayaQrURL:       u.MayaQrURL,
+		BankName:        u.BankName,
+		BankAccountNo:   u.BankAccountNo,
+		BankAccountName: u.BankAccountName,
+	}, nil
+}
+
 // UpdateProfile updates the user's profile fields.
 func (s *UserService) UpdateProfile(ctx context.Context, userID string, req models.UpdateProfileRequest) (*models.User, error) {
 	oid, err := bson.ObjectIDFromHex(userID)

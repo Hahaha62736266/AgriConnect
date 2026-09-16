@@ -76,6 +76,7 @@ func New(
 		r.Use(middleware.JWTAuth(jwtSecret))
 
 		r.Get("/me", userHandler.GetProfile)
+		r.Get("/{id}/public", userHandler.GetPublicProfile)
 		r.Put("/me", userHandler.UpdateProfile)
 		r.Put("/me/photo", userHandler.UploadPhoto)
 		r.Put("/me/password", userHandler.ChangePassword)
@@ -123,6 +124,7 @@ func New(
 			r.Put("/orders/{id}/status", supplyHandler.UpdateOrderStatus)
 			// Payment status: supplier confirms COD receipt; future: gateway webhook for online payments.
 			r.Put("/orders/{id}/payment-status", supplyHandler.UpdatePaymentStatus)
+			r.Put("/orders/{id}/payment-ref", supplyHandler.SubmitPaymentRef)
 			r.Post("/orders/{id}/quote-decision", supplyHandler.RespondToQuote)
 		})
 	})

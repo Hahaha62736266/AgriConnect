@@ -175,3 +175,10 @@ type UpdatePaymentStatusRequest struct {
 	PaymentStatus PaymentStatus `json:"paymentStatus"`
 	PaymentNote   string        `json:"paymentNote,omitempty"`
 }
+
+// SubmitPaymentRefRequest is the JSON body when a buyer submits/updates their transaction reference number post-checkout.
+type SubmitPaymentRefRequest struct {
+	PaymentRefNo    string `json:"paymentRefNo"`
+	PaymentProofURL string `json:"paymentProofUrl,omitempty"`
+}
+

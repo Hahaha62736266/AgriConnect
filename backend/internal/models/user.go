@@ -129,3 +129,27 @@ type ChangePasswordRequest struct {
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
+
+// PublicUserProfile contains non-sensitive public seller/farmer details and payment accounts.
+type PublicUserProfile struct {
+	ID              string   `json:"id"`
+	FirstName       string   `json:"firstName"`
+	LastName        string   `json:"lastName"`
+	Role            Role     `json:"role"`
+	Phone           string   `json:"phone,omitempty"`
+	Region          string   `json:"region,omitempty"`
+	Province        string   `json:"province,omitempty"`
+	Municipality    string   `json:"municipality,omitempty"`
+	Barangay        string   `json:"barangay,omitempty"`
+	Address         string   `json:"address,omitempty"`
+	GCashNumber     string   `json:"gcashNumber,omitempty"`
+	GCashName       string   `json:"gcashName,omitempty"`
+	GCashQrURL      string   `json:"gcashQrUrl,omitempty"`
+	MayaNumber      string   `json:"mayaNumber,omitempty"`
+	MayaName        string   `json:"mayaName,omitempty"`
+	MayaQrURL       string   `json:"mayaQrUrl,omitempty"`
+	BankName        string   `json:"bankName,omitempty"`
+	BankAccountNo   string   `json:"bankAccountNo,omitempty"`
+	BankAccountName string   `json:"bankAccountName,omitempty"`
+}
+

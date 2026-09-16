@@ -526,3 +526,42 @@ func (s *SupplyService) UpdatePaymentStatus(ctx context.Context, userID string, 
 
 	return updated, err
 }
+
+// SubmitPaymentRef allows a buyer to submit/update their transaction reference number post-checkout.
+func (s *SupplyService) SubmitPaymentRef(ctx context.Context, userID string, orderID string, req models.SubmitPaymentRefRequest) (*models.SupplyOrder, error) {
+	oOID, err := bson.ObjectIDFromHex(orderID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid order ID: %w", err)
+	}
+
+	order, err := s.supplyRepo.GetOrderByID(ctx, oOID)
+	if err != nil {
+		return nil, err
+	}
+
+	if order.BuyerID.Hex() != userID {
+		return nil, errors.New("unauthorized: only the buyer can submit payment reference for this order")
+	}
+
+	if strings.TrimSpace(req.PaymentRefNo) == "" {
+		return nil, errors.New("payment reference number is required")
+	}
+
+	if err := s.supplyRepo.SubmitPaymentRef(ctx, oOID, strings.TrimSpace(req.PaymentRefNo), req.PaymentProofURL); err != nil {
+		return nil, err
+	}
+
+	updated, err := s.supplyRepo.GetOrderByID(ctx, oOID)
+	if err == nil && s.notifRepo != nil {
+		_ = s.notifRepo.CreateNotification(ctx, &models.Notification{
+			UserID:  updated.SupplierID,
+			Title:   "📲 Payment Ref Received",
+			Message: fmt.Sprintf("Buyer %s submitted Ref No #%s for order. Please verify.", updated.BuyerName, req.PaymentRefNo),
+			Type:    models.NotifTypePaymentStatus,
+			Link:    "/supply/orders",
+		})
+	}
+
+	return updated, err
+}
+

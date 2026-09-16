@@ -7,6 +7,7 @@ import (
 	"github.com/agriconnect/backend/internal/middleware"
 	"github.com/agriconnect/backend/internal/models"
 	"github.com/agriconnect/backend/internal/service"
+	"github.com/go-chi/chi/v5"
 )
 
 // UserHandler handles user profile endpoints.
@@ -30,6 +31,23 @@ func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	user, err := h.userService.GetProfile(r.Context(), userID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "user not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, user)
+}
+
+// GetPublicProfile handles GET /api/users/{id}/public.
+func (h *UserHandler) GetPublicProfile(w http.ResponseWriter, r *http.Request) {
+	targetID := chi.URLParam(r, "id")
+	if targetID == "" {
+		writeError(w, http.StatusBadRequest, "user ID required")
+		return
+	}
+
+	user, err := h.userService.GetPublicProfile(r.Context(), targetID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "public profile not found")
 		return
 	}
 
