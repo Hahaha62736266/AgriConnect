@@ -4,9 +4,10 @@ import { Navbar } from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { supplyApi } from '../api/supply';
 import { produceApi } from '../api/produce';
-import { getImageUrl } from '../api';
+import { api, getImageUrl } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import type { DeliveryMethod, PaymentMethod, SupplyProduct } from '../types/supply';
+import type { PublicUserProfile } from '../types/auth';
 
 interface CartItem {
   product: SupplyProduct;
@@ -512,6 +513,42 @@ export const SupplyCartPage: React.FC = () => {
   const uniqueSelectedSuppliers = Array.from(new Set(selectedSupplyItems.map((i) => i.product.supplierName || 'Supplier')));
   const hasMultipleSelectedSuppliers = uniqueSelectedSuppliers.length > 1;
 
+  const [sellerProfile, setSellerProfile] = useState<PublicUserProfile | null>(null);
+  const [loadingSellerProfile, setLoadingSellerProfile] = useState(false);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedText(label);
+    toastSuccess('Copied to Clipboard!', `${label} (${text}) copied to clipboard.`);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
+
+  useEffect(() => {
+    if (paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') {
+      let sellerId = '';
+      if (activeTab === 'supplies') {
+        sellerId = selectedSupplyItems[0]?.product.supplierId || cart[0]?.product.supplierId || '';
+      } else if (activeTab === 'produce') {
+        sellerId = selectedProduceItems[0]?.listing?.farmerId || selectedProduceItems[0]?.listing?.userId || produceCart[0]?.listing?.farmerId || produceCart[0]?.listing?.userId || '';
+      }
+
+      if (sellerId) {
+        setLoadingSellerProfile(true);
+        api.getUserPublicProfile(sellerId)
+          .then((profile) => setSellerProfile(profile))
+          .catch((err) => {
+            console.error('Failed to load seller profile:', err);
+            setSellerProfile(null);
+          })
+          .finally(() => setLoadingSellerProfile(false));
+      } else {
+        setSellerProfile(null);
+      }
+    }
+  }, [paymentMethod, activeTab, selectedSupplyIds, selectedProduceIds, cart, produceCart]);
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -543,14 +580,6 @@ export const SupplyCartPage: React.FC = () => {
         return;
       }
 
-      if ((paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && !paymentRefNo.trim()) {
-        toastWarning(
-          'Reference Number Required',
-          'Please enter your payment Reference Number (e.g. 13-digit GCash/Maya Ref No) before submitting.'
-        );
-        return;
-      }
-
       setOrdering(true);
       try {
         await supplyApi.createOrder({
@@ -569,7 +598,9 @@ export const SupplyCartPage: React.FC = () => {
 
         const successText = paymentMethod === 'cod'
           ? (deliveryMethod === 'pickup' ? 'Order placed! Pay upon in-store pickup. Redirecting to My Supply Orders…' : 'Order placed! Pay upon delivery. Redirecting to My Supply Orders…')
-          : 'Order submitted with Payment Reference Number! Awaiting seller payment verification.';
+          : (paymentRefNo.trim()
+              ? 'Order submitted with Payment Reference Number! Awaiting seller verification.'
+              : 'Order submitted! You can transfer payment and enter your Ref No anytime under My Orders.');
         toastSuccess('Order Placed!', successText);
         setTimeout(() => navigate('/supply/orders'), 2200);
       } catch (err: any) {
@@ -600,14 +631,6 @@ export const SupplyCartPage: React.FC = () => {
 
       if (!contactPhone.trim()) {
         toastWarning('Phone Required', 'Please provide your contact phone number.');
-        return;
-      }
-
-      if ((paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && !paymentRefNo.trim()) {
-        toastWarning(
-          'Reference Number Required',
-          'Please enter your payment Reference Number (e.g. 13-digit GCash/Maya Ref No).'
-        );
         return;
       }
 
@@ -1229,38 +1252,147 @@ export const SupplyCartPage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* E-Wallet & Bank Reference Number Box */}
+                {/* E-Wallet & Bank Recipient & Reference Box */}
                 {(paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && (
                   <div
                     style={{
                       marginBottom: '20px',
-                      padding: '16px',
-                      borderRadius: '12px',
+                      padding: '16px 18px',
+                      borderRadius: '14px',
                       background: '#F0F9FF',
                       border: '1.5px solid #0284C7',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '12px',
+                      gap: '14px',
                     }}
                   >
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0C4A6E', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>📱</span>
-                      <span>
-                        {paymentMethod === 'gcash' ? 'GCash Payment Details' : paymentMethod === 'maya' ? 'Maya Payment Details' : 'Bank Transfer Details'}
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0C4A6E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>{paymentMethod === 'gcash' ? '📱' : paymentMethod === 'maya' ? '💜' : '🏦'}</span>
+                        <span>
+                          {paymentMethod === 'gcash' ? 'GCash Recipient Details' : paymentMethod === 'maya' ? 'Maya Recipient Details' : 'Bank Account Details'}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '12px', background: '#0284C7', color: '#FFF', padding: '3px 10px', borderRadius: '12px', fontWeight: 800 }}>
+                        Total: ₱{currentTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '12px', color: '#0369A1', lineHeight: 1.45 }}>
-                      Please send payment of <strong>₱{currentTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}</strong> via your {paymentMethod.toUpperCase()} app, then enter the Reference Number below:
-                    </div>
+                    {/* Recipient Account Details Card */}
+                    {loadingSellerProfile ? (
+                      <div style={{ fontSize: '12.5px', color: '#0369A1', fontStyle: 'italic', padding: '10px', background: '#E0F2FE', borderRadius: '8px' }}>
+                        ⏳ Fetching seller payment details…
+                      </div>
+                    ) : (
+                      <div style={{ background: '#FFFFFF', padding: '12px 14px', borderRadius: '10px', border: '1px solid #BAE6FD', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {paymentMethod === 'gcash' && (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Name:</span>
+                              <span style={{ color: '#0F172A', fontWeight: 800 }}>
+                                {sellerProfile?.gcashName || (sellerProfile?.firstName ? `${sellerProfile.firstName} ${sellerProfile.lastName}` : (activeTab === 'supplies' && selectedSupplyItems[0]?.product.supplierName ? selectedSupplyItems[0].product.supplierName : 'Seller Account'))}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: '#475569', fontWeight: 600 }}>GCash Number:</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#0284C7', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                                  {sellerProfile?.gcashNumber || sellerProfile?.phone || 'Contact seller after checkout'}
+                                </span>
+                                {(sellerProfile?.gcashNumber || sellerProfile?.phone) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(sellerProfile?.gcashNumber || sellerProfile?.phone || '', 'GCash Number')}
+                                    style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
+                                  >
+                                    📋 {copiedText === 'GCash Number' ? 'Copied!' : 'Copy'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {sellerProfile?.gcashQrUrl && (
+                              <div style={{ marginTop: '6px', textAlign: 'center', background: '#F8FAFC', padding: '8px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#0369A1', marginBottom: '4px' }}>📲 Scan Seller GCash QR Code:</div>
+                                <img src={getImageUrl(sellerProfile.gcashQrUrl)} alt="GCash QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0', margin: '0 auto' }} />
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {paymentMethod === 'maya' && (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Name:</span>
+                              <span style={{ color: '#0F172A', fontWeight: 800 }}>
+                                {sellerProfile?.mayaName || (sellerProfile?.firstName ? `${sellerProfile.firstName} ${sellerProfile.lastName}` : 'Seller Account')}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: '#475569', fontWeight: 600 }}>Maya Number:</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#7C3AED', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                                  {sellerProfile?.mayaNumber || sellerProfile?.phone || 'Contact seller after checkout'}
+                                </span>
+                                {(sellerProfile?.mayaNumber || sellerProfile?.phone) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(sellerProfile?.mayaNumber || sellerProfile?.phone || '', 'Maya Number')}
+                                    style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#F3E8FF', color: '#6D28D9', border: 'none', cursor: 'pointer' }}
+                                  >
+                                    📋 {copiedText === 'Maya Number' ? 'Copied!' : 'Copy'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            {sellerProfile?.mayaQrUrl && (
+                              <div style={{ marginTop: '6px', textAlign: 'center', background: '#F8FAFC', padding: '8px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#6D28D9', marginBottom: '4px' }}>💜 Scan Seller Maya QR Code:</div>
+                                <img src={getImageUrl(sellerProfile.mayaQrUrl)} alt="Maya QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0', margin: '0 auto' }} />
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {paymentMethod === 'bank_transfer' && (
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: '#475569', fontWeight: 600 }}>Bank Name:</span>
+                              <span style={{ color: '#0F172A', fontWeight: 800 }}>{sellerProfile?.bankName || 'BDO / BPI / Landbank'}</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Name:</span>
+                              <span style={{ color: '#0F172A', fontWeight: 800 }}>
+                                {sellerProfile?.bankAccountName || (sellerProfile?.firstName ? `${sellerProfile.firstName} ${sellerProfile.lastName}` : 'Seller Account')}
+                              </span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
+                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Number:</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ color: '#0F172A', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                                  {sellerProfile?.bankAccountNo || 'Provided upon order confirmation'}
+                                </span>
+                                {sellerProfile?.bankAccountNo && (
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(sellerProfile?.bankAccountNo || '', 'Account Number')}
+                                    style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
+                                  >
+                                    📋 {copiedText === 'Account Number' ? 'Copied!' : 'Copy'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    )}
 
                     <div>
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#0F172A', marginBottom: '4px' }}>
-                        Transaction Reference Number *
+                        Transaction Reference Number <span style={{ color: '#64748B', fontWeight: 500 }}>(Optional at checkout)</span>
                       </label>
                       <input
                         type="text"
-                        required
                         value={paymentRefNo}
                         onChange={(e) => setPaymentRefNo(e.target.value)}
                         placeholder={paymentMethod === 'gcash' ? 'e.g. 1029384756123 (13 digits)' : 'Enter transaction Ref / Auth No.'}
@@ -1276,6 +1408,9 @@ export const SupplyCartPage: React.FC = () => {
                           boxSizing: 'border-box',
                         }}
                       />
+                      <div style={{ fontSize: '11.5px', color: '#0369A1', marginTop: '6px', lineHeight: 1.4 }}>
+                        💡 <strong>Tip:</strong> If you haven't transferred yet, you can place your order first and enter your Ref No anytime under <strong>"My Orders"</strong>.
+                      </div>
                     </div>
                   </div>
                 )}

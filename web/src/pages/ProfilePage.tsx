@@ -59,6 +59,7 @@ export const ProfilePage: React.FC = () => {
   const [gcashQrUrl, setGcashQrUrl] = useState(user?.gcashQrUrl || '');
   const [mayaNumber, setMayaNumber] = useState(user?.mayaNumber || '');
   const [mayaName, setMayaName] = useState(user?.mayaName || '');
+  const [mayaQrUrl] = useState(user?.mayaQrUrl || '');
   const [bankName, setBankName] = useState(user?.bankName || '');
   const [bankAccountNo, setBankAccountNo] = useState(user?.bankAccountNo || '');
   const [bankAccountName, setBankAccountName] = useState(user?.bankAccountName || '');
@@ -162,6 +163,7 @@ export const ProfilePage: React.FC = () => {
         gcashQrUrl,
         mayaNumber,
         mayaName,
+        mayaQrUrl,
         bankName,
         bankAccountNo,
         bankAccountName,

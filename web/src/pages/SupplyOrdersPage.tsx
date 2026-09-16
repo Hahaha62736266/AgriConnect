@@ -5,9 +5,10 @@ import { useToast } from '../contexts/ToastContext';
 import { useChat } from '../contexts/ChatContext';
 import { supplyApi } from '../api/supply';
 import { produceApi } from '../api/produce';
-import { getImageUrl } from '../api';
+import { api, getImageUrl } from '../api';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import type { PaymentMethod, PaymentStatus, SupplyOrder, SupplyOrderStatus } from '../types/supply';
+import type { PublicUserProfile } from '../types/auth';
 
 const getSupplyFallback = (name: string = ''): string => {
   const n = name.toLowerCase();
@@ -101,6 +102,68 @@ export const SupplyOrdersPage: React.FC = () => {
   }, [orderToSetShipping]);
   const [orderToCancel, setOrderToCancel] = useState<SupplyOrder | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  const [orderToSubmitRef, setOrderToSubmitRef] = useState<SupplyOrder | null>(null);
+  const [submittingRefInput, setSubmittingRefInput] = useState('');
+  const [isSubmittingRef, setIsSubmittingRef] = useState(false);
+
+  const handleSubmitRefNo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orderToSubmitRef || !submittingRefInput.trim()) return;
+
+    setIsSubmittingRef(true);
+    try {
+      const updated = await supplyApi.submitPaymentRef(orderToSubmitRef.id, submittingRefInput.trim());
+      toastSuccess('Reference Number Submitted!', 'Your payment reference number has been sent to the seller for verification.');
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      setOrderToSubmitRef(null);
+      setSubmittingRefInput('');
+    } catch (err: any) {
+      toastError('Submission Failed', err.response?.data?.error || err.message || 'Failed to submit payment reference.');
+    } finally {
+      setIsSubmittingRef(false);
+    }
+  };
+
+  const [modalSupplierProfile, setModalSupplierProfile] = useState<PublicUserProfile | null>(null);
+  const [loadingModalProfile, setLoadingModalProfile] = useState(false);
+  const [copiedModalText, setCopiedModalText] = useState<string | null>(null);
+
+  const copyModalText = (text: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedModalText(label);
+    toastSuccess('Copied to Clipboard!', `${label} (${text}) copied to clipboard.`);
+    setTimeout(() => setCopiedModalText(null), 2000);
+  };
+
+  useEffect(() => {
+    if (orderToSubmitRef?.supplierId) {
+      setLoadingModalProfile(true);
+      api.getUserPublicProfile(orderToSubmitRef.supplierId)
+        .then((profile) => setModalSupplierProfile(profile))
+        .catch(() => setModalSupplierProfile(null))
+        .finally(() => setLoadingModalProfile(false));
+    } else {
+      setModalSupplierProfile(null);
+    }
+  }, [orderToSubmitRef]);
+  const [supplierProfiles, setSupplierProfiles] = useState<Record<string, PublicUserProfile>>({});
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      const supplierIds = Array.from(new Set(orders.map((o) => o.supplierId).filter(Boolean)));
+      supplierIds.forEach((supId) => {
+        if (!supplierProfiles[supId]) {
+          api.getUserPublicProfile(supId)
+            .then((profile) => {
+              setSupplierProfiles((prev) => ({ ...prev, [supId]: profile }));
+            })
+            .catch(() => {});
+        }
+      });
+    }
+  }, [orders]);
 
   const [produceSalesCount, setProduceSalesCount] = useState<number | null>(null);
   const [producePurchasesCount, setProducePurchasesCount] = useState<number | null>(null);
@@ -885,6 +948,50 @@ export const SupplyOrdersPage: React.FC = () => {
                         {payBadge.icon} {payBadge.label}
                       </span>
                     </div>
+
+                    {/* Direct Recipient Info Card on Order Card */}
+                    {(() => {
+                      const supProf = supplierProfiles[order.supplierId];
+                      const isEWallet = order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer';
+                      if (!isEWallet) return null;
+
+                      const eWalletNum = order.paymentMethod === 'gcash'
+                        ? (supProf?.gcashNumber || supProf?.phone)
+                        : order.paymentMethod === 'maya'
+                        ? (supProf?.mayaNumber || supProf?.phone)
+                        : supProf?.bankAccountNo;
+                      const eWalletName = order.paymentMethod === 'gcash'
+                        ? (supProf?.gcashName || (supProf?.firstName ? `${supProf.firstName} ${supProf.lastName}` : order.supplierName))
+                        : order.paymentMethod === 'maya'
+                        ? (supProf?.mayaName || (supProf?.firstName ? `${supProf.firstName} ${supProf.lastName}` : order.supplierName))
+                        : (supProf?.bankAccountName || order.supplierName);
+
+                      return (
+                        <div style={{ marginTop: '8px', padding: '8px 10px', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                            <span>Recipient Name:</span>
+                            <strong style={{ color: '#0F172A' }}>{eWalletName}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>{order.paymentMethod.toUpperCase()} Number:</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284C7', fontSize: '13px' }}>
+                                {eWalletNum || 'Contact seller'}
+                              </span>
+                              {eWalletNum && (
+                                <button
+                                  type="button"
+                                  onClick={() => copyModalText(eWalletNum, `${order.paymentMethod.toUpperCase()} Number`)}
+                                  style={{ padding: '2px 6px', fontSize: '10px', fontWeight: 700, borderRadius: '4px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
+                                >
+                                  📋 Copy
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {order.paymentRefNo && (
                       <div style={{ fontSize: '12px', color: '#0369A1', fontWeight: 800, marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <span>🧾 Ref No:</span>
@@ -895,6 +1002,32 @@ export const SupplyOrdersPage: React.FC = () => {
                       <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', marginTop: '4px' }}>
                         {order.paymentNote}
                       </div>
+                    )}
+                    {isBuyer && (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') && order.paymentStatus !== 'paid' && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrderToSubmitRef(order);
+                          setSubmittingRefInput(order.paymentRefNo || '');
+                        }}
+                        style={{
+                          marginTop: '8px',
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          backgroundColor: '#0284C7',
+                          color: '#FFFFFF',
+                          fontWeight: 700,
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                        }}
+                      >
+                        <span>📱</span>
+                        <span>{order.paymentRefNo ? 'Update Payment Ref No' : 'Submit Payment Ref No'}</span>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -1377,6 +1510,256 @@ export const SupplyOrdersPage: React.FC = () => {
         cancelText="Keep Order Active"
         isDeleting={isCancelling}
       />
+
+      {/* Submit Payment Reference Number Modal */}
+      {orderToSubmitRef && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '460px',
+            width: '100%',
+            padding: '24px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>📱</span> Submit Payment Ref No
+              </h3>
+              <button
+                type="button"
+                onClick={() => setOrderToSubmitRef(null)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', color: '#64748B', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, background: '#F0F9FF', padding: '12px 14px', borderRadius: '10px', border: '1px solid #BAE6FD' }}>
+              Order <strong>#{orderToSubmitRef.id.slice(-6).toUpperCase()}</strong> · Total Amount: <strong>₱{orderToSubmitRef.totalAmount.toLocaleString()}</strong><br/>
+              Payment Method: <strong>{orderToSubmitRef.paymentMethod.toUpperCase()}</strong> · Supplier: <strong>{orderToSubmitRef.supplierName}</strong>
+            </div>
+
+            {/* Seller Payment Recipient Card inside Modal */}
+            <div style={{ background: '#F8FAFC', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>Recipient Payment Info ({orderToSubmitRef.paymentMethod.toUpperCase()})</span>
+                <span style={{ fontSize: '12px', color: '#0284C7', fontWeight: 800 }}>
+                  Send: ₱{orderToSubmitRef.totalAmount.toLocaleString()}
+                </span>
+              </div>
+
+              {loadingModalProfile ? (
+                <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic' }}>Loading seller account details…</div>
+              ) : (
+                <>
+                  {orderToSubmitRef.paymentMethod === 'gcash' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B', fontWeight: 600 }}>GCash Name:</span>
+                        <span style={{ color: '#0F172A', fontWeight: 800 }}>
+                          {modalSupplierProfile?.gcashName || (modalSupplierProfile?.firstName ? `${modalSupplierProfile.firstName} ${modalSupplierProfile.lastName}` : orderToSubmitRef.supplierName)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#64748B', fontWeight: 600 }}>GCash Number:</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#0284C7', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                            {modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone || 'Not configured by seller'}
+                          </span>
+                          {(modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone) ? (
+                            <button
+                              type="button"
+                              onClick={() => copyModalText(modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone || '', 'GCash Number')}
+                              style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
+                            >
+                              📋 {copiedModalText === 'GCash Number' ? 'Copied!' : 'Copy'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const orderRef = orderToSubmitRef;
+                                setOrderToSubmitRef(null);
+                                handleChatOrderParty(orderRef);
+                              }}
+                              style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#EFFDF5', color: '#16A34A', border: '1px solid #86EFAC', cursor: 'pointer' }}
+                            >
+                              💬 Chat Seller for Details
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {modalSupplierProfile?.gcashQrUrl && (
+                        <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
+                          <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0284C7', marginBottom: '4px' }}>Scan QR Code with GCash App:</div>
+                          <img src={getImageUrl(modalSupplierProfile.gcashQrUrl)} alt="GCash QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {orderToSubmitRef.paymentMethod === 'maya' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B', fontWeight: 600 }}>Maya Name:</span>
+                        <span style={{ color: '#0F172A', fontWeight: 800 }}>
+                          {modalSupplierProfile?.mayaName || (modalSupplierProfile?.firstName ? `${modalSupplierProfile.firstName} ${modalSupplierProfile.lastName}` : orderToSubmitRef.supplierName)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#64748B', fontWeight: 600 }}>Maya Number:</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#7C3AED', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                            {modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone || 'Not configured by seller'}
+                          </span>
+                          {(modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone) ? (
+                            <button
+                              type="button"
+                              onClick={() => copyModalText(modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone || '', 'Maya Number')}
+                              style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#F3E8FF', color: '#6D28D9', border: 'none', cursor: 'pointer' }}
+                            >
+                              📋 {copiedModalText === 'Maya Number' ? 'Copied!' : 'Copy'}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const orderRef = orderToSubmitRef;
+                                setOrderToSubmitRef(null);
+                                handleChatOrderParty(orderRef);
+                              }}
+                              style={{ padding: '3px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#EFFDF5', color: '#16A34A', border: '1px solid #86EFAC', cursor: 'pointer' }}
+                            >
+                              💬 Chat Seller for Details
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {modalSupplierProfile?.mayaQrUrl && (
+                        <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
+                          <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#6D28D9', marginBottom: '4px' }}>Scan QR Code with Maya App:</div>
+                          <img src={getImageUrl(modalSupplierProfile.mayaQrUrl)} alt="Maya QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {orderToSubmitRef.paymentMethod === 'bank_transfer' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B', fontWeight: 600 }}>Bank Name:</span>
+                        <span style={{ color: '#0F172A', fontWeight: 800 }}>{modalSupplierProfile?.bankName || 'BDO / BPI / Landbank'}</span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#64748B', fontWeight: 600 }}>Account Name:</span>
+                        <span style={{ color: '#0F172A', fontWeight: 800 }}>
+                          {modalSupplierProfile?.bankAccountName || (modalSupplierProfile?.firstName ? `${modalSupplierProfile.firstName} ${modalSupplierProfile.lastName}` : orderToSubmitRef.supplierName)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ color: '#64748B', fontWeight: 600 }}>Account Number:</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ color: '#0F172A', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                            {modalSupplierProfile?.bankAccountNo || 'Contact seller'}
+                          </span>
+                          {modalSupplierProfile?.bankAccountNo && (
+                            <button
+                              type="button"
+                              onClick={() => copyModalText(modalSupplierProfile?.bankAccountNo || '', 'Account Number')}
+                              style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
+                            >
+                              📋 {copiedModalText === 'Account Number' ? 'Copied!' : 'Copy'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <form onSubmit={handleSubmitRefNo} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                  Transaction Reference Number *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={submittingRefInput}
+                  onChange={(e) => setSubmittingRefInput(e.target.value)}
+                  placeholder="e.g. 1029384756123 (13 digits)"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1.5px solid #0284C7',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    color: '#0C4A6E',
+                    boxSizing: 'border-box',
+                  }}
+                />
+                <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '4px' }}>
+                  Paste the 13-digit transaction reference number from your GCash, Maya, or Bank receipt.
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setOrderToSubmitRef(null)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #CBD5E1',
+                    backgroundColor: '#FFFFFF',
+                    color: '#475569',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingRef || !submittingRefInput.trim()}
+                  style={{
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#0284C7',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {isSubmittingRef ? 'Submitting…' : 'Submit Reference Number'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
