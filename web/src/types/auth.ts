@@ -70,3 +70,26 @@ export interface UpdateProfilePayload {
   bankAccountNo?: string;
   bankAccountName?: string;
 }
+
+export interface PublicUserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  role: Role;
+  phone?: string;
+  region?: string;
+  province?: string;
+  municipality?: string;
+  barangay?: string;
+  address?: string;
+  gcashNumber?: string;
+  gcashName?: string;
+  gcashQrUrl?: string;
+  mayaNumber?: string;
+  mayaName?: string;
+  mayaQrUrl?: string;
+  bankName?: string;
+  bankAccountNo?: string;
+  bankAccountName?: string;
+}
+

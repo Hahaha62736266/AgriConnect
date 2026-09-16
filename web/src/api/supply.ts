@@ -74,4 +74,12 @@ export const supplyApi = {
     const res = await apiClient.post<SupplyOrder>(`/api/supply/orders/${id}/quote-decision`, { action });
     return res.data;
   },
+
+  submitPaymentRef: async (id: string, paymentRefNo: string, paymentProofUrl?: string): Promise<SupplyOrder> => {
+    const res = await apiClient.put<SupplyOrder>(`/api/supply/orders/${id}/payment-ref`, {
+      paymentRefNo,
+      paymentProofUrl,
+    });
+    return res.data;
+  },
 };

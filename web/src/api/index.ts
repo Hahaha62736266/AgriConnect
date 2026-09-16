@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, LoginPayload, RegisterPayload, UpdateProfilePayload, User } from '../types/auth';
+import type { AuthResponse, LoginPayload, RegisterPayload, UpdateProfilePayload, User, PublicUserProfile } from '../types/auth';
 
 const API_URL =
   import.meta.env.VITE_API_URL ||
@@ -36,6 +36,10 @@ export const api = {
   // Profile
   getProfile: async (): Promise<User> => {
     const res = await apiClient.get<User>('/api/users/me');
+    return res.data;
+  },
+  getUserPublicProfile: async (id: string): Promise<PublicUserProfile> => {
+    const res = await apiClient.get<PublicUserProfile>(`/api/users/${id}/public`);
     return res.data;
   },
   updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
