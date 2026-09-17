@@ -43,7 +43,7 @@ export const SupplyStorePage: React.FC = () => {
   const { openChatWith } = useChat();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
 
-  const handleChatWithSupplier = (item: SupplyProduct) => {
+  const handleChatWithSupplier = async (item: SupplyProduct) => {
     if (!item.supplierId) {
       toastWarning('Contact Unavailable', 'Supplier contact information is currently unavailable for this product.');
       return;
@@ -53,7 +53,13 @@ export const SupplyStorePage: React.FC = () => {
       return;
     }
     const photo = item.images?.[0] || categoryImages[item.category] || '';
-    openChatWith(
+    const initialMsg = user?.role === 'farmer'
+      ? `Hello! I'm a farmer interested in ordering ${item.name} (₱${item.price}/${item.unit}) for my farm. Do you have stock available?`
+      : user?.role === 'buyer'
+      ? `Hello! I'm interested in purchasing ${item.name} (₱${item.price}/${item.unit}). Do you offer bulk delivery?`
+      : `Hello! Inquiring about ${item.name} (₱${item.price}/${item.unit}).`;
+
+    await openChatWith(
       item.supplierId,
       {
         type: 'supply',
@@ -63,8 +69,9 @@ export const SupplyStorePage: React.FC = () => {
         price: item.price,
         unit: item.unit,
       },
-      `Hello! I'm inquiring about ${item.name} (₱${item.price}/${item.unit}).`
+      initialMsg
     );
+    navigate('/messages');
   };
   const [products, setProducts] = useState<SupplyProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,9 +104,9 @@ export const SupplyStorePage: React.FC = () => {
   // Purchasing privilege check: Only Farmers and Buyers (and admin) can buy supplies
   const isPurchaser = user?.role === 'farmer' || user?.role === 'buyer' || user?.role === 'super_admin';
   const [prodCategory, setProdCategory] = useState('fertilizer');
-  const [prodPrice, setProdPrice] = useState<number>(1000);
+  const [prodPrice, setProdPrice] = useState<number | ''>('');
   const [prodUnit, setProdUnit] = useState('sack (50kg)');
-  const [prodStock, setProdStock] = useState<number>(50);
+  const [prodStock, setProdStock] = useState<number | ''>('');
   const [prodDesc, setProdDesc] = useState('');
   const [prodLocation, setProdLocation] = useState('');
   const [prodImageFile, setProdImageFile] = useState<File | null>(null);
@@ -120,8 +127,8 @@ export const SupplyStorePage: React.FC = () => {
   const openAddSupplyModal = () => {
     setProdName('');
     setProdCategory('fertilizer');
-    setProdPrice(1000);
-    setProdStock(50);
+    setProdPrice('');
+    setProdStock('');
     setProdUnit('sack (50kg)');
     setProdDesc('');
     setProdLocation(
@@ -137,6 +144,19 @@ export const SupplyStorePage: React.FC = () => {
 
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const parsedPrice = typeof prodPrice === 'number' ? prodPrice : parseFloat(String(prodPrice));
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      toastError('Invalid Price', 'Please enter a valid product price greater than ₱0.');
+      return;
+    }
+
+    const parsedStock = typeof prodStock === 'number' ? prodStock : parseInt(String(prodStock), 10);
+    if (isNaN(parsedStock) || parsedStock < 0) {
+      toastError('Invalid Stock', 'Please enter a valid stock quantity.');
+      return;
+    }
+
     setSubmittingProd(true);
     let uploadedImageUrl = '';
     if (prodImageFile) {
@@ -154,9 +174,9 @@ export const SupplyStorePage: React.FC = () => {
       await supplyApi.createProduct({
         name: prodName,
         category: prodCategory as any,
-        price: prodPrice,
+        price: parsedPrice,
         unit: prodUnit,
-        stockQuantity: prodStock,
+        stockQuantity: parsedStock,
         description: prodDesc,
         location: prodLocation,
         images: uploadedImageUrl ? [uploadedImageUrl] : [],
@@ -798,9 +818,21 @@ export const SupplyStorePage: React.FC = () => {
                       <input
                         type="number"
                         min="1"
+                        placeholder="0.00"
                         required
                         value={prodPrice}
-                        onChange={(e) => setProdPrice(Number(e.target.value))}
+                        onFocus={() => {
+                          if (prodPrice === 0) setProdPrice('');
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setProdPrice('');
+                          } else {
+                            const num = parseFloat(val);
+                            setProdPrice(isNaN(num) ? '' : num);
+                          }
+                        }}
                         style={{
                           width: '100%',
                           padding: '11px 14px 11px 28px',
@@ -821,9 +853,21 @@ export const SupplyStorePage: React.FC = () => {
                     <input
                       type="number"
                       min="0"
+                      placeholder="e.g. 50"
                       required
                       value={prodStock}
-                      onChange={(e) => setProdStock(Number(e.target.value))}
+                      onFocus={() => {
+                        if (prodStock === 0) setProdStock('');
+                      }}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '') {
+                          setProdStock('');
+                        } else {
+                          const num = parseInt(val, 10);
+                          setProdStock(isNaN(num) ? '' : num);
+                        }
+                      }}
                       style={{
                         width: '100%',
                         padding: '11px 14px',

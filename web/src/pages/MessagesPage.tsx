@@ -82,6 +82,22 @@ export const MessagesPage: React.FC = () => {
   }, [refreshConversations]);
 
   useEffect(() => {
+    const activeIdFromStorage = sessionStorage.getItem('agriconnect_active_conv_id');
+    if (activeIdFromStorage && conversations.length > 0) {
+      const match = conversations.find((c) => c.id === activeIdFromStorage);
+      if (match) {
+        if (!activeConversation || activeConversation.id !== match.id) {
+          openConversation(match);
+        }
+      } else if (!activeConversation) {
+        openConversation(conversations[0]);
+      }
+    } else if (!activeConversation && conversations.length > 0) {
+      openConversation(conversations[0]);
+    }
+  }, [conversations, activeConversation, openConversation]);
+
+  useEffect(() => {
     if (!activeConversation) {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
@@ -243,33 +259,22 @@ export const MessagesPage: React.FC = () => {
     }
   });
 
-  // Dynamic quick reply suggestion chips based on context
+  // Dynamic role-aware quick reply suggestion chips based on context & active user role
   const getContextChips = () => {
-    if (!activeConversation?.context) {
-      return [
-        'Is this still available?',
-        'Can I pick this up today?',
-        'What is your best wholesale price?',
-        'Do you accept Cash on Delivery (COD)?',
-      ];
-    }
-    if (activeConversation.context.type === 'produce') {
-      return [
-        'Is this available for bulk delivery?',
-        'When was this harvested?',
-        'Can we negotiate on 50kg+?',
-        'Can you provide photos of the harvest batch?',
-      ];
-    }
-    if (activeConversation.context.type === 'supply') {
-      return [
-        'Do you have this in stock now?',
-        'What is the recommended application dosage?',
-        'Is shipping available to Northern Mindanao?',
-        'Do you offer volume discounts for cooperatives?',
-      ];
-    }
-    if (activeConversation.context.type === 'produce_order' || activeConversation.context.type === 'supply_order') {
+    const isSupplierUser = user?.role === 'supplier';
+    const isFarmerUser = user?.role === 'farmer';
+
+    const ctxType = activeConversation?.context?.type;
+
+    if (ctxType === 'supply_order') {
+      if (isSupplierUser) {
+        return [
+          'Hello! Your order is being processed and prepared for delivery.',
+          'Please confirm your preferred delivery address and contact number.',
+          'Payment has been verified! We are preparing your shipment.',
+          'When would be the best time to dispatch your order?',
+        ];
+      }
       return [
         'What is the latest status of this order?',
         'When will this order be dispatched?',
@@ -277,7 +282,68 @@ export const MessagesPage: React.FC = () => {
         'Please share the courier tracking / driver info.',
       ];
     }
+
+    if (ctxType === 'produce_order') {
+      const isSeller = otherParticipant?.role === 'buyer' || (user?.role === 'farmer' && otherParticipant?.role !== 'farmer');
+      if (isSeller) {
+        return [
+          'Hello! Thank you for your harvest crop order.',
+          'We are preparing your produce freshly harvested from our farm.',
+          'Please confirm your preferred delivery address or pickup time.',
+          'Payment received! We will dispatch your order shortly.',
+        ];
+      }
+      return [
+        'What is the latest fulfillment status of this harvest order?',
+        'When can we expect dispatch or farm-gate pickup?',
+        'I have received and inspected the produce delivery.',
+        'Please share the driver/hauling contact details.',
+      ];
+    }
+
+    if (ctxType === 'supply') {
+      if (isSupplierUser) {
+        return [
+          'Hello! Yes, this item is in stock and ready for delivery.',
+          'We offer volume discounts for agricultural co-ops and bulk orders.',
+          'Delivery is available across local municipalities and provinces.',
+          'Let me know your required quantity so I can provide a quote.',
+        ];
+      }
+      return [
+        'Do you have this in stock now?',
+        'What is the recommended application dosage?',
+        'Is shipping available to Northern Mindanao?',
+        'Do you offer volume discounts for cooperatives?',
+      ];
+    }
+
+    if (ctxType === 'produce') {
+      if (isFarmerUser && (otherParticipant?.role === 'buyer' || otherParticipant?.role === 'farmer')) {
+        return [
+          'Hello! Fresh harvest available and ready for pickup or delivery.',
+          'What volume or quantity in kg are you looking to purchase?',
+          'We can arrange farm-gate pickup or local truck hauling.',
+          'Price can be negotiated for bulk orders above 100kg.',
+        ];
+      }
+      return [
+        'Is this available for bulk delivery?',
+        'When was this harvested?',
+        'Can we negotiate on 50kg+?',
+        'Can you provide photos of the harvest batch?',
+      ];
+    }
+
     if (otherParticipant?.role === 'lgu_staff') {
+      if (user?.role === 'lgu_staff') {
+        return [
+          'Hello! How can the Municipal Agriculture Office assist your farm today?',
+          'Please provide your RSBSA registration number or Barangay name.',
+          'Subsidized fertilizer and seed distribution updates are available.',
+          'We have logged your inquiry and will follow up shortly.',
+        ];
+      }
       return [
         'How do I register or update my RSBSA record?',
         'Are there active municipal seed/fertilizer subsidies?',
@@ -285,7 +351,16 @@ export const MessagesPage: React.FC = () => {
         'How do I report crop damage from recent weather?',
       ];
     }
+
     if (otherParticipant?.role === 'super_admin') {
+      if (user?.role === 'super_admin') {
+        return [
+          'Hello! Support Admin here. How can I assist with your account?',
+          'Please share your account email and details of the issue.',
+          'We are reviewing your verification documents.',
+          'Your account status has been updated successfully.',
+        ];
+      }
       return [
         'I need help updating my account verification status.',
         'I am experiencing a technical issue on the platform.',
@@ -293,7 +368,25 @@ export const MessagesPage: React.FC = () => {
         'Can you assist me with account security settings?',
       ];
     }
-    return ['Hello, I am inquiring about this listing.', 'Can you share more details?'];
+
+    // Role-based defaults
+    if (isSupplierUser) {
+      return [
+        'Hello! Welcome to our farm supply store.',
+        'Let me know how many units you need so I can quote you.',
+        'We have high-grade fertilizers, seeds, PPE, and equipment in stock.',
+      ];
+    }
+
+    if (isFarmerUser) {
+      return [
+        'Hello! Inquiring about agricultural supplies and crop harvests.',
+        'Is farm-gate pickup or local delivery available?',
+        'Can we negotiate prices for bulk farming orders?',
+      ];
+    }
+
+    return ['Hello! I am inquiring about this item.', 'Can you share more details?'];
   };
 
   return (

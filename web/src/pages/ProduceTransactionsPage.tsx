@@ -137,7 +137,7 @@ export const ProduceTransactionsPage: React.FC = () => {
     }
   }, [location.search, isFarmer]);
 
-  const handleChatOrderParty = (ord: OrderItem) => {
+  const handleChatOrderParty = async (ord: OrderItem) => {
     // When viewing as buyer (farmer's own purchases or general buyer), chat target is the seller (farmerId)
     // When viewing sales orders, chat target is the buyer (buyerId)
     const targetUserId = isViewingAsBuyer ? ord.farmerId : ord.buyerId;
@@ -145,7 +145,11 @@ export const ProduceTransactionsPage: React.FC = () => {
       toastError('Account Unavailable', 'Contact information is currently unavailable for this user.');
       return;
     }
-    openChatWith(
+    const initialMsg = isViewingAsBuyer
+      ? `Hi! Inquiring regarding harvest crop order #${ord.id.slice(-6).toUpperCase()} (${ord.product}, total ₱${ord.total?.toLocaleString()}).`
+      : `Hello ${ord.buyerName || 'Customer'}! Thank you for your harvest order #${ord.id.slice(-6).toUpperCase()} (${ord.product}). We are preparing your order!`;
+
+    await openChatWith(
       targetUserId,
       {
         type: 'produce_order',
@@ -154,8 +158,9 @@ export const ProduceTransactionsPage: React.FC = () => {
         image: ord.photo ? getImageUrl(ord.photo) : undefined,
         price: ord.total,
       },
-      `Hi! Inquiring regarding order #${ord.id.slice(-6).toUpperCase()} (${ord.product}, total ₱${ord.total?.toLocaleString()}).`
+      initialMsg
     );
+    navigate('/messages');
   };
 
   const [selectedTab, setSelectedTab] = useState<'All Orders' | 'Pending' | 'Quoted' | 'Confirmed' | 'Completed' | 'Cancelled'>('All Orders');

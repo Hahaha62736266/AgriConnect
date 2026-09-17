@@ -63,7 +63,7 @@ export const SupplyOrdersPage: React.FC = () => {
   const navigate = useNavigate();
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
 
-  const handleChatOrderParty = (order: SupplyOrder) => {
+  const handleChatOrderParty = async (order: SupplyOrder) => {
     const isSupplier = user?.role === 'supplier';
     const targetUserId = isSupplier ? order.buyerId : order.supplierId;
     if (!targetUserId) {
@@ -71,7 +71,11 @@ export const SupplyOrdersPage: React.FC = () => {
       return;
     }
     const firstItem = order.items?.[0];
-    openChatWith(
+    const initialMsg = isSupplier
+      ? `Hello ${order.buyerName || 'Customer'}! Thank you for your order #${order.id.slice(-6).toUpperCase()} (₱${order.totalAmount?.toLocaleString()}). Let me know if you have any questions or delivery instructions!`
+      : `Hi! Inquiring regarding supply order #${order.id.slice(-6).toUpperCase()} (₱${order.totalAmount?.toLocaleString()}).`;
+
+    await openChatWith(
       targetUserId,
       {
         type: 'supply_order',
@@ -80,8 +84,9 @@ export const SupplyOrdersPage: React.FC = () => {
         image: firstItem?.productImage ? getImageUrl(firstItem.productImage) : undefined,
         price: order.totalAmount,
       },
-      `Hi! Inquiring regarding supply order #${order.id.slice(-6).toUpperCase()} (₱${order.totalAmount?.toLocaleString()}).`
+      initialMsg
     );
+    navigate('/messages');
   };
 
   const [orders, setOrders] = useState<SupplyOrder[]>([]);

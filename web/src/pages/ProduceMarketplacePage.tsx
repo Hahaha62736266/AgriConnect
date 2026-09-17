@@ -112,7 +112,7 @@ export const ProduceMarketplacePage: React.FC = () => {
   const { openChatWith } = useChat();
   const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
 
-  const handleChatWithFarmer = (listing: any) => {
+  const handleChatWithFarmer = async (listing: any) => {
     const targetFarmerId = listing.farmerId || listing.sellerId;
     if (!targetFarmerId) {
       toastWarning('Contact Unavailable', 'Farmer contact information is currently unavailable for this listing.');
@@ -123,7 +123,13 @@ export const ProduceMarketplacePage: React.FC = () => {
       return;
     }
     const photo = listing.photos?.[0] || listing.imageUrl;
-    openChatWith(
+    const initialMsg = user?.role === 'buyer'
+      ? `Hello! I'm a buyer interested in purchasing your ${listing.cropName} harvest listed at ₱${listing.pricePerUnit}/${listing.unit || 'kg'}. Is bulk purchase available?`
+      : user?.role === 'farmer'
+      ? `Hello fellow farmer! Inquiring about your ${listing.cropName} harvest (₱${listing.pricePerUnit}/${listing.unit || 'kg'}).`
+      : `Hello! Inquiring about your ${listing.cropName} listed at ₱${listing.pricePerUnit}/${listing.unit || 'kg'}.`;
+
+    await openChatWith(
       targetFarmerId,
       {
         type: 'produce',
@@ -133,8 +139,9 @@ export const ProduceMarketplacePage: React.FC = () => {
         price: listing.pricePerUnit,
         unit: listing.unit || 'kg',
       },
-      `Hello! I'm inquiring about your ${listing.cropName} listed at ₱${listing.pricePerUnit}/${listing.unit || 'kg'}.`
+      initialMsg
     );
+    navigate('/messages');
   };
   const [listings, setListings] = useState<ProduceListing[]>([]);
   const [_loading, setLoading] = useState(false);
