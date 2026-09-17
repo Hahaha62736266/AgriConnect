@@ -98,6 +98,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setActiveConversation(conv);
       setIsOpen(true);
       setIsMinimized(false);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('agriconnect_active_conv_id', conv.id);
+      }
       refreshConversations();
       refreshUnreadCount();
       return conv;
@@ -111,6 +114,9 @@ export const ChatProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActiveConversation(conv);
     setIsOpen(true);
     setIsMinimized(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('agriconnect_active_conv_id', conv.id);
+    }
     setConversations((prev) => {
       if (prev.some((c) => c.id === conv.id)) return prev;
       return [conv, ...prev];
