@@ -27,8 +27,8 @@ export const ManageSupplyProductsPage: React.FC = () => {
   const [name, setName] = useState('');
   const [category, setCategory] = useState<SupplyCategory>('fertilizer');
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState<number>(1000);
-  const [stockQuantity, setStockQuantity] = useState<number>(50);
+  const [price, setPrice] = useState<number | ''>('');
+  const [stockQuantity, setStockQuantity] = useState<number | ''>('');
   const [unit, setUnit] = useState('sack (50kg)');
   const [location, setLocation] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -86,8 +86,8 @@ export const ManageSupplyProductsPage: React.FC = () => {
       setName('');
       setCategory('fertilizer');
       setDescription('');
-      setPrice(1000);
-      setStockQuantity(50);
+      setPrice('');
+      setStockQuantity('');
       setUnit('sack (50kg)');
       setLocation(
         user?.municipality && user?.province
@@ -131,12 +131,27 @@ export const ManageSupplyProductsPage: React.FC = () => {
       }
     }
 
+    const parsedPrice = typeof price === 'number' ? price : parseFloat(String(price));
+    const parsedStock = typeof stockQuantity === 'number' ? stockQuantity : parseInt(String(stockQuantity), 10);
+
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      toastError('Invalid Price', 'Please enter a valid product price greater than ₱0.');
+      setSaving(false);
+      return;
+    }
+
+    if (isNaN(parsedStock) || parsedStock < 0) {
+      toastError('Invalid Stock', 'Please enter a valid stock quantity (0 or greater).');
+      setSaving(false);
+      return;
+    }
+
     const payload = {
       name,
       category,
       description,
-      price,
-      stockQuantity,
+      price: parsedPrice,
+      stockQuantity: parsedStock,
       unit,
       location,
       images: finalImageUrl ? [finalImageUrl] : [],
@@ -939,10 +954,23 @@ export const ManageSupplyProductsPage: React.FC = () => {
                         <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontWeight: 700, color: '#64748b' }}>₱</span>
                         <input
                           type="number"
-                          min="1"
+                          min="0"
+                          step="any"
                           required
                           value={price}
-                          onChange={(e) => setPrice(Number(e.target.value))}
+                          placeholder="0.00"
+                          onFocus={() => {
+                            if (price === 0) setPrice('');
+                          }}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '') {
+                              setPrice('');
+                            } else {
+                              const num = parseFloat(val);
+                              setPrice(isNaN(num) ? '' : num);
+                            }
+                          }}
                           style={{
                             width: '100%',
                             padding: '11px 14px 11px 28px',
@@ -965,7 +993,19 @@ export const ManageSupplyProductsPage: React.FC = () => {
                         min="0"
                         required
                         value={stockQuantity}
-                        onChange={(e) => setStockQuantity(Number(e.target.value))}
+                        placeholder="e.g. 50"
+                        onFocus={() => {
+                          if (stockQuantity === 0) setStockQuantity('');
+                        }}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '') {
+                            setStockQuantity('');
+                          } else {
+                            const num = parseInt(val, 10);
+                            setStockQuantity(isNaN(num) ? '' : num);
+                          }
+                        }}
                         style={{
                           width: '100%',
                           padding: '11px 14px',
