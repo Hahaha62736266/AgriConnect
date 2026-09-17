@@ -17,6 +17,7 @@ import { ManageProduceListingsPage } from './pages/ManageProduceListingsPage';
 import { ProduceTransactionsPage } from './pages/ProduceTransactionsPage';
 import { SupplyStorePage } from './pages/SupplyStorePage';
 import { SupplyCartPage } from './pages/SupplyCartPage';
+import { CheckoutPage } from './pages/CheckoutPage';
 import { ManageSupplyProductsPage } from './pages/ManageSupplyProductsPage';
 import { SupplyOrdersPage } from './pages/SupplyOrdersPage';
 import { MarketPriceMonitoringPage } from './pages/MarketPriceMonitoringPage';
@@ -140,6 +141,16 @@ export const App: React.FC = () => {
                 <ProtectedRoute>
                   <AppLayout>
                     <SupplyCartPage />
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <CheckoutPage />
                   </AppLayout>
                 </ProtectedRoute>
               }

@@ -4,10 +4,9 @@ import { Navbar } from '../components/Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { supplyApi } from '../api/supply';
 import { produceApi } from '../api/produce';
-import { api, getImageUrl } from '../api';
+import { getImageUrl } from '../api';
 import { useToast } from '../contexts/ToastContext';
-import type { DeliveryMethod, PaymentMethod, SupplyProduct } from '../types/supply';
-import type { PublicUserProfile } from '../types/auth';
+import type { SupplyProduct } from '../types/supply';
 
 interface CartItem {
   product: SupplyProduct;
@@ -49,46 +48,7 @@ const getCropImageFallback = (cropName: string = ''): string => {
   return 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=600&q=80';
 };
 
-// Payment options config — easy to enable/disable as gateways go live.
-const getPaymentOptions = (isPickup: boolean): {
-  id: PaymentMethod;
-  label: string;
-  icon: string;
-  desc: string;
-  comingSoon?: boolean;
-}[] => [
-    {
-      id: 'cod',
-      label: isPickup ? 'Cash on Pickup' : 'Cash on Delivery',
-      icon: '💵',
-      desc: isPickup ? 'Pay in cash upon in-store collection.' : 'Pay in cash when your order arrives.',
-    },
-    {
-      id: 'gcash',
-      label: 'GCash Direct QR',
-      icon: '📱',
-      desc: 'Scan QR code & enter 13-digit Ref No.',
-    },
-    {
-      id: 'maya',
-      label: 'Maya Direct',
-      icon: '💜',
-      desc: 'Send via Maya e-wallet & enter Ref No.',
-    },
-    {
-      id: 'bank_transfer',
-      label: 'Bank Transfer (InstaPay)',
-      icon: '🏦',
-      desc: 'Direct transfer to seller bank account.',
-    },
-    {
-      id: 'card',
-      label: 'Credit / Debit Card',
-      icon: '💳',
-      desc: 'Visa, Mastercard via PayMongo gateway.',
-      comingSoon: true,
-    },
-  ];
+
 
 export const SupplyCartPage: React.FC = () => {
   const { user } = useAuth();
@@ -105,17 +65,7 @@ export const SupplyCartPage: React.FC = () => {
   const [produceCart, setProduceCart] = useState<ProduceCartItem[]>([]);
   const [selectedProduceIds, setSelectedProduceIds] = useState<Set<string>>(new Set());
 
-  // Checkout Form States
-  const userAddr = user ? [user.barangay, user.municipality, user.province].filter(Boolean).join(', ') || user.address || '' : '';
-  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('delivery');
-  const [deliveryAddress, setDeliveryAddress] = useState(userAddr);
-  const [contactPhone, setContactPhone] = useState(user?.phone || '');
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
-  const [paymentRefNo, setPaymentRefNo] = useState('');
-  const paymentProofUrl = '';
-
-  const [ordering, setOrdering] = useState(false);
-  const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
+  const { error: toastError, warning: toastWarning, info: toastInfo } = useToast();
 
   const isInternalUpdate = useRef(false);
 
@@ -513,48 +463,12 @@ export const SupplyCartPage: React.FC = () => {
   const uniqueSelectedSuppliers = Array.from(new Set(selectedSupplyItems.map((i) => i.product.supplierName || 'Supplier')));
   const hasMultipleSelectedSuppliers = uniqueSelectedSuppliers.length > 1;
 
-  const [sellerProfile, setSellerProfile] = useState<PublicUserProfile | null>(null);
-  const [loadingSellerProfile, setLoadingSellerProfile] = useState(false);
-  const [copiedText, setCopiedText] = useState<string | null>(null);
-
-  const copyToClipboard = (text: string, label: string) => {
-    if (!text) return;
-    navigator.clipboard.writeText(text);
-    setCopiedText(label);
-    toastSuccess('Copied to Clipboard!', `${label} (${text}) copied to clipboard.`);
-    setTimeout(() => setCopiedText(null), 2000);
-  };
-
-  useEffect(() => {
-    if (paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') {
-      let sellerId = '';
-      if (activeTab === 'supplies') {
-        sellerId = selectedSupplyItems[0]?.product.supplierId || cart[0]?.product.supplierId || '';
-      } else if (activeTab === 'produce') {
-        sellerId = selectedProduceItems[0]?.listing?.farmerId || selectedProduceItems[0]?.listing?.userId || produceCart[0]?.listing?.farmerId || produceCart[0]?.listing?.userId || '';
-      }
-
-      if (sellerId) {
-        setLoadingSellerProfile(true);
-        api.getUserPublicProfile(sellerId)
-          .then((profile) => setSellerProfile(profile))
-          .catch((err) => {
-            console.error('Failed to load seller profile:', err);
-            setSellerProfile(null);
-          })
-          .finally(() => setLoadingSellerProfile(false));
-      } else {
-        setSellerProfile(null);
-      }
-    }
-  }, [paymentMethod, activeTab, selectedSupplyIds, selectedProduceIds, cart, produceCart]);
-
-  const handleCheckout = async (e: React.FormEvent) => {
+  const handleProceedToCheckout = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (activeTab === 'supplies') {
       if (selectedSupplyItems.length === 0) {
-        toastWarning('No Items Selected', 'Please select at least 1 supply item to checkout.');
+        toastWarning('No Items Selected', 'Please select at least 1 supply item to check out.');
         return;
       }
 
@@ -580,134 +494,28 @@ export const SupplyCartPage: React.FC = () => {
         return;
       }
 
-      setOrdering(true);
-      try {
-        await supplyApi.createOrder({
-          items: selectedSupplyItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
-          deliveryMethod,
-          deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : undefined,
-          paymentMethod,
-          paymentRefNo: paymentRefNo.trim() || undefined,
-          paymentProofUrl: paymentProofUrl || undefined,
-        });
-
-        // Remove only the checked-out items from cart (Shopee style)
-        const remaining = cart.filter((i) => !selectedSupplyIds.has(i.product.id));
-        saveSupplyCart(remaining);
-        setSelectedSupplyIds(new Set(remaining.map((i) => i.product.id)));
-
-        const successText = paymentMethod === 'cod'
-          ? (deliveryMethod === 'pickup' ? 'Order placed! Pay upon in-store pickup. Redirecting to My Supply Orders…' : 'Order placed! Pay upon delivery. Redirecting to My Supply Orders…')
-          : (paymentRefNo.trim()
-              ? 'Order submitted with Payment Reference Number! Awaiting seller verification.'
-              : 'Order submitted! You can transfer payment and enter your Ref No anytime under My Orders.');
-        toastSuccess('Order Placed!', successText);
-        setTimeout(() => navigate('/supply/orders'), 2200);
-      } catch (err: any) {
-        const errorMsg = err.response?.data?.error || err.message || 'Failed to place supply order.';
-        toastError('Checkout Failed', errorMsg);
-        // Automatically reconcile cart if a product was not found or stock changed
-        if (
-          errorMsg.toLowerCase().includes('not found') ||
-          errorMsg.toLowerCase().includes('no longer available') ||
-          errorMsg.toLowerCase().includes('stock')
-        ) {
-          reconcileCartWithLiveStock();
-        }
-      } finally {
-        setOrdering(false);
-      }
+      sessionStorage.setItem('agriconnect_checkout_supplies', JSON.stringify(selectedSupplyItems));
+      navigate('/checkout', {
+        state: {
+          type: 'supplies',
+          selectedSupplyItems,
+        },
+      });
     } else {
-      // Produce Cart Checkout
       if (selectedProduceItems.length === 0) {
-        toastWarning('No Crops Selected', 'Please select at least 1 crop to checkout.');
+        toastWarning('No Crops Selected', 'Please select at least 1 crop to check out.');
         return;
       }
 
-      if (deliveryMethod === 'delivery' && !deliveryAddress.trim()) {
-        toastWarning('Address Required', 'Please enter your delivery address.');
-        return;
-      }
-
-      if (!contactPhone.trim()) {
-        toastWarning('Phone Required', 'Please provide your contact phone number.');
-        return;
-      }
-
-      setOrdering(true);
-      const successfulItemIds: string[] = [];
-      const failedErrors: string[] = [];
-
-      try {
-        for (const item of selectedProduceItems) {
-          try {
-            const refNoText = paymentRefNo.trim() ? ` • Ref No: ${paymentRefNo.trim()}` : '';
-            const contactMsg = `Fulfillment: ${deliveryMethod === 'delivery' ? `Delivery to ${deliveryAddress.trim()}` : 'Farm-Gate Pickup'} • Phone: ${contactPhone.trim()} • Payment: ${paymentMethod.toUpperCase()}${refNoText}`;
-            await produceApi.initiateTransaction({
-              listingId: item.id,
-              quantity: item.quantity,
-              contactMessage: contactMsg,
-              deliveryMethod: deliveryMethod,
-              deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress.trim() : undefined,
-            });
-            successfulItemIds.push(item.id);
-          } catch (itemErr: any) {
-            const errMsg = itemErr.response?.data?.error || itemErr.message || `Failed to order ${item.listing?.cropName || 'crop'}`;
-            failedErrors.push(errMsg);
-          }
-        }
-
-        // Remove any successfully ordered items immediately so retries do not re-order them
-        if (successfulItemIds.length > 0) {
-          const remaining = produceCart.filter((i) => !successfulItemIds.includes(i.id));
-          saveProduceCart(remaining);
-          setSelectedProduceIds((prev) => {
-            const next = new Set(prev);
-            successfulItemIds.forEach((id) => next.delete(id));
-            return next;
-          });
-        }
-
-        // Auto-reconcile produce cart if there were errors or sold-out items
-        if (failedErrors.length > 0) {
-          await reconcileProduceCartWithLiveStock();
-          toastError('Checkout Issue', failedErrors.join(' • '));
-        }
-
-        if (successfulItemIds.length > 0) {
-          if (failedErrors.length === 0) {
-            toastSuccess('Harvest Order Placed!', 'Harvest crop order placed successfully! Redirecting to My Crop Orders…');
-            setTimeout(() => navigate('/produce/orders'), 2200);
-          } else {
-            toastSuccess('Partial Order Placed', `${successfulItemIds.length} harvest(s) ordered successfully. Unavailable items were removed from your cart.`);
-          }
-        }
-      } finally {
-        setOrdering(false);
-      }
+      sessionStorage.setItem('agriconnect_checkout_produce', JSON.stringify(selectedProduceItems));
+      navigate('/checkout', {
+        state: {
+          type: 'produce',
+          selectedProduceItems,
+        },
+      });
     }
   };
-
-  // Visible payment options based on delivery method
-  const visiblePaymentOptions = getPaymentOptions(deliveryMethod === 'pickup');
-
-  // Card style helpers
-  const panelBtn = (active: boolean): React.CSSProperties => ({
-    padding: '10px 12px',
-    borderRadius: '10px',
-    border: `1.5px solid ${active ? '#15803d' : '#e2e8f0'}`,
-    backgroundColor: active ? '#f0fdf4' : '#ffffff',
-    color: active ? '#15803d' : '#475569',
-    fontWeight: 700,
-    fontSize: '13px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    flex: 1,
-    justifyContent: 'center',
-    transition: 'all 0.15s ease',
-  });
 
   const activeItemsCount = activeTab === 'supplies' ? cart.length : produceCart.length;
   const currentTotalAmount = activeTab === 'supplies' ? supplyTotalAmount : produceTotalAmount;
@@ -1137,285 +945,13 @@ export const SupplyCartPage: React.FC = () => {
               )}
             </div>
 
-            {/* ── Order Summary Panel ── */}
+            {/* ── Cart Summary Panel ── */}
             <div className="glass-panel cart-summary-panel">
               <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '18px' }}>
-                {activeTab === 'supplies' ? 'Supply Checkout' : 'Crop Checkout'}
+                Cart Summary
               </h2>
 
-              <form onSubmit={handleCheckout}>
-                {/* Fulfillment Method */}
-                <div style={{ marginBottom: '18px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Fulfillment Method
-                  </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <button type="button" onClick={() => setDeliveryMethod('delivery')} style={panelBtn(deliveryMethod === 'delivery')}>
-                      🚚 Delivery
-                    </button>
-                    <button type="button" onClick={() => setDeliveryMethod('pickup')} style={panelBtn(deliveryMethod === 'pickup')}>
-                      {activeTab === 'supplies' ? '🏪 Pickup' : '🚜 Farm Pickup'}
-                    </button>
-                  </div>
-                  {deliveryMethod === 'delivery' ? (
-                    <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', fontSize: '12px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>🚚</span>
-                      <span><strong>Delivery Fee:</strong> To be confirmed by the {activeTab === 'supplies' ? 'supplier' : 'farmer'} upon order acceptance based on vehicle/hauling arrangements.</span>
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: '10px', padding: '10px 14px', borderRadius: '10px', background: '#F0FDF4', border: '1px solid #BBF7D0', fontSize: '12px', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>✓</span>
-                      <span><strong>{activeTab === 'supplies' ? 'Store Pickup' : 'Farm-Gate Pickup'}:</strong> ₱0 (FREE)</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Delivery Address */}
-                {deliveryMethod === 'delivery' && (
-                  <div style={{ marginBottom: '18px' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Delivery Address *
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      placeholder="Barangay, Municipality, Province"
-                      required
-                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontFamily: 'inherit', fontSize: '13px', resize: 'none', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                )}
-
-                {/* Contact Phone (for produce or delivery) */}
-                <div style={{ marginBottom: '18px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Contact Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="e.g. 0917 123 4567"
-                    required
-                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontFamily: 'inherit', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
-                </div>
-
-                {/* Payment Method */}
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Payment Method
-                  </label>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {visiblePaymentOptions.map((opt) => {
-                      const isActive = paymentMethod === opt.id;
-                      return (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => !opt.comingSoon && setPaymentMethod(opt.id)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            padding: '10px 12px',
-                            borderRadius: '10px',
-                            border: isActive ? `2px solid ${activeTab === 'supplies' ? '#ca8a04' : '#176B3A'}` : '1.5px solid #e2e8f0',
-                            backgroundColor: isActive ? (activeTab === 'supplies' ? '#fef9c3' : '#EAF6EE') : opt.comingSoon ? '#f8fafc' : '#fff',
-                            cursor: opt.comingSoon ? 'default' : 'pointer',
-                            textAlign: 'left',
-                            opacity: opt.comingSoon ? 0.6 : 1,
-                          }}
-                        >
-                          <div style={{
-                            width: '16px', height: '16px', borderRadius: '50%',
-                            border: isActive ? `5px solid ${activeTab === 'supplies' ? '#ca8a04' : '#176B3A'}` : '2px solid #cbd5e1',
-                            flexShrink: 0,
-                          }} />
-                          <span style={{ fontSize: '18px', lineHeight: 1 }}>{opt.icon}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              {opt.label}
-                              {opt.comingSoon && (
-                                <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '6px', backgroundColor: '#e2e8f0', color: '#64748b' }}>
-                                  SOON
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '1px' }}>{opt.desc}</div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* E-Wallet & Bank Recipient & Reference Box */}
-                {(paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && (
-                  <div
-                    style={{
-                      marginBottom: '20px',
-                      padding: '16px 18px',
-                      borderRadius: '14px',
-                      background: '#F0F9FF',
-                      border: '1.5px solid #0284C7',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '14px',
-                    }}
-                  >
-                    <div style={{ fontSize: '14px', fontWeight: 800, color: '#0C4A6E', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>{paymentMethod === 'gcash' ? '📱' : paymentMethod === 'maya' ? '💜' : '🏦'}</span>
-                        <span>
-                          {paymentMethod === 'gcash' ? 'GCash Recipient Details' : paymentMethod === 'maya' ? 'Maya Recipient Details' : 'Bank Account Details'}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '12px', background: '#0284C7', color: '#FFF', padding: '3px 10px', borderRadius: '12px', fontWeight: 800 }}>
-                        Total: ₱{currentTotalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-
-                    {/* Recipient Account Details Card */}
-                    {loadingSellerProfile ? (
-                      <div style={{ fontSize: '12.5px', color: '#0369A1', fontStyle: 'italic', padding: '10px', background: '#E0F2FE', borderRadius: '8px' }}>
-                        ⏳ Fetching seller payment details…
-                      </div>
-                    ) : (
-                      <div style={{ background: '#FFFFFF', padding: '12px 14px', borderRadius: '10px', border: '1px solid #BAE6FD', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        {paymentMethod === 'gcash' && (
-                          <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Name:</span>
-                              <span style={{ color: '#0F172A', fontWeight: 800 }}>
-                                {sellerProfile?.gcashName || (sellerProfile?.firstName ? `${sellerProfile.firstName} ${sellerProfile.lastName}` : (activeTab === 'supplies' && selectedSupplyItems[0]?.product.supplierName ? selectedSupplyItems[0].product.supplierName : 'Seller Account'))}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                              <span style={{ color: '#475569', fontWeight: 600 }}>GCash Number:</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ color: '#0284C7', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
-                                  {sellerProfile?.gcashNumber || sellerProfile?.phone || 'Contact seller after checkout'}
-                                </span>
-                                {(sellerProfile?.gcashNumber || sellerProfile?.phone) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(sellerProfile?.gcashNumber || sellerProfile?.phone || '', 'GCash Number')}
-                                    style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
-                                  >
-                                    📋 {copiedText === 'GCash Number' ? 'Copied!' : 'Copy'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            {sellerProfile?.gcashQrUrl && (
-                              <div style={{ marginTop: '6px', textAlign: 'center', background: '#F8FAFC', padding: '8px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
-                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#0369A1', marginBottom: '4px' }}>📲 Scan Seller GCash QR Code:</div>
-                                <img src={getImageUrl(sellerProfile.gcashQrUrl)} alt="GCash QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0', margin: '0 auto' }} />
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {paymentMethod === 'maya' && (
-                          <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Name:</span>
-                              <span style={{ color: '#0F172A', fontWeight: 800 }}>
-                                {sellerProfile?.mayaName || (sellerProfile?.firstName ? `${sellerProfile.firstName} ${sellerProfile.lastName}` : 'Seller Account')}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                              <span style={{ color: '#475569', fontWeight: 600 }}>Maya Number:</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ color: '#7C3AED', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
-                                  {sellerProfile?.mayaNumber || sellerProfile?.phone || 'Contact seller after checkout'}
-                                </span>
-                                {(sellerProfile?.mayaNumber || sellerProfile?.phone) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(sellerProfile?.mayaNumber || sellerProfile?.phone || '', 'Maya Number')}
-                                    style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#F3E8FF', color: '#6D28D9', border: 'none', cursor: 'pointer' }}
-                                  >
-                                    📋 {copiedText === 'Maya Number' ? 'Copied!' : 'Copy'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                            {sellerProfile?.mayaQrUrl && (
-                              <div style={{ marginTop: '6px', textAlign: 'center', background: '#F8FAFC', padding: '8px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
-                                <div style={{ fontSize: '11px', fontWeight: 700, color: '#6D28D9', marginBottom: '4px' }}>💜 Scan Seller Maya QR Code:</div>
-                                <img src={getImageUrl(sellerProfile.mayaQrUrl)} alt="Maya QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0', margin: '0 auto' }} />
-                              </div>
-                            )}
-                          </>
-                        )}
-
-                        {paymentMethod === 'bank_transfer' && (
-                          <>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                              <span style={{ color: '#475569', fontWeight: 600 }}>Bank Name:</span>
-                              <span style={{ color: '#0F172A', fontWeight: 800 }}>{sellerProfile?.bankName || 'BDO / BPI / Landbank'}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Name:</span>
-                              <span style={{ color: '#0F172A', fontWeight: 800 }}>
-                                {sellerProfile?.bankAccountName || (sellerProfile?.firstName ? `${sellerProfile.firstName} ${sellerProfile.lastName}` : 'Seller Account')}
-                              </span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px' }}>
-                              <span style={{ color: '#475569', fontWeight: 600 }}>Account Number:</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span style={{ color: '#0F172A', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
-                                  {sellerProfile?.bankAccountNo || 'Provided upon order confirmation'}
-                                </span>
-                                {sellerProfile?.bankAccountNo && (
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(sellerProfile?.bankAccountNo || '', 'Account Number')}
-                                    style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
-                                  >
-                                    📋 {copiedText === 'Account Number' ? 'Copied!' : 'Copy'}
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    )}
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#0F172A', marginBottom: '4px' }}>
-                        Transaction Reference Number <span style={{ color: '#64748B', fontWeight: 500 }}>(Optional at checkout)</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={paymentRefNo}
-                        onChange={(e) => setPaymentRefNo(e.target.value)}
-                        placeholder={paymentMethod === 'gcash' ? 'e.g. 1029384756123 (13 digits)' : 'Enter transaction Ref / Auth No.'}
-                        style={{
-                          width: '100%',
-                          padding: '10px 12px',
-                          borderRadius: '8px',
-                          border: '1.5px solid #0284C7',
-                          fontSize: '14px',
-                          fontWeight: 700,
-                          color: '#0C4A6E',
-                          background: '#FFFFFF',
-                          boxSizing: 'border-box',
-                        }}
-                      />
-                      <div style={{ fontSize: '11.5px', color: '#0369A1', marginTop: '6px', lineHeight: 1.4 }}>
-                        💡 <strong>Tip:</strong> If you haven't transferred yet, you can place your order first and enter your Ref No anytime under <strong>"My Orders"</strong>.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Multiple Suppliers Warning for Supplies */}
+              <form onSubmit={handleProceedToCheckout}>
                 {activeTab === 'supplies' && hasMultipleSelectedSuppliers && (
                   <div style={{
                     padding: '12px 14px',
@@ -1431,26 +967,18 @@ export const SupplyCartPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* Order Cost Breakdown */}
-                <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', marginBottom: '18px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', fontSize: '13px' }}>
-                    <span style={{ color: '#64748b', fontWeight: 600 }}>Items Subtotal ({currentSelectedCount} item{currentSelectedCount !== 1 ? 's' : ''}):</span>
-                    <span style={{ color: '#0f172a', fontWeight: 700 }}>₱{currentTotalAmount.toLocaleString()}</span>
+                {/* Cart Cost Breakdown */}
+                <div style={{ padding: '18px', backgroundColor: '#f8fafc', borderRadius: '14px', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '14px' }}>
+                    <span style={{ color: '#64748b', fontWeight: 600 }}>Selected Items:</span>
+                    <span style={{ color: '#0f172a', fontWeight: 700 }}>{currentSelectedCount} item{currentSelectedCount !== 1 ? 's' : ''}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '13px' }}>
-                    <span style={{ color: '#64748b', fontWeight: 600 }}>Shipping / Delivery Fee:</span>
-                    <span style={{ color: deliveryMethod === 'pickup' ? '#16a34a' : '#ca8a04', fontWeight: 700 }}>
-                      {deliveryMethod === 'pickup' ? '₱0 (Pickup)' : 'Pending Seller Confirmation'}
-                    </span>
-                  </div>
-                  <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
-                      <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: 800 }}>Total Order Value</div>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>
-                        {deliveryMethod === 'delivery' ? '(Excl. delivery fee)' : '(Pickup at store/farm)'}
-                      </div>
+                      <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: 800 }}>Subtotal</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>(Excl. shipping fee calculated at checkout)</div>
                     </div>
-                    <span style={{ color: activeTab === 'supplies' ? '#ca8a04' : '#176B3A', fontSize: '22px', fontWeight: 800 }}>
+                    <span style={{ color: '#16a34a', fontSize: '22px', fontWeight: 800 }}>
                       ₱{currentTotalAmount.toLocaleString()}
                     </span>
                   </div>
@@ -1458,27 +986,26 @@ export const SupplyCartPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={ordering || currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers)}
+                  disabled={currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers)}
                   style={{
                     width: '100%',
-                    padding: '14px',
+                    padding: '16px',
                     borderRadius: '12px',
-                    backgroundColor: ordering || currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers)
-                      ? '#a3a3a3'
-                      : activeTab === 'supplies' ? '#ca8a04' : '#176B3A',
+                    background: currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers)
+                      ? '#cbd5e1'
+                      : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
                     color: '#fff',
                     fontWeight: 800,
                     border: 'none',
-                    cursor: ordering || currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers) ? 'not-allowed' : 'pointer',
-                    fontSize: '15px',
-                    transition: 'background 0.2s',
+                    cursor: currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers) ? 'not-allowed' : 'pointer',
+                    fontSize: '16px',
+                    boxShadow: currentSelectedCount > 0 ? '0 4px 14px rgba(22, 163, 74, 0.35)' : 'none',
+                    transition: 'all 0.2s',
                   }}
                 >
-                  {ordering
-                    ? 'Placing Order…'
-                    : currentSelectedCount === 0
-                      ? 'Select items to checkout'
-                      : `Checkout Selected (${currentSelectedCount}) · ₱${currentTotalAmount.toLocaleString()}`
+                  {currentSelectedCount === 0
+                    ? 'Select items to checkout'
+                    : `Check Out (${currentSelectedCount}) · ₱${currentTotalAmount.toLocaleString()}`
                   }
                 </button>
               </form>
