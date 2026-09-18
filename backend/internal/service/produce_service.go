@@ -283,6 +283,9 @@ func (s *ProduceService) UpdateTransactionStatus(ctx context.Context, userID str
 	}
 
 	status := req.Status
+	if status == "" {
+		status = tx.Status
+	}
 	isBuyer := tx.BuyerID.Hex() == userID
 	isFarmer := tx.FarmerID.Hex() == userID
 	isAdmin := role == string(models.RoleSuperAdmin) || role == string(models.RoleLGUStaff)
@@ -303,12 +306,21 @@ func (s *ProduceService) UpdateTransactionStatus(ctx context.Context, userID str
 				if tx.Status != models.TxPending {
 					return nil, errors.New("cannot cancel an order that has already been confirmed or processed")
 				}
+			} else if status == tx.Status {
+				// Allow buyer to update payment details (reference number, receipt proof) without changing order status
 			} else {
 				return nil, errors.New("buyers cannot accept orders; only the farmer can confirm an order")
 			}
 		} else if isFarmer {
 			if tx.Status == models.TxCompleted || tx.Status == models.TxCancelled {
 				return nil, fmt.Errorf("cannot update a transaction that is already %s", tx.Status)
+			}
+			if status == models.TxCancelled {
+				// Prevent seller from cancelling paid non-COD orders
+				isNonCOD := tx.PaymentMethod != "cod" && tx.PaymentMethod != ""
+				if (tx.PaymentStatus == "paid" || tx.PaymentRefNo != "") && isNonCOD {
+					return nil, errors.New("cannot cancel order: customer has already submitted payment for this non-COD order")
+				}
 			}
 			if status == models.TxCompleted && tx.Status != models.TxConfirmed {
 				return nil, errors.New("order must be confirmed before marking as completed")
@@ -338,7 +350,7 @@ func (s *ProduceService) UpdateTransactionStatus(ctx context.Context, userID str
 		status = models.TxQuoted
 	}
 
-	if err := s.produceRepo.UpdateTransactionStatusWithShipping(ctx, tOID, status, shippingFee, totalPrice); err != nil {
+	if err := s.produceRepo.UpdateTransactionStatusFull(ctx, tOID, status, shippingFee, totalPrice, req.PaymentStatus, req.PaymentRefNo, req.PaymentProofURL); err != nil {
 		return nil, err
 	}
 

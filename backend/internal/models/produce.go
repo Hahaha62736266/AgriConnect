@@ -89,6 +89,10 @@ type ProduceTransaction struct {
 	DeliveryMethod string            `bson:"delivery_method,omitempty" json:"deliveryMethod,omitempty"`
 	DeliveryAddress string           `bson:"delivery_address,omitempty" json:"deliveryAddress,omitempty"`
 	ContactMessage string            `bson:"contact_message,omitempty" json:"contactMessage,omitempty"`
+	PaymentMethod  string            `bson:"payment_method,omitempty"   json:"paymentMethod,omitempty"`
+	PaymentStatus  string            `bson:"payment_status,omitempty"   json:"paymentStatus,omitempty"`
+	PaymentRefNo   string            `bson:"payment_ref_no,omitempty"   json:"paymentRefNo,omitempty"`
+	PaymentProofURL string           `bson:"payment_proof_url,omitempty" json:"paymentProofUrl,omitempty"`
 	Status         TransactionStatus `bson:"status"              json:"status"`
 	CreatedAt      time.Time         `bson:"created_at"          json:"createdAt"`
 	UpdatedAt      time.Time         `bson:"updated_at"          json:"updatedAt"`
@@ -101,12 +105,22 @@ type CreateProduceTransactionRequest struct {
 	ContactMessage  string  `json:"contactMessage,omitempty"`
 	DeliveryMethod  string  `json:"deliveryMethod,omitempty"`
 	DeliveryAddress string  `json:"deliveryAddress,omitempty"`
+	PaymentMethod   string  `json:"paymentMethod,omitempty"`
 }
 
 // UpdateTransactionStatusRequest is the JSON payload to update transaction status.
 type UpdateTransactionStatusRequest struct {
-	Status      TransactionStatus `json:"status"`
-	ShippingFee *float64          `json:"shippingFee,omitempty"`
+	Status          TransactionStatus `json:"status"`
+	ShippingFee     *float64          `json:"shippingFee,omitempty"`
+	PaymentStatus   *string           `json:"paymentStatus,omitempty"`
+	PaymentRefNo    *string           `json:"paymentRefNo,omitempty"`
+	PaymentProofURL *string           `json:"paymentProofUrl,omitempty"`
+}
+
+// SubmitProducePaymentRefRequest is the request to submit payment reference and proof.
+type SubmitProducePaymentRefRequest struct {
+	PaymentRefNo    string  `json:"paymentRefNo"`
+	PaymentProofURL *string `json:"paymentProofUrl,omitempty"`
 }
 
 // BuyerQuoteDecisionRequest is the payload for buyer responding to a seller-quoted fee.

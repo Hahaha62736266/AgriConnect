@@ -221,8 +221,13 @@ func (r *ProduceRepository) UpdateTransactionStatus(ctx context.Context, txID bs
 	return r.UpdateTransactionStatusWithShipping(ctx, txID, status, nil, nil)
 }
 
-// UpdateTransactionStatusWithShipping updates a transaction's status and optional shipping fee & total price.
+// UpdateTransactionStatusWithShipping updates a transaction's status and optional shipping fee, total price, and payment fields.
 func (r *ProduceRepository) UpdateTransactionStatusWithShipping(ctx context.Context, txID bson.ObjectID, status models.TransactionStatus, shippingFee *float64, totalPrice *float64) error {
+	return r.UpdateTransactionStatusFull(ctx, txID, status, shippingFee, totalPrice, nil, nil, nil)
+}
+
+// UpdateTransactionStatusFull updates transaction status, shipping, and payment state.
+func (r *ProduceRepository) UpdateTransactionStatusFull(ctx context.Context, txID bson.ObjectID, status models.TransactionStatus, shippingFee *float64, totalPrice *float64, paymentStatus *string, paymentRefNo *string, paymentProofUrl *string) error {
 	update := bson.M{
 		"status":     status,
 		"updated_at": time.Now(),
@@ -233,9 +238,37 @@ func (r *ProduceRepository) UpdateTransactionStatusWithShipping(ctx context.Cont
 	if totalPrice != nil {
 		update["total_price"] = *totalPrice
 	}
+	if paymentStatus != nil {
+		update["payment_status"] = *paymentStatus
+	}
+	if paymentRefNo != nil {
+		update["payment_ref_no"] = *paymentRefNo
+	}
+	if paymentProofUrl != nil {
+		update["payment_proof_url"] = *paymentProofUrl
+	}
 	res, err := r.transactionsColl.UpdateByID(ctx, txID, bson.M{"$set": update})
 	if err != nil {
 		return fmt.Errorf("update transaction status: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return ErrTransactionNotFound
+	}
+	return nil
+}
+
+// SubmitPaymentRef updates payment reference number, proof URL, and payment status for a transaction.
+func (r *ProduceRepository) SubmitPaymentRef(ctx context.Context, txID bson.ObjectID, refNo string, proofURL string) error {
+	update := bson.M{
+		"payment_ref_no": refNo,
+		"updated_at":     time.Now(),
+	}
+	if proofURL != "" {
+		update["payment_proof_url"] = proofURL
+	}
+	res, err := r.transactionsColl.UpdateByID(ctx, txID, bson.M{"$set": update})
+	if err != nil {
+		return fmt.Errorf("submit payment ref: %w", err)
 	}
 	if res.MatchedCount == 0 {
 		return ErrTransactionNotFound
