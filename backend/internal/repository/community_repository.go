@@ -301,3 +301,71 @@ func (r *CommunityRepository) ListCommentsByPost(ctx context.Context, postID bso
 	}
 	return comments, nil
 }
+
+// UpdatePost updates the editable fields of a post. Ownership is enforced by
+// including author_id in the filter so only the post author can update it.
+func (r *CommunityRepository) UpdatePost(ctx context.Context, postID bson.ObjectID, authorID bson.ObjectID, req models.UpdatePostRequest) (*models.Post, error) {
+	filter := bson.M{"_id": postID, "author_id": authorID, "is_removed": false}
+
+	update := bson.M{
+		"$set": bson.M{
+			"title":      req.Title,
+			"body":       req.Body,
+			"category":   req.Category,
+			"image_url":  req.ImageUrl,
+			"video_url":  req.VideoUrl,
+			"updated_at": time.Now(),
+		},
+	}
+
+	res, err := r.postColl.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return nil, fmt.Errorf("update post: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return nil, ErrPostNotFound
+	}
+
+	return r.GetPostByID(ctx, postID, authorID.Hex())
+}
+
+// DeletePost soft-deletes a post by setting is_removed = true.
+// Ownership is enforced via author_id in the filter.
+func (r *CommunityRepository) DeletePost(ctx context.Context, postID bson.ObjectID, authorID bson.ObjectID) error {
+	filter := bson.M{"_id": postID, "author_id": authorID, "is_removed": false}
+	update := bson.M{"$set": bson.M{"is_removed": true, "updated_at": time.Now()}}
+
+	res, err := r.postColl.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return fmt.Errorf("delete post: %w", err)
+	}
+	if res.MatchedCount == 0 {
+		return ErrPostNotFound
+	}
+	return nil
+}
+
+// ListPostsByAuthor retrieves all non-removed posts by a specific author.
+func (r *CommunityRepository) ListPostsByAuthor(ctx context.Context, authorID bson.ObjectID) ([]models.Post, error) {
+	query := bson.M{"author_id": authorID, "is_removed": false}
+	opts := options.Find().SetSort(bson.D{{Key: "created_at", Value: -1}})
+	cursor, err := r.postColl.Find(ctx, query, opts)
+	if err != nil {
+		return nil, fmt.Errorf("find posts by author: %w", err)
+	}
+	defer cursor.Close(ctx)
+
+	var posts []models.Post
+	if err := cursor.All(ctx, &posts); err != nil {
+		return nil, fmt.Errorf("decode posts: %w", err)
+	}
+	if posts == nil {
+		posts = []models.Post{}
+	}
+
+	for i := range posts {
+		populatePostReactionState(&posts[i], authorID)
+	}
+	return posts, nil
+}
+

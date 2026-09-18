@@ -97,6 +97,15 @@ type ReactPostRequest struct {
 	Reaction ReactionType `json:"reaction"`
 }
 
+// UpdatePostRequest payload for editing an existing post.
+type UpdatePostRequest struct {
+	Title    string       `json:"title"`
+	Body     string       `json:"body"`
+	Category PostCategory `json:"category"`
+	ImageUrl string       `json:"imageUrl,omitempty"`
+	VideoUrl string       `json:"videoUrl,omitempty"`
+}
+
 // CreateCommentRequest payload
 type CreateCommentRequest struct {
 	Body string `json:"body"`

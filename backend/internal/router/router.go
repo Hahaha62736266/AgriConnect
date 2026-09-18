@@ -175,14 +175,19 @@ func New(
 	// Community Hub routes
 	r.Route("/api/community", func(r chi.Router) {
 		r.Get("/posts", communityHandler.ListPosts)
-		r.Get("/posts/{id}", communityHandler.GetPostByID)
 		r.Get("/posts/{id}/comments", communityHandler.ListCommentsByPost)
 		r.Get("/posts/{id}/reactions", communityHandler.GetPostReactions)
 
 		r.Group(func(r chi.Router) {
 			r.Use(middleware.JWTAuth(jwtSecret))
 
+			// /my must be registered before /{id} to avoid being matched as a param
+			r.Get("/posts/my", communityHandler.ListMyPosts)
+			r.Get("/posts/{id}", communityHandler.GetPostByID)
+
 			r.Post("/posts", communityHandler.CreatePost)
+			r.Put("/posts/{id}", communityHandler.UpdatePost)
+			r.Delete("/posts/{id}", communityHandler.DeletePost)
 			r.Post("/posts/{id}/react", communityHandler.ReactToPost)
 			r.Post("/posts/{id}/upvote", communityHandler.ToggleUpvote)
 			r.Post("/posts/{id}/comments", communityHandler.CreateComment)

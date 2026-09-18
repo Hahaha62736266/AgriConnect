@@ -4,7 +4,7 @@ import { communityApi } from '../api/community';
 import { getImageUrl } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import type { Post, PostCategory, ReactionType, Comment } from '../types/community';
+import type { Post, PostCategory, ReactionType, Comment, UpdatePostPayload } from '../types/community';
 import { ReactionPicker, ReactionBadgeList } from '../components/community/ReactionPicker';
 import { VideoPlayer } from '../components/community/VideoPlayer';
 import { ReactionModal } from '../components/community/ReactionModal';
@@ -197,7 +197,7 @@ const sampleGuides: FarmingGuide[] = [
 ];
 
 interface CommunityHubPageProps {
-  initialTab?: 'community' | 'guides';
+  initialTab?: 'community' | 'guides' | 'myposts';
 }
 
 export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }) => {
@@ -207,7 +207,7 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
   const { user } = useAuth();
 
   // Tab State
-  const [activeTab, setActiveTab] = useState<'community' | 'guides'>(() => {
+  const [activeTab, setActiveTab] = useState<'community' | 'guides' | 'myposts'>(() => {
     if (initialTab) return initialTab;
     if (location.pathname.includes('/guides') || location.hash === '#guides') return 'guides';
     return 'community';
@@ -221,10 +221,12 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
     }
   }, [location.hash, location.pathname]);
 
-  const handleTabChange = (tab: 'community' | 'guides') => {
+  const handleTabChange = (tab: 'community' | 'guides' | 'myposts') => {
     setActiveTab(tab);
     if (tab === 'guides') {
       navigate('/community#guides', { replace: true });
+    } else if (tab === 'myposts') {
+      navigate('/community#myposts', { replace: true });
     } else {
       navigate('/community', { replace: true });
     }
@@ -267,6 +269,21 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
   const [selectedGuideCategory, setSelectedGuideCategory] = useState('all');
   const [activeGuideModal, setActiveGuideModal] = useState<FarmingGuide | null>(null);
 
+  // My Posts State
+  const [myPosts, setMyPosts] = useState<Post[]>([]);
+  const [loadingMyPosts, setLoadingMyPosts] = useState(false);
+
+  // Edit Post State
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editBody, setEditBody] = useState('');
+  const [editCategory, setEditCategory] = useState<PostCategory>('crop_advice');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Post Kebab Menu State (stores the postId of the open menu)
+  const [postMenuOpen, setPostMenuOpen] = useState<string | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+
   // Fetch posts from backend
   const loadPosts = useCallback(async () => {
     setLoadingPosts(true);
@@ -283,6 +300,89 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
   useEffect(() => {
     loadPosts();
   }, [loadPosts]);
+
+  // Close kebab menu when clicking outside
+  useEffect(() => {
+    if (!postMenuOpen) return;
+    const handleClickAway = () => setPostMenuOpen(null);
+    document.addEventListener('click', handleClickAway);
+    return () => document.removeEventListener('click', handleClickAway);
+  }, [postMenuOpen]);
+
+  // Load My Posts
+  const loadMyPosts = useCallback(async () => {
+    setLoadingMyPosts(true);
+    try {
+      const data = await communityApi.listMyPosts();
+      setMyPosts(data || []);
+    } catch (err) {
+      console.error('Failed to fetch my posts:', err);
+    } finally {
+      setLoadingMyPosts(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'myposts') loadMyPosts();
+  }, [activeTab, loadMyPosts]);
+
+  // Open Edit Modal pre-filled with post data
+  const handleOpenEdit = (post: Post) => {
+    setPostMenuOpen(null);
+    setEditingPost(post);
+    setEditTitle(post.title || '');
+    setEditBody(post.body || '');
+    setEditCategory((post.category as PostCategory) || 'general');
+  };
+
+  // Save edit
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPost) return;
+    if (!editBody.trim()) {
+      error('Content Required', 'Post text cannot be empty.');
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const payload: UpdatePostPayload = {
+        title: editTitle.trim() || undefined,
+        body: editBody.trim(),
+        category: editCategory,
+      };
+      const updated = await communityApi.updatePost(editingPost.id, payload);
+      // Update in main feed
+      setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      // Update in my posts if loaded
+      setMyPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setEditingPost(null);
+      success('Post Updated', 'Your post has been updated successfully.');
+    } catch (err: any) {
+      error('Update Failed', err.response?.data?.error || 'Please try again.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Delete post with confirmation
+  const handleDeletePost = async (postId: string) => {
+    setPostMenuOpen(null);
+    setDeletingPostId(postId);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!deletingPostId) return;
+    try {
+      await communityApi.deletePost(deletingPostId);
+      setPosts((prev) => prev.filter((p) => p.id !== deletingPostId));
+      setMyPosts((prev) => prev.filter((p) => p.id !== deletingPostId));
+      success('Post Deleted', 'Your post has been removed.');
+    } catch (err: any) {
+      error('Delete Failed', err.response?.data?.error || 'Please try again.');
+    } finally {
+      setDeletingPostId(null);
+    }
+  };
 
   // Handle LinkedIn-Style Reaction (Optimistic)
   const handleReact = async (postId: string, reaction: ReactionType) => {
@@ -555,11 +655,15 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
         <div className="community-header-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '16px' }}>
           <div>
             <h1 className="community-title" style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
-              {activeTab === 'community' ? 'Agricultural Community & Media Feed' : 'Agricultural Learning Hub & Field Guides'}
+              {activeTab === 'community' ? 'Agricultural Community & Media Feed'
+                : activeTab === 'myposts' ? 'My Posts'
+                : 'Agricultural Learning Hub & Field Guides'}
             </h1>
             <p className="community-subtitle" style={{ fontSize: '16px', color: '#525450', marginTop: '6px', marginBottom: 0, maxWidth: '780px', lineHeight: 1.5 }}>
               {activeTab === 'community'
                 ? 'Share crop videos, field photos, discuss wholesale market prices, and connect with farmers, suppliers, and agronomists across regions.'
+                : activeTab === 'myposts'
+                ? 'Manage all the posts you have shared with the community. Edit or delete your posts here.'
                 : 'Practical, step-by-step agricultural handbooks, pest identification sheets, and crop management manuals.'}
             </p>
           </div>
@@ -621,6 +725,31 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
             <span>📖</span>
             <span>Learn & Field Guides</span>
           </button>
+
+          {user && (
+            <button
+              onClick={() => handleTabChange('myposts')}
+              className={`segmented-tab-btn ${activeTab === 'myposts' ? 'active' : ''}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 22px',
+                borderRadius: '12px',
+                border: 'none',
+                fontWeight: 800,
+                fontSize: '15px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                background: activeTab === 'myposts' ? '#FFFFFF' : 'transparent',
+                color: activeTab === 'myposts' ? '#0E4A27' : '#525450',
+                boxShadow: activeTab === 'myposts' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+              }}
+            >
+              <span>📝</span>
+              <span>My Posts</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -1134,6 +1263,70 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                           </div>
                         </div>
                       </div>
+
+                      {/* ⋯ Kebab menu — only for the post author */}
+                      {user && post.authorId === user.id && (
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPostMenuOpen(postMenuOpen === post.id ? null : post.id);
+                            }}
+                            title="Post options"
+                            style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              fontSize: '22px', color: '#94A3B8', lineHeight: 1,
+                              padding: '4px 8px', borderRadius: '8px',
+                              transition: 'background 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                          >
+                            ⋯
+                          </button>
+                          {postMenuOpen === post.id && (
+                            <div
+                              style={{
+                                position: 'absolute', top: '100%', right: 0, zIndex: 50,
+                                background: '#FFFFFF', borderRadius: '14px',
+                                boxShadow: '0 8px 30px rgba(0,0,0,0.14)',
+                                border: '1px solid #E2E8F0',
+                                minWidth: '160px', overflow: 'hidden', marginTop: '4px',
+                              }}
+                            >
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleOpenEdit(post); }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: '10px',
+                                  width: '100%', padding: '12px 16px', border: 'none',
+                                  background: 'none', textAlign: 'left', cursor: 'pointer',
+                                  fontSize: '14px', color: '#15803D', fontWeight: 700,
+                                  transition: 'background 0.12s ease',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#F0FDF4'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                              >
+                                ✏️ Edit Post
+                              </button>
+                              <div style={{ height: '1px', background: '#F1F5F9', margin: '0 12px' }} />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeletePost(post.id); }}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: '10px',
+                                  width: '100%', padding: '12px 16px', border: 'none',
+                                  background: 'none', textAlign: 'left', cursor: 'pointer',
+                                  fontSize: '14px', color: '#BE123C', fontWeight: 700,
+                                  transition: 'background 0.12s ease',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#FFF1F2'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                              >
+                                🗑️ Delete Post
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Post Title (if custom title provided and differs from short body) */}
@@ -1830,6 +2023,290 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
           onClose={() => setActiveShareModalPost(null)}
           onPostShared={(newPost) => setPosts((prev) => [newPost, ...prev])}
         />
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════
+          MY POSTS TAB PANEL
+      ═══════════════════════════════════════════════════════════ */}
+      {activeTab === 'myposts' && (
+        <div style={{ maxWidth: '820px', margin: '0 auto' }}>
+          {loadingMyPosts ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📝</div>
+              <p style={{ fontSize: '16px', margin: 0 }}>Loading your posts…</p>
+            </div>
+          ) : myPosts.length === 0 ? (
+            <div
+              style={{
+                textAlign: 'center', padding: '60px 20px',
+                background: '#FFFFFF', borderRadius: '20px',
+                border: '1.5px dashed #C8E6D2',
+              }}
+            >
+              <div style={{ fontSize: '52px', marginBottom: '12px' }}>🌾</div>
+              <p style={{ fontSize: '18px', fontWeight: 700, color: '#0E4A27', margin: '0 0 6px' }}>No Posts Yet</p>
+              <p style={{ fontSize: '15px', color: '#64748B', margin: 0 }}>You haven't shared anything with the community yet.</p>
+            </div>
+          ) : (
+            myPosts.map((post) => (
+              <div
+                key={post.id}
+                style={{
+                  background: '#FFFFFF', borderRadius: '20px',
+                  border: '1.5px solid #E2EBE6', marginBottom: '20px',
+                  boxShadow: '0 4px 18px rgba(14,74,39,0.06)', overflow: 'visible',
+                  position: 'relative',
+                }}
+              >
+                {/* Post Author Row + Edit/Delete controls */}
+                <div style={{ padding: '18px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{
+                      width: '44px', height: '44px', borderRadius: '50%', overflow: 'hidden',
+                      background: '#0E4A27', color: '#fff', fontWeight: 800, fontSize: '18px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                    }}>
+                      {post.authorPhotoUrl
+                        ? <img src={getImageUrl(post.authorPhotoUrl)} alt={post.authorName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        : post.authorName?.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '15px', color: '#1E293B' }}>{post.authorName}</div>
+                      <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '2px' }}>{formatTimeAgo(post.createdAt)}</div>
+                    </div>
+                  </div>
+                  {/* Edit / Delete buttons always visible on My Posts */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => handleOpenEdit(post)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '7px 14px', borderRadius: '10px',
+                        background: '#F0FDF4', border: '1px solid #BBF7D0',
+                        color: '#15803D', fontWeight: 700, fontSize: '13px',
+                        cursor: 'pointer', transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#DCFCE7'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#F0FDF4'; }}
+                    >
+                      ✏️ Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeletePost(post.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        padding: '7px 14px', borderRadius: '10px',
+                        background: '#FFF1F2', border: '1px solid #FECDD3',
+                        color: '#BE123C', fontWeight: 700, fontSize: '13px',
+                        cursor: 'pointer', transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = '#FFE4E6'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = '#FFF1F2'; }}
+                    >
+                      🗑️ Delete
+                    </button>
+                  </div>
+                </div>
+
+                {/* Post Body */}
+                <div style={{ padding: '14px 20px 16px' }}>
+                  {post.title && (
+                    <div style={{ fontWeight: 700, fontSize: '16px', color: '#1E293B', marginBottom: '6px' }}>{post.title}</div>
+                  )}
+                  {post.body && (
+                    <p style={{ fontSize: '15px', color: '#334155', margin: 0, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{post.body}</p>
+                  )}
+                </div>
+
+                {/* Post Image */}
+                {post.imageUrl && (
+                  <div style={{ padding: '0 20px 16px' }}>
+                    <img src={getImageUrl(post.imageUrl)} alt="Post" style={{ width: '100%', borderRadius: '12px', objectFit: 'cover', maxHeight: '360px' }} />
+                  </div>
+                )}
+
+                {/* Post Video */}
+                {post.videoUrl && (
+                  <div style={{ padding: '0 20px 16px' }}>
+                    <VideoPlayer src={getImageUrl(post.videoUrl)} />
+                  </div>
+                )}
+
+                {/* Stats row */}
+                <div style={{
+                  padding: '10px 20px 14px', borderTop: '1px solid #F1F5F9',
+                  display: 'flex', gap: '16px', fontSize: '13px', color: '#64748B',
+                }}>
+                  <span>❤️ {post.totalReactions || 0} reactions</span>
+                  <span>💬 {post.commentsCount || 0} comments</span>
+                  <span style={{
+                    marginLeft: 'auto', fontSize: '12px',
+                    background: '#F1F5F9', borderRadius: '8px', padding: '3px 10px',
+                  }}>{getCategoryLabel(post.category)}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ─── Edit Post Modal ─── */}
+      {editingPost && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1000,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingPost(null); }}
+        >
+          <div
+            style={{
+              background: '#FFFFFF', borderRadius: '24px',
+              padding: '32px', width: '100%', maxWidth: '580px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0E4A27' }}>✏️ Edit Post</h2>
+              <button
+                onClick={() => setEditingPost(null)}
+                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#94A3B8', lineHeight: 1 }}
+              >×</button>
+            </div>
+
+            <form onSubmit={handleSaveEdit}>
+              {/* Category */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>Category</label>
+                <select
+                  value={editCategory}
+                  onChange={(e) => setEditCategory(e.target.value as PostCategory)}
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '12px',
+                    border: '1.5px solid #D1E7D8', fontSize: '14px', color: '#1E293B',
+                    background: '#F8FAFC', outline: 'none',
+                  }}
+                >
+                  <option value="general">🌾 General Farming</option>
+                  <option value="crop_advice">🌱 Crop Care & Advice</option>
+                  <option value="pest_control">🐛 Pest & Disease Control</option>
+                  <option value="market_talk">💰 Market & Prices</option>
+                  <option value="equipment">🚜 Equipment & Tools</option>
+                </select>
+              </div>
+
+              {/* Optional title */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>Title (optional)</label>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  placeholder="Give your post a headline…"
+                  style={{
+                    width: '100%', padding: '10px 14px', borderRadius: '12px',
+                    border: '1.5px solid #D1E7D8', fontSize: '14px', color: '#1E293B',
+                    background: '#F8FAFC', outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              {/* Body */}
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#374151', marginBottom: '6px' }}>Post Content *</label>
+                <textarea
+                  value={editBody}
+                  onChange={(e) => setEditBody(e.target.value)}
+                  rows={5}
+                  placeholder="What would you like to share…"
+                  style={{
+                    width: '100%', padding: '12px 14px', borderRadius: '12px',
+                    border: '1.5px solid #D1E7D8', fontSize: '14px', color: '#1E293B',
+                    background: '#F8FAFC', outline: 'none', resize: 'vertical',
+                    lineHeight: 1.6, boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingPost(null)}
+                  style={{
+                    flex: 1, padding: '12px', borderRadius: '12px',
+                    border: '1.5px solid #D1FAE5', background: '#F0FDF4',
+                    color: '#15803D', fontWeight: 700, fontSize: '15px', cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  style={{
+                    flex: 1, padding: '12px', borderRadius: '12px',
+                    border: 'none', background: savingEdit ? '#86EFAC' : '#0E4A27',
+                    color: '#FFFFFF', fontWeight: 700, fontSize: '15px',
+                    cursor: savingEdit ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease',
+                  }}
+                >
+                  {savingEdit ? 'Saving…' : '✅ Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Delete Confirmation Modal ─── */}
+      {deletingPostId && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1001,
+            background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '20px',
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) setDeletingPostId(null); }}
+        >
+          <div
+            style={{
+              background: '#FFFFFF', borderRadius: '24px',
+              padding: '32px', width: '100%', maxWidth: '440px',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.25)', textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '52px', marginBottom: '16px' }}>🗑️</div>
+            <h2 style={{ margin: '0 0 10px', fontSize: '22px', fontWeight: 800, color: '#1E293B' }}>Delete Post?</h2>
+            <p style={{ margin: '0 0 28px', fontSize: '15px', color: '#64748B', lineHeight: 1.6 }}>
+              This post will be removed from the community feed. This action cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button
+                onClick={() => setDeletingPostId(null)}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '12px',
+                  border: '1.5px solid #E2E8F0', background: '#F8FAFC',
+                  color: '#475569', fontWeight: 700, fontSize: '15px', cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeletePost}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: '12px',
+                  border: 'none', background: '#DC2626',
+                  color: '#FFFFFF', fontWeight: 700, fontSize: '15px', cursor: 'pointer',
+                }}
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

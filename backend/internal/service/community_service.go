@@ -378,3 +378,64 @@ func (s *CommunityService) ListCommentsByPost(ctx context.Context, postIDStr str
 	return comments, nil
 }
 
+// UpdatePost updates a post owned by the given author.
+func (s *CommunityService) UpdatePost(ctx context.Context, postIDStr string, authorIDStr string, req models.UpdatePostRequest) (*models.Post, error) {
+	pOID, err := bson.ObjectIDFromHex(postIDStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid post ID: %w", err)
+	}
+	aOID, err := bson.ObjectIDFromHex(authorIDStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid author ID: %w", err)
+	}
+
+	if req.Body == "" && req.ImageUrl == "" && req.VideoUrl == "" {
+		return nil, errors.New("post must contain text, an image, or a video")
+	}
+
+	if req.Category == "" {
+		req.Category = models.PostCategoryGeneral
+	}
+
+	// Auto-generate title if not provided
+	if req.Title == "" {
+		if req.Body != "" {
+			runes := []rune(req.Body)
+			if len(runes) > 60 {
+				req.Title = string(runes[:57]) + "..."
+			} else {
+				req.Title = req.Body
+			}
+		}
+	}
+
+	return s.commRepo.UpdatePost(ctx, pOID, aOID, req)
+}
+
+// DeletePost soft-deletes a post owned by the given author.
+func (s *CommunityService) DeletePost(ctx context.Context, postIDStr string, authorIDStr string) error {
+	pOID, err := bson.ObjectIDFromHex(postIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid post ID: %w", err)
+	}
+	aOID, err := bson.ObjectIDFromHex(authorIDStr)
+	if err != nil {
+		return fmt.Errorf("invalid author ID: %w", err)
+	}
+	return s.commRepo.DeletePost(ctx, pOID, aOID)
+}
+
+// ListMyPosts fetches all posts authored by the given user.
+func (s *CommunityService) ListMyPosts(ctx context.Context, authorIDStr string) ([]models.Post, error) {
+	aOID, err := bson.ObjectIDFromHex(authorIDStr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid author ID: %w", err)
+	}
+	posts, err := s.commRepo.ListPostsByAuthor(ctx, aOID)
+	if err != nil {
+		return nil, err
+	}
+	return s.enrichSharedPosts(ctx, posts), nil
+}
+
+

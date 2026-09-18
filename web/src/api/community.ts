@@ -1,5 +1,5 @@
 import { apiClient } from './index';
-import type { Comment, CreateCommentPayload, CreatePostPayload, Post, PostReaction, ReactionType } from '../types/community';
+import type { Comment, CreateCommentPayload, CreatePostPayload, UpdatePostPayload, Post, PostReaction, ReactionType } from '../types/community';
 
 export const communityApi = {
   listPosts: async (category?: string): Promise<Post[]> => {
@@ -50,6 +50,20 @@ export const communityApi = {
     const res = await apiClient.post<{ url: string; filename: string; fileType: 'image' | 'video' }>('/api/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    return res.data;
+  },
+
+  updatePost: async (id: string, payload: UpdatePostPayload): Promise<Post> => {
+    const res = await apiClient.put<Post>(`/api/community/posts/${id}`, payload);
+    return res.data;
+  },
+
+  deletePost: async (id: string): Promise<void> => {
+    await apiClient.delete(`/api/community/posts/${id}`);
+  },
+
+  listMyPosts: async (): Promise<Post[]> => {
+    const res = await apiClient.get<Post[]>('/api/community/posts/my');
     return res.data;
   },
 };

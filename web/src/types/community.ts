@@ -73,6 +73,14 @@ export interface CreatePostPayload {
   sharedPostId?: string;
 }
 
+export interface UpdatePostPayload {
+  title?: string;
+  body: string;
+  category: PostCategory;
+  imageUrl?: string;
+  videoUrl?: string;
+}
+
 export interface CreateCommentPayload {
   body: string;
 }

@@ -143,3 +143,53 @@ func (h *CommunityHandler) ListCommentsByPost(w http.ResponseWriter, r *http.Req
 
 	writeJSON(w, http.StatusOK, comments)
 }
+
+// UpdatePost handles PUT /api/community/posts/{id}.
+// Only the post author can update their own post.
+func (h *CommunityHandler) UpdatePost(w http.ResponseWriter, r *http.Request) {
+	authorID := middleware.GetUserID(r.Context())
+	postID := chi.URLParam(r, "id")
+
+	var req models.UpdatePostRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	post, err := h.commService.UpdatePost(r.Context(), postID, authorID, req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, post)
+}
+
+// DeletePost handles DELETE /api/community/posts/{id}.
+// Only the post author can delete their own post (soft delete).
+func (h *CommunityHandler) DeletePost(w http.ResponseWriter, r *http.Request) {
+	authorID := middleware.GetUserID(r.Context())
+	postID := chi.URLParam(r, "id")
+
+	if err := h.commService.DeletePost(r.Context(), postID, authorID); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ListMyPosts handles GET /api/community/posts/my.
+// Returns all posts authored by the currently authenticated user.
+func (h *CommunityHandler) ListMyPosts(w http.ResponseWriter, r *http.Request) {
+	authorID := middleware.GetUserID(r.Context())
+
+	posts, err := h.commService.ListMyPosts(r.Context(), authorID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to fetch your posts")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, posts)
+}
+
