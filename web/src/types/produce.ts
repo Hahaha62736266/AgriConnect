@@ -127,6 +127,10 @@ export interface ProduceTransaction {
   deliveryMethod?: string;
   deliveryAddress?: string;
   contactMessage?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paymentRefNo?: string;
+  paymentProofUrl?: string;
   status: TransactionStatus;
   createdAt: string;
   updatedAt: string;

@@ -62,8 +62,30 @@ export const produceApi = {
     return res.data;
   },
 
-  updateTransactionStatus: async (id: string, status: TransactionStatus, shippingFee?: number): Promise<ProduceTransaction> => {
-    const res = await apiClient.put<ProduceTransaction>(`/api/produce/transactions/${id}/status`, { status, shippingFee });
+  updateTransactionStatus: async (
+    id: string,
+    status: TransactionStatus,
+    shippingFee?: number,
+    paymentStatus?: string,
+    paymentRefNo?: string,
+    paymentProofUrl?: string
+  ): Promise<ProduceTransaction> => {
+    const res = await apiClient.put<ProduceTransaction>(`/api/produce/transactions/${id}/status`, {
+      status,
+      shippingFee,
+      paymentStatus,
+      paymentRefNo,
+      paymentProofUrl,
+    });
+    return res.data;
+  },
+
+  submitPaymentRef: async (id: string, paymentRefNo: string, paymentProofUrl?: string): Promise<ProduceTransaction> => {
+    const res = await apiClient.put<ProduceTransaction>(`/api/produce/transactions/${id}/status`, {
+      paymentRefNo,
+      paymentProofUrl,
+      paymentStatus: 'pending_verification',
+    });
     return res.data;
   },
 

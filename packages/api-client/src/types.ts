@@ -97,6 +97,10 @@ export interface ProduceTransaction {
   unitPrice: number;
   totalPrice: number;
   contactMessage?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paymentRefNo?: string;
+  paymentProofUrl?: string;
   status: TransactionStatus;
   createdAt: string;
   updatedAt: string;
