@@ -1,4 +1,5 @@
 import { apiClient } from './index';
+import { withCache, clientCache } from '../utils/cache';
 import type {
   CreateSupplyOrderPayload,
   CreateSupplyProductPayload,
@@ -21,27 +22,35 @@ export const supplyApi = {
     if (options?.q) params.append('q', options.q);
     if (options?.supplierId) params.append('supplierId', options.supplierId);
 
-    const res = await apiClient.get<SupplyProduct[]>(`/api/supply/products?${params.toString()}`);
-    return res.data;
+    const cacheKey = `supply_products_${params.toString()}`;
+    return withCache(cacheKey, async () => {
+      const res = await apiClient.get<SupplyProduct[]>(`/api/supply/products?${params.toString()}`);
+      return res.data;
+    }, 30_000);
   },
 
   getProductByID: async (id: string): Promise<SupplyProduct> => {
-    const res = await apiClient.get<SupplyProduct>(`/api/supply/products/${id}`);
-    return res.data;
+    return withCache(`supply_product_${id}`, async () => {
+      const res = await apiClient.get<SupplyProduct>(`/api/supply/products/${id}`);
+      return res.data;
+    }, 60_000);
   },
 
   createProduct: async (payload: CreateSupplyProductPayload): Promise<SupplyProduct> => {
     const res = await apiClient.post<SupplyProduct>('/api/supply/products', payload);
+    clientCache.invalidate('supply_product');
     return res.data;
   },
 
   updateProduct: async (id: string, payload: Partial<CreateSupplyProductPayload>): Promise<SupplyProduct> => {
     const res = await apiClient.put<SupplyProduct>(`/api/supply/products/${id}`, payload);
+    clientCache.invalidate('supply_product');
     return res.data;
   },
 
   deleteProduct: async (id: string): Promise<{ message: string }> => {
     const res = await apiClient.delete<{ message: string }>(`/api/supply/products/${id}`);
+    clientCache.invalidate('supply_product');
     return res.data;
   },
 

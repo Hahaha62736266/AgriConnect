@@ -284,13 +284,51 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
     loadPosts();
   }, [loadPosts]);
 
-  // Handle LinkedIn-Style Reaction
+  // Handle LinkedIn-Style Reaction (Optimistic)
   const handleReact = async (postId: string, reaction: ReactionType) => {
+    const prevPosts = posts;
+
+    // Optimistically update post reactions
+    setPosts((prev) =>
+      prev.map((p) => {
+        if (p.id !== postId) return p;
+
+        const currentReaction = p.myReaction;
+        const counts = { ...(p.reactionCounts || {} as Record<ReactionType, number>) };
+        let total = p.totalReactions || 0;
+        let newReaction: ReactionType | undefined = reaction;
+
+        if (currentReaction === reaction) {
+          // Toggle off
+          newReaction = undefined;
+          counts[reaction] = Math.max(0, (counts[reaction] || 1) - 1);
+          total = Math.max(0, total - 1);
+        } else {
+          // If replacing previous reaction
+          if (currentReaction) {
+            counts[currentReaction] = Math.max(0, (counts[currentReaction] || 1) - 1);
+          } else {
+            total += 1;
+          }
+          counts[reaction] = (counts[reaction] || 0) + 1;
+        }
+
+        return {
+          ...p,
+          myReaction: newReaction,
+          reactionCounts: counts,
+          totalReactions: total,
+        };
+      })
+    );
+
     try {
       const updated = await communityApi.reactToPost(postId, reaction);
       setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
     } catch (err) {
       console.error('Failed to react to post:', err);
+      // Rollback on failure
+      setPosts(prevPosts);
     }
   };
 

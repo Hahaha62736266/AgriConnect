@@ -57,12 +57,43 @@ export const CommunityPostDetailPage: React.FC = () => {
   }, [loading]);
 
   const handleReact = async (reaction: ReactionType) => {
-    if (!id) return;
+    if (!id || !post) return;
+    const prevPost = post;
+
+    // Optimistically update post reaction
+    const currentReaction = post.myReaction;
+    const counts = { ...(post.reactionCounts || {} as Record<ReactionType, number>) };
+    let total = post.totalReactions || 0;
+    let newReaction: ReactionType | undefined = reaction;
+
+    if (currentReaction === reaction) {
+      // Toggle off
+      newReaction = undefined;
+      counts[reaction] = Math.max(0, (counts[reaction] || 1) - 1);
+      total = Math.max(0, total - 1);
+    } else {
+      if (currentReaction) {
+        counts[currentReaction] = Math.max(0, (counts[currentReaction] || 1) - 1);
+      } else {
+        total += 1;
+      }
+      counts[reaction] = (counts[reaction] || 0) + 1;
+    }
+
+    setPost({
+      ...post,
+      myReaction: newReaction,
+      reactionCounts: counts,
+      totalReactions: total,
+    });
+
     try {
       const updated = await communityApi.reactToPost(id, reaction);
       setPost(updated);
     } catch (e) {
       console.error('Failed to react:', e);
+      // Rollback on failure
+      setPost(prevPost);
     }
   };
 

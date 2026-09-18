@@ -142,7 +142,7 @@ export const ProduceTransactionsPage: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { openChatWith } = useChat();
-  const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+  const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
   const isFarmer = user?.role === 'farmer';
   const isBuyer = user?.role === 'buyer';
 
@@ -264,30 +264,61 @@ export const ProduceTransactionsPage: React.FC = () => {
     e.preventDefault();
     if (!orderToSubmitRef || !submittingRefInput.trim()) return;
 
+    if (!submittingProofUrl) {
+      toastWarning('Receipt Required', 'Please upload a photo or screenshot of your payment receipt.');
+      return;
+    }
+
+    const currentOrder = orderToSubmitRef;
+    const refNo = submittingRefInput.trim();
+    const proofUrl = submittingProofUrl;
+    const prevOrders = orders;
+    const prevSelected = selectedOrder;
+
+    // Optimistic Update: close modal and show pending verification state immediately
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === currentOrder.id
+          ? {
+              ...o,
+              paymentRefNo: refNo,
+              paymentProofUrl: proofUrl || o.paymentProofUrl,
+              paymentStatus: 'pending_verification',
+            }
+          : o
+      )
+    );
+    if (selectedOrder && selectedOrder.id === currentOrder.id) {
+      setSelectedOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              paymentRefNo: refNo,
+              paymentProofUrl: proofUrl || prev.paymentProofUrl,
+              paymentStatus: 'pending_verification',
+            }
+          : null
+      );
+    }
+    setOrderToSubmitRef(null);
+    setSubmittingRefInput('');
+    setSubmittingProofUrl('');
+
     setIsSubmittingRef(true);
     try {
       await produceApi.submitPaymentRef(
-        orderToSubmitRef.id,
-        submittingRefInput.trim(),
-        submittingProofUrl || undefined
+        currentOrder.id,
+        refNo,
+        proofUrl
       );
       toastSuccess('Payment Reference Submitted! 🎉', 'Your payment reference and proof receipt have been sent to the selling farmer for verification.');
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === orderToSubmitRef.id
-            ? {
-                ...o,
-                paymentRefNo: submittingRefInput.trim(),
-                paymentProofUrl: submittingProofUrl || o.paymentProofUrl,
-                paymentStatus: 'pending_verification',
-              }
-            : o
-        )
-      );
-      setOrderToSubmitRef(null);
-      setSubmittingRefInput('');
-      setSubmittingProofUrl('');
     } catch (err: any) {
+      // Rollback on failure
+      setOrders(prevOrders);
+      setSelectedOrder(prevSelected);
+      setOrderToSubmitRef(currentOrder);
+      setSubmittingRefInput(refNo);
+      setSubmittingProofUrl(proofUrl);
       toastError('Submission Failed', err.response?.data?.error || err.message || 'Failed to submit payment reference.');
     } finally {
       setIsSubmittingRef(false);
@@ -295,21 +326,42 @@ export const ProduceTransactionsPage: React.FC = () => {
   };
 
   const handleVerifyPayment = async (orderId: string) => {
+    const target = orders.find((o) => o.id === orderId);
+    if (!target) return;
+
+    const prevOrders = orders;
+    const prevSelected = selectedOrder;
+
+    // Optimistic update: mark as paid immediately
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: 'paid' } : o))
+    );
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setSelectedOrder((prev) => (prev ? { ...prev, paymentStatus: 'paid' } : null));
+    }
+
     setIsUpdatingStatus(true);
     try {
-      const target = orders.find((o) => o.id === orderId);
-      if (!target) return;
-      await produceApi.updateTransactionStatus(
+      const updatedTx = await produceApi.updateTransactionStatus(
         orderId,
         target.status.toLowerCase() as any,
         target.shippingFee,
         'paid'
       );
       toastSuccess('Payment Verified! ✅', 'Payment received and verified successfully.');
+      const finalStatus = updatedTx?.status
+        ? ((updatedTx.status.charAt(0).toUpperCase() + updatedTx.status.slice(1).toLowerCase()) as any)
+        : target.status;
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: 'paid' } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: 'paid', status: finalStatus } : o))
       );
+      if (selectedOrder && selectedOrder.id === orderId) {
+        setSelectedOrder((prev) => (prev ? { ...prev, paymentStatus: 'paid', status: finalStatus } : null));
+      }
     } catch (err: any) {
+      // Rollback on failure
+      setOrders(prevOrders);
+      setSelectedOrder(prevSelected);
       toastError('Verification Failed', err.message || 'Failed to verify payment.');
     } finally {
       setIsUpdatingStatus(false);
@@ -350,10 +402,31 @@ export const ProduceTransactionsPage: React.FC = () => {
         })
         .catch((err) => console.error('Failed to load supply count:', err));
     }
+
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        loadTransactions(true);
+      }
+    };
+
+    const pollInterval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadTransactions(true);
+      }
+    }, 4000);
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      window.clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, [user?.id]);
 
-  const loadTransactions = async () => {
-    setLoading(true);
+  const loadTransactions = async (isSilent: boolean = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const [res, listingsRes] = await Promise.all([
         produceApi.listTransactions(),
@@ -419,21 +492,54 @@ export const ProduceTransactionsPage: React.FC = () => {
           };
         });
         setOrders(mapped);
+        setSelectedOrder((current) => {
+          if (!current) return null;
+          const updated = mapped.find((o) => o.id === current.id);
+          return updated || current;
+        });
       } else {
         setOrders([]);
       }
     } catch (err) {
       console.error('Failed to load transactions', err);
-      setOrders([]);
+      if (!isSilent) setOrders([]);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: 'confirmed' | 'completed' | 'cancelled', shippingFee?: number) => {
+    const target = orders.find((o) => o.id === orderId);
+    if (!target) return;
+
+    const prevOrders = orders;
+    const prevSelected = selectedOrder;
+
+    // Optimistic calculation
+    const isQuoting = shippingFee !== undefined && shippingFee > 0;
+    const optimisticStatusStr = isQuoting ? 'Quoted' : (newStatus.charAt(0).toUpperCase() + newStatus.slice(1).toLowerCase());
+    const optimisticFee = shippingFee !== undefined ? shippingFee : (target.shippingFee || 0);
+    const sub = target.subtotal ?? (target.total - (target.shippingFee || 0));
+    const optimisticTotal = sub + optimisticFee;
+
+    // Optimistic Update: render changes immediately
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? { ...o, status: optimisticStatusStr as any, shippingFee: optimisticFee, total: optimisticTotal }
+          : o
+      )
+    );
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setSelectedOrder((prev) =>
+        prev
+          ? { ...prev, status: optimisticStatusStr as any, shippingFee: optimisticFee, total: optimisticTotal }
+          : null
+      );
+    }
+
     setIsUpdatingStatus(true);
     try {
-      const target = orders.find((o) => o.id === orderId);
       let returnedStatus = newStatus as string;
       let updatedTx: any = null;
       if (target?.isBackend) {
@@ -443,21 +549,20 @@ export const ProduceTransactionsPage: React.FC = () => {
         }
       }
       const capStatus = (returnedStatus.charAt(0).toUpperCase() + returnedStatus.slice(1).toLowerCase()) as any;
-      const fee = updatedTx?.shippingFee !== undefined ? updatedTx.shippingFee : (shippingFee !== undefined ? shippingFee : 0);
-      const total = updatedTx?.totalPrice !== undefined ? updatedTx.totalPrice : undefined;
+      const fee = updatedTx?.shippingFee !== undefined ? updatedTx.shippingFee : optimisticFee;
+      const total = updatedTx?.totalPrice !== undefined ? updatedTx.totalPrice : optimisticTotal;
 
+      // Reconcile with authoritative server response
       setOrders((prev) =>
         prev.map((o) => {
           if (o.id === orderId) {
-            const sub = o.subtotal ?? (o.total - (o.shippingFee || 0));
-            return { ...o, status: capStatus, shippingFee: fee, total: total ?? (sub + fee) };
+            return { ...o, status: capStatus, shippingFee: fee, total };
           }
           return o;
         })
       );
       if (selectedOrder && selectedOrder.id === orderId) {
-        const sub = selectedOrder.subtotal ?? (selectedOrder.total - (selectedOrder.shippingFee || 0));
-        setSelectedOrder((prev) => (prev ? { ...prev, status: capStatus, shippingFee: fee, total: total ?? (sub + fee) } : null));
+        setSelectedOrder((prev) => (prev ? { ...prev, status: capStatus, shippingFee: fee, total } : null));
       }
       if (returnedStatus === 'quoted') {
         toastSuccess('Delivery Fee Quoted', `Hauling fee of ₱${fee.toLocaleString()} submitted. Waiting for buyer approval.`);
@@ -466,6 +571,9 @@ export const ProduceTransactionsPage: React.FC = () => {
       }
     } catch (err: any) {
       console.error('Failed to update status', err);
+      // Rollback on failure
+      setOrders(prevOrders);
+      setSelectedOrder(prevSelected);
       toastError('Update Failed', err.response?.data?.error || 'Failed to update order status');
     } finally {
       setIsUpdatingStatus(false);
@@ -473,6 +581,58 @@ export const ProduceTransactionsPage: React.FC = () => {
   };
 
   const handleQuoteDecision = async (orderId: string, action: 'approve' | 'switch_pickup' | 'reject') => {
+    const target = orders.find((o) => o.id === orderId);
+    if (!target) return;
+
+    const prevOrders = orders;
+    const prevSelected = selectedOrder;
+
+    // Optimistic calculation
+    let optimisticStatus: any = 'Confirmed';
+    let optimisticDeliveryMethod = target.deliveryMethod;
+    let optimisticShippingFee = target.shippingFee;
+    let optimisticTotal = target.total;
+    const sub = target.subtotal ?? (target.total - (target.shippingFee || 0));
+
+    if (action === 'approve') {
+      optimisticStatus = 'Confirmed';
+    } else if (action === 'switch_pickup') {
+      optimisticStatus = 'Confirmed';
+      optimisticDeliveryMethod = 'PICKUP';
+      optimisticShippingFee = 0;
+      optimisticTotal = sub;
+    } else {
+      optimisticStatus = 'Cancelled';
+    }
+
+    // Optimistic update: reflect decision immediately
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: optimisticStatus,
+              deliveryMethod: optimisticDeliveryMethod,
+              shippingFee: optimisticShippingFee,
+              total: optimisticTotal,
+            }
+          : o
+      )
+    );
+    if (selectedOrder && selectedOrder.id === orderId) {
+      setSelectedOrder((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: optimisticStatus,
+              deliveryMethod: optimisticDeliveryMethod,
+              shippingFee: optimisticShippingFee,
+              total: optimisticTotal,
+            }
+          : null
+      );
+    }
+
     setIsUpdatingStatus(true);
     try {
       const updated = await produceApi.respondToQuote(orderId, action);
@@ -511,9 +671,11 @@ export const ProduceTransactionsPage: React.FC = () => {
       } else {
         toastInfo('Order Cancelled', 'Quoted delivery fee was declined and order has been cancelled.');
       }
-      loadTransactions();
     } catch (err: any) {
       console.error('Failed to respond to quote', err);
+      // Rollback on failure
+      setOrders(prevOrders);
+      setSelectedOrder(prevSelected);
       toastError('Action Failed', err.response?.data?.error || 'Failed to submit quote decision');
     } finally {
       setIsUpdatingStatus(false);
@@ -1745,71 +1907,63 @@ export const ProduceTransactionsPage: React.FC = () => {
                           </span>
                         )}
 
-                        {ord.status === 'Confirmed' && (
-                          <button
-                            type="button"
-                            className="order-primary-btn"
-                            disabled={isUpdatingStatus}
-                            onClick={() => handleUpdateStatus(ord.id, 'completed')}
-                            style={{
-                              padding: '10px 20px',
-                              borderRadius: '10px',
-                              backgroundColor: (isFarmer && !isViewingPurchases) ? '#16A34A' : '#2563EB',
-                              color: '#FFFFFF',
-                              fontWeight: 700,
-                              fontSize: '14px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              boxShadow: (isFarmer && !isViewingPurchases)
-                                ? '0 2px 6px rgba(22,163,74,0.25)'
-                                : '0 2px 6px rgba(37,99,235,0.25)',
-                            }}
-                          >
-                            <span>{(isFarmer && !isViewingPurchases) ? '💵' : '✓'}</span>
-                            <span>
-                              {isUpdatingStatus
-                                ? 'Updating...'
-                                : (isFarmer && !isViewingPurchases)
-                                ? `Confirm Payment Received (₱${ord.total.toLocaleString()})`
-                                : 'Confirm Produce Received & Paid'}
-                            </span>
-                          </button>
-                        )}
+                        {(() => {
+                          const isCOD = ord.paymentMethod === 'cod' || parseContactMessage(ord.contactMessage).payment.toLowerCase().includes('cash on delivery') || parseContactMessage(ord.contactMessage).payment.toLowerCase().includes('cod');
+                          const hasSubmittedPayment = Boolean(ord.paymentRefNo) || Boolean(ord.paymentProofUrl) || ord.paymentStatus === 'paid';
+                          const isPaid = ord.paymentStatus === 'paid';
 
+                          if (ord.status !== 'Confirmed') return null;
 
-                        {/* Seller Verify Payment button */}
-                        {isFarmer &&
-                          !isViewingPurchases &&
-                          ord.paymentMethod !== 'cod' &&
-                          Boolean(ord.paymentRefNo) &&
-                          ord.paymentStatus !== 'paid' && (
+                          // For the farmer: on digital non-COD orders, the farmer must verify payment first via "Verify & Confirm Payment Received".
+                          // Do not show completion button until payment is verified, preventing duplicate "Confirm Payment" buttons.
+                          if (isFarmer && !isViewingPurchases) {
+                            if (!isCOD && !isPaid) {
+                              return null;
+                            }
+                          }
+
+                          // For the buyer: on non-COD orders, buyer must submit payment ref/proof first before confirming receipt.
+                          if (isViewingAsBuyer) {
+                            if (!isCOD && !hasSubmittedPayment) {
+                              return null;
+                            }
+                          }
+
+                          return (
                             <button
                               type="button"
                               className="order-primary-btn"
                               disabled={isUpdatingStatus}
-                              onClick={() => handleVerifyPayment(ord.id)}
+                              onClick={() => handleUpdateStatus(ord.id, 'completed')}
                               style={{
-                                padding: '10px 18px',
+                                padding: '10px 20px',
                                 borderRadius: '10px',
-                                backgroundColor: '#16A34A',
+                                backgroundColor: (isFarmer && !isViewingPurchases) ? '#16A34A' : '#2563EB',
                                 color: '#FFFFFF',
-                                fontWeight: 800,
+                                fontWeight: 700,
                                 fontSize: '14px',
                                 border: 'none',
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '6px',
-                                boxShadow: '0 2px 6px rgba(22,163,74,0.3)',
+                                boxShadow: (isFarmer && !isViewingPurchases)
+                                  ? '0 2px 6px rgba(22,163,74,0.25)'
+                                  : '0 2px 6px rgba(37,99,235,0.25)',
                               }}
                             >
-                              <span>✅</span>
-                              <span>Verify & Confirm Payment Received</span>
+                              <span>{(isFarmer && !isViewingPurchases) ? (isCOD ? '💵' : '✓') : '✓'}</span>
+                              <span>
+                                {isUpdatingStatus
+                                  ? 'Updating...'
+                                  : (isFarmer && !isViewingPurchases)
+                                  ? (isCOD ? `Confirm COD Payment & Complete (₱${ord.total.toLocaleString()})` : '✓ Mark Order as Completed')
+                                  : 'Confirm Produce Received & Paid'}
+                              </span>
                             </button>
-                          )}
+                          );
+                        })()}
+
 
                         {/* Cancel Order button with Seller Restriction Guard */}
                         {ord.status === 'Pending' && (
@@ -2727,40 +2881,60 @@ export const ProduceTransactionsPage: React.FC = () => {
                     </div>
                   )}
 
-                  {isConfirmed && (
-                    <button
-                      type="button"
-                      disabled={isUpdatingStatus}
-                      onClick={async () => {
-                        await handleUpdateStatus(selectedOrder.id, 'completed');
-                      }}
-                      style={{
-                        padding: '10px 20px',
-                        borderRadius: '10px',
-                        border: 'none',
-                        backgroundColor: (isFarmer && !isViewingPurchases) ? '#16A34A' : '#2563EB',
-                        color: '#FFFFFF',
-                        fontWeight: 700,
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: (isFarmer && !isViewingPurchases)
-                          ? '0 2px 6px rgba(22, 163, 74, 0.25)'
-                          : '0 2px 6px rgba(37, 99, 235, 0.25)',
-                      }}
-                    >
-                      <span>{(isFarmer && !isViewingPurchases) ? '💵' : '✓'}</span>
-                      <span>
-                        {isUpdatingStatus
-                          ? 'Updating...'
-                          : (isFarmer && !isViewingPurchases)
-                          ? `Confirm Payment Received (₱${selectedOrder.total.toLocaleString()})`
-                          : 'Confirm Produce Received & Paid'}
-                      </span>
-                    </button>
-                  )}
+                  {(() => {
+                    const isSelectedCOD = selectedOrder.paymentMethod === 'cod' || parseContactMessage(selectedOrder.contactMessage).payment.toLowerCase().includes('cash on delivery') || parseContactMessage(selectedOrder.contactMessage).payment.toLowerCase().includes('cod');
+                    const hasSelectedSubmittedPayment = Boolean(selectedOrder.paymentRefNo) || Boolean(selectedOrder.paymentProofUrl) || selectedOrder.paymentStatus === 'paid';
+                    const isSelectedPaid = selectedOrder.paymentStatus === 'paid';
+
+                    if (!isConfirmed) return null;
+
+                    if (isFarmer && !isViewingPurchases) {
+                      if (!isSelectedCOD && !isSelectedPaid) {
+                        return null;
+                      }
+                    }
+
+                    if (isViewingAsBuyer) {
+                      if (!isSelectedCOD && !hasSelectedSubmittedPayment) {
+                        return null;
+                      }
+                    }
+
+                    return (
+                      <button
+                        type="button"
+                        disabled={isUpdatingStatus}
+                        onClick={async () => {
+                          await handleUpdateStatus(selectedOrder.id, 'completed');
+                        }}
+                        style={{
+                          padding: '10px 20px',
+                          borderRadius: '10px',
+                          border: 'none',
+                          backgroundColor: (isFarmer && !isViewingPurchases) ? '#16A34A' : '#2563EB',
+                          color: '#FFFFFF',
+                          fontWeight: 700,
+                          fontSize: '14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: (isFarmer && !isViewingPurchases)
+                            ? '0 2px 6px rgba(22, 163, 74, 0.25)'
+                            : '0 2px 6px rgba(37, 99, 235, 0.25)',
+                        }}
+                      >
+                        <span>{(isFarmer && !isViewingPurchases) ? (isSelectedCOD ? '💵' : '✓') : '✓'}</span>
+                        <span>
+                          {isUpdatingStatus
+                            ? 'Updating...'
+                            : (isFarmer && !isViewingPurchases)
+                            ? (isSelectedCOD ? `Confirm COD Payment & Complete (₱${selectedOrder.total.toLocaleString()})` : '✓ Mark Order as Completed')
+                            : 'Confirm Produce Received & Paid'}
+                        </span>
+                      </button>
+                    );
+                  })()}
 
                   {isCompleted && (
                     <div
@@ -3353,7 +3527,7 @@ export const ProduceTransactionsPage: React.FC = () => {
               {/* Receipt Image Proof Uploader */}
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
-                  Proof of Transaction / Receipt Photo <span style={{ fontSize: '11px', color: '#0284C7', fontWeight: 600 }}>(Optional / Recommended)</span>
+                  Proof of Transaction / Receipt Photo <span style={{ color: '#EF4444' }}>*</span> <span style={{ fontSize: '11px', color: '#DC2626', fontWeight: 600 }}>(Required)</span>
                 </label>
 
                 {submittingProofUrl ? (
@@ -3417,8 +3591,18 @@ export const ProduceTransactionsPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingRef || uploadingProof}
-                  style={{ padding: '10px 22px', borderRadius: '10px', border: 'none', background: '#0284C7', color: '#FFFFFF', fontWeight: 800, fontSize: '14px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(2,132,199,0.3)' }}
+                  disabled={isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl}
+                  style={{
+                    padding: '10px 22px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl ? '#94A3B8' : '#0284C7',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    fontSize: '14px',
+                    cursor: isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl ? 'not-allowed' : 'pointer',
+                    boxShadow: isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl ? 'none' : '0 2px 6px rgba(2,132,199,0.3)',
+                  }}
                 >
                   {isSubmittingRef ? 'Submitting…' : 'Submit Reference & Proof'}
                 </button>

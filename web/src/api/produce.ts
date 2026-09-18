@@ -1,4 +1,5 @@
 import { apiClient } from './index';
+import { withCache, clientCache } from '../utils/cache';
 import type {
   CreateProduceListingPayload,
   CreateProduceTransactionPayload,
@@ -28,27 +29,35 @@ export const produceApi = {
     if (options?.status) params.append('status', options.status);
     if (options?.farmerId) params.append('farmerId', options.farmerId);
 
-    const res = await apiClient.get<ProduceListing[]>(`/api/produce/listings?${params.toString()}`);
-    return res.data;
+    const cacheKey = `produce_listings_${params.toString()}`;
+    return withCache(cacheKey, async () => {
+      const res = await apiClient.get<ProduceListing[]>(`/api/produce/listings?${params.toString()}`);
+      return res.data;
+    }, 30_000);
   },
 
   getListingByID: async (id: string): Promise<ProduceListing> => {
-    const res = await apiClient.get<ProduceListing>(`/api/produce/listings/${id}`);
-    return res.data;
+    return withCache(`produce_listing_${id}`, async () => {
+      const res = await apiClient.get<ProduceListing>(`/api/produce/listings/${id}`);
+      return res.data;
+    }, 60_000);
   },
 
   createListing: async (payload: CreateProduceListingPayload): Promise<ProduceListing> => {
     const res = await apiClient.post<ProduceListing>('/api/produce/listings', payload);
+    clientCache.invalidate('produce_listing');
     return res.data;
   },
 
   updateListing: async (id: string, payload: Partial<CreateProduceListingPayload>): Promise<ProduceListing> => {
     const res = await apiClient.put<ProduceListing>(`/api/produce/listings/${id}`, payload);
+    clientCache.invalidate('produce_listing');
     return res.data;
   },
 
   deleteListing: async (id: string): Promise<{ message: string }> => {
     const res = await apiClient.delete<{ message: string }>(`/api/produce/listings/${id}`);
+    clientCache.invalidate('produce_listing');
     return res.data;
   },
 

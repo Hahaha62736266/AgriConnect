@@ -45,8 +45,25 @@ export const NotificationBell: React.FC = () => {
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 15000); // poll count every 15s
-    return () => clearInterval(interval);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCount();
+      }
+    }, 10000);
+
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUnreadCount();
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -70,14 +87,21 @@ export const NotificationBell: React.FC = () => {
 
   const handleItemClick = async (notif: NotificationItem) => {
     if (!notif.isRead) {
+      // Optimistic update: mark as read immediately
+      const prevNotifications = notifications;
+      const prevUnreadCount = unreadCount;
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+
       try {
         await notificationApi.markAsRead(notif.id);
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
-        );
-        setUnreadCount((prev) => Math.max(0, prev - 1));
       } catch (e) {
         console.error('Failed to mark read:', e);
+        // Rollback on failure
+        setNotifications(prevNotifications);
+        setUnreadCount(prevUnreadCount);
       }
     }
     setIsOpen(false);
@@ -87,12 +111,19 @@ export const NotificationBell: React.FC = () => {
   };
 
   const handleMarkAllRead = async () => {
+    // Optimistic update: mark all read immediately
+    const prevNotifications = notifications;
+    const prevUnreadCount = unreadCount;
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+
     try {
       await notificationApi.markAllAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
     } catch (e) {
       console.error('Failed to mark all read:', e);
+      // Rollback on failure
+      setNotifications(prevNotifications);
+      setUnreadCount(prevUnreadCount);
     }
   };
 

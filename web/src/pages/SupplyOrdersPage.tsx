@@ -61,7 +61,7 @@ export const SupplyOrdersPage: React.FC = () => {
   const { user } = useAuth();
   const { openChatWith } = useChat();
   const navigate = useNavigate();
-  const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+  const { success: toastSuccess, error: toastError, warning: toastWarning, info: toastInfo } = useToast();
 
   const handleChatOrderParty = async (order: SupplyOrder) => {
     const isSupplier = user?.role === 'supplier';
@@ -96,6 +96,12 @@ export const SupplyOrdersPage: React.FC = () => {
   const [filterTab, setFilterTab] = useState<'all' | 'to_pay' | 'pending' | 'quoted' | 'processing' | 'active' | 'completed' | 'cancelled'>('all');
 
   const handleConfirmDigitalPayment = async (orderId: string) => {
+    const prevOrders = orders;
+    // Optimistic update: mark as paid immediately
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: 'paid' } : o))
+    );
+
     setMarkingPaid(orderId);
     try {
       await supplyApi.updatePaymentStatus(orderId, {
@@ -105,6 +111,8 @@ export const SupplyOrdersPage: React.FC = () => {
       toastSuccess('Payment Verified! 🎉', 'You confirmed receipt of the digital transfer for this order.');
       await fetchOrders();
     } catch (err: any) {
+      // Rollback on failure
+      setOrders(prevOrders);
       toastError('Payment Verification Failed', err.response?.data?.error || 'Failed to verify payment');
     } finally {
       setMarkingPaid(null);
@@ -156,19 +164,48 @@ export const SupplyOrdersPage: React.FC = () => {
     e.preventDefault();
     if (!orderToSubmitRef || !submittingRefInput.trim()) return;
 
+    if (!submittingProofUrl) {
+      toastWarning('Receipt Required', 'Please upload a photo or screenshot of your payment receipt.');
+      return;
+    }
+
+    const currentOrder = orderToSubmitRef;
+    const refNo = submittingRefInput.trim();
+    const proofUrl = submittingProofUrl;
+    const prevOrders = orders;
+
+    // Optimistic Update: close modal and update order card immediately
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === currentOrder.id
+          ? {
+              ...o,
+              paymentRefNo: refNo,
+              paymentProofUrl: proofUrl,
+              paymentStatus: 'payment_pending_verification',
+            }
+          : o
+      )
+    );
+    setOrderToSubmitRef(null);
+    setSubmittingRefInput('');
+    setSubmittingProofUrl('');
+
     setIsSubmittingRef(true);
     try {
       const updated = await supplyApi.submitPaymentRef(
-        orderToSubmitRef.id,
-        submittingRefInput.trim(),
-        submittingProofUrl || undefined
+        currentOrder.id,
+        refNo,
+        proofUrl
       );
       toastSuccess('Reference Number & Proof Submitted! 🎉', 'Your payment reference and receipt proof have been sent to the seller for verification.');
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-      setOrderToSubmitRef(null);
-      setSubmittingRefInput('');
-      setSubmittingProofUrl('');
     } catch (err: any) {
+      // Rollback on failure
+      setOrders(prevOrders);
+      setOrderToSubmitRef(currentOrder);
+      setSubmittingRefInput(refNo);
+      setSubmittingProofUrl(proofUrl);
       toastError('Submission Failed', err.response?.data?.error || err.message || 'Failed to submit payment reference.');
     } finally {
       setIsSubmittingRef(false);
@@ -218,15 +255,19 @@ export const SupplyOrdersPage: React.FC = () => {
   const [produceSalesCount, setProduceSalesCount] = useState<number | null>(null);
   const [producePurchasesCount, setProducePurchasesCount] = useState<number | null>(null);
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  const fetchOrders = async (isSilent: boolean = false) => {
+    if (!isSilent) setLoading(true);
     try {
       const data = await supplyApi.listOrders();
       setOrders(data);
+      if (orderToSubmitRef) {
+        const updated = data.find((o) => o.id === orderToSubmitRef.id);
+        if (updated) setOrderToSubmitRef(updated);
+      }
     } catch (err) {
       console.error('Failed to load supply orders:', err);
     } finally {
-      setLoading(false);
+      if (!isSilent) setLoading(false);
     }
   };
 
@@ -247,15 +288,61 @@ export const SupplyOrdersPage: React.FC = () => {
         })
         .catch((err) => console.error('Failed to load produce counts:', err));
     }
+
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchOrders(true);
+      }
+    };
+
+    const pollInterval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchOrders(true);
+      }
+    }, 4000);
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+
+    return () => {
+      window.clearInterval(pollInterval);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
   }, [user]);
 
   const handleUpdateStatus = async (id: string, status: SupplyOrderStatus, shippingFee?: number) => {
+    const target = orders.find((o) => o.id === id);
+    if (!target) return;
+
+    const prevOrders = orders;
+    const isQuoting = shippingFee !== undefined && shippingFee > 0;
+    const fee = shippingFee !== undefined ? shippingFee : (target.shippingFee || 0);
+    const sub = target.subtotal ?? (target.totalAmount - (target.shippingFee || 0));
+    const total = sub + fee;
+
+    // Optimistic update
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === id
+          ? {
+              ...o,
+              status: isQuoting ? 'quoted' : status,
+              shippingFee: fee,
+              totalAmount: total,
+            }
+          : o
+      )
+    );
+
     setUpdatingStatusId(id);
     try {
       await supplyApi.updateOrderStatus(id, status, shippingFee);
       toastSuccess('Status Updated', `Order status progressed to ${status.replace('_', ' ')}.`);
       await fetchOrders();
     } catch (err: any) {
+      // Rollback on failure
+      setOrders(prevOrders);
       toastError('Update Failed', err.response?.data?.error || 'Failed to update order status');
     } finally {
       setUpdatingStatusId(null);
@@ -263,6 +350,42 @@ export const SupplyOrdersPage: React.FC = () => {
   };
 
   const handleQuoteDecision = async (orderId: string, action: 'approve' | 'switch_pickup' | 'reject') => {
+    const target = orders.find((o) => o.id === orderId);
+    if (!target) return;
+
+    const prevOrders = orders;
+    let optStatus: SupplyOrderStatus = 'processing';
+    let optMethod = target.deliveryMethod;
+    let optFee = target.shippingFee;
+    let optTotal = target.totalAmount;
+    const sub = target.subtotal ?? (target.totalAmount - (target.shippingFee || 0));
+
+    if (action === 'approve') {
+      optStatus = 'processing';
+    } else if (action === 'switch_pickup') {
+      optStatus = 'processing';
+      optMethod = 'pickup';
+      optFee = 0;
+      optTotal = sub;
+    } else {
+      optStatus = 'cancelled';
+    }
+
+    // Optimistic update
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: optStatus,
+              deliveryMethod: optMethod,
+              shippingFee: optFee,
+              totalAmount: optTotal,
+            }
+          : o
+      )
+    );
+
     setUpdatingStatusId(orderId);
     try {
       await supplyApi.respondToQuote(orderId, action);
@@ -276,6 +399,8 @@ export const SupplyOrdersPage: React.FC = () => {
       await fetchOrders();
     } catch (err: any) {
       console.error('Failed to respond to quote:', err);
+      // Rollback on failure
+      setOrders(prevOrders);
       toastError('Action Failed', err.response?.data?.error || 'Failed to submit quote decision');
     } finally {
       setUpdatingStatusId(null);
@@ -294,6 +419,12 @@ export const SupplyOrdersPage: React.FC = () => {
   };
 
   const handleMarkCODPaid = async (orderId: string) => {
+    const prevOrders = orders;
+    // Optimistic update: mark as paid immediately
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: 'paid' } : o))
+    );
+
     setMarkingPaid(orderId);
     try {
       await supplyApi.updatePaymentStatus(orderId, {
@@ -303,6 +434,8 @@ export const SupplyOrdersPage: React.FC = () => {
       toastSuccess('Payment Confirmed', 'Cash on Delivery payment has been verified as paid.');
       await fetchOrders();
     } catch (err: any) {
+      // Rollback on failure
+      setOrders(prevOrders);
       toastError('Payment Update Failed', err.response?.data?.error || 'Failed to confirm payment');
     } finally {
       setMarkingPaid(null);
@@ -312,15 +445,15 @@ export const SupplyOrdersPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Top KPI Metrics
-  const activePendingCount = orders.filter((o) => o.status === 'pending' || (o.paymentMethod !== 'cod' && o.paymentStatus !== 'paid' && !o.paymentRefNo)).length;
+  const activePendingCount = orders.filter((o) => o.status !== 'cancelled' && o.status !== 'completed' && (o.status === 'pending' || (o.paymentMethod !== 'cod' && o.paymentStatus !== 'paid' && !o.paymentRefNo))).length;
   const activeConfirmedCount = orders.filter((o) => o.status === 'processing' || o.status === 'quoted' || o.status === 'shipped_ready').length;
   const completedCount = orders.filter((o) => o.status === 'completed').length;
   const totalSpent = orders
     .filter((o) => o.status === 'completed' || o.paymentStatus === 'paid')
     .reduce((sum, o) => sum + o.totalAmount, 0);
 
-  // Status counts (To Pay: Non-COD orders that are not paid yet AND customer has not submitted ref no yet)
-  const toPayCount = orders.filter((o) => o.paymentMethod !== 'cod' && o.paymentStatus !== 'paid' && !o.paymentRefNo).length;
+  // Status counts (To Pay: Non-COD orders that are not paid yet AND customer has not submitted ref no yet, excluding cancelled, completed, and unquoted pending delivery)
+  const toPayCount = orders.filter((o) => o.status !== 'cancelled' && o.status !== 'completed' && !(o.deliveryMethod === 'delivery' && o.status === 'pending') && o.paymentMethod !== 'cod' && o.paymentStatus !== 'paid' && !o.paymentRefNo).length;
   const pendingCount = orders.filter((o) => o.status === 'pending').length;
   const quotedCount = orders.filter((o) => o.status === 'quoted').length;
   const processingCount = orders.filter((o) => o.status === 'processing' || o.status === 'shipped_ready').length;
@@ -339,7 +472,7 @@ export const SupplyOrdersPage: React.FC = () => {
       }
     }
 
-    if (filterTab === 'to_pay') return order.paymentMethod !== 'cod' && order.paymentStatus !== 'paid' && !order.paymentRefNo;
+    if (filterTab === 'to_pay') return order.status !== 'cancelled' && order.status !== 'completed' && !(order.deliveryMethod === 'delivery' && order.status === 'pending') && order.paymentMethod !== 'cod' && order.paymentStatus !== 'paid' && !order.paymentRefNo;
     if (filterTab === 'pending') return order.status === 'pending';
     if (filterTab === 'quoted') return order.status === 'quoted';
     if (filterTab === 'processing') return order.status === 'processing' || order.status === 'shipped_ready';
@@ -1226,32 +1359,39 @@ export const SupplyOrdersPage: React.FC = () => {
                         {order.paymentNote}
                       </div>
                     )}
-                    {isBuyer && (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') && order.paymentStatus !== 'paid' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOrderToSubmitRef(order);
-                          setSubmittingRefInput(order.paymentRefNo || '');
-                          setSubmittingProofUrl(order.paymentProofUrl || '');
-                        }}
-                        style={{
-                          marginTop: '8px',
-                          padding: '6px 12px',
-                          borderRadius: '8px',
-                          border: 'none',
-                          backgroundColor: '#0284C7',
-                          color: '#FFFFFF',
-                          fontWeight: 700,
-                          fontSize: '12px',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                        }}
-                      >
-                        <span>📱</span>
-                        <span>{order.paymentRefNo || order.paymentProofUrl ? 'Update Payment Ref / Proof' : 'Submit Payment Ref / Proof'}</span>
-                      </button>
+                    {isBuyer && (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') && order.paymentStatus !== 'paid' && order.status !== 'cancelled' && order.status !== 'completed' && (
+                      !(order.deliveryMethod === 'delivery' && order.status === 'pending') || Boolean(order.paymentRefNo || order.paymentProofUrl) ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOrderToSubmitRef(order);
+                            setSubmittingRefInput(order.paymentRefNo || '');
+                            setSubmittingProofUrl(order.paymentProofUrl || '');
+                          }}
+                          style={{
+                            marginTop: '8px',
+                            padding: '6px 12px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: '#0284C7',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                          }}
+                        >
+                          <span>📱</span>
+                          <span>{order.paymentRefNo || order.paymentProofUrl ? 'Update Payment Ref / Proof' : 'Submit Payment Ref / Proof'}</span>
+                        </button>
+                      ) : (
+                        <div style={{ fontSize: '11.5px', color: '#D97706', fontWeight: 600, marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <span>⏳</span>
+                          <span>Awaiting seller to quote delivery fee before payment</span>
+                        </div>
+                      )
                     )}
                   </div>
                 </div>
@@ -1433,7 +1573,12 @@ export const SupplyOrdersPage: React.FC = () => {
                   )}
 
                   {/* Supplier Digital Payment Verification */}
-                  {isSupplier && (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') && order.paymentStatus !== 'paid' && (
+                  {isSupplier &&
+                    (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') &&
+                    Boolean(order.paymentRefNo && order.paymentProofUrl) &&
+                    order.paymentStatus !== 'paid' &&
+                    order.status !== 'cancelled' &&
+                    order.status !== 'completed' && (
                     <button
                       type="button"
                       onClick={() => handleConfirmDigitalPayment(order.id)}
@@ -2056,7 +2201,7 @@ export const SupplyOrdersPage: React.FC = () => {
               {/* Receipt Image Proof Uploader */}
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
-                  Proof of Transaction / Receipt Photo <span style={{ fontSize: '11px', color: '#0284C7', fontWeight: 600 }}>(Optional / Recommended)</span>
+                  Proof of Transaction / Receipt Photo <span style={{ color: '#EF4444' }}>*</span> <span style={{ fontSize: '11px', color: '#DC2626', fontWeight: 600 }}>(Required)</span>
                 </label>
 
                 {submittingProofUrl ? (
@@ -2150,17 +2295,17 @@ export const SupplyOrdersPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingRef || uploadingProof || !submittingRefInput.trim()}
+                  disabled={isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl}
                   style={{
                     padding: '10px 20px',
                     borderRadius: '10px',
                     border: 'none',
-                    backgroundColor: isSubmittingRef || uploadingProof || !submittingRefInput.trim() ? '#94A3B8' : '#0284C7',
+                    backgroundColor: isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl ? '#94A3B8' : '#0284C7',
                     color: '#FFFFFF',
                     fontWeight: 800,
                     fontSize: '13px',
-                    cursor: isSubmittingRef || uploadingProof || !submittingRefInput.trim() ? 'not-allowed' : 'pointer',
-                    boxShadow: isSubmittingRef || uploadingProof || !submittingRefInput.trim() ? 'none' : '0 4px 12px rgba(2, 132, 199, 0.3)',
+                    cursor: isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl ? 'not-allowed' : 'pointer',
+                    boxShadow: isSubmittingRef || uploadingProof || !submittingRefInput.trim() || !submittingProofUrl ? 'none' : '0 4px 12px rgba(2, 132, 199, 0.3)',
                   }}
                 >
                   {isSubmittingRef ? 'Submitting…' : 'Submit Ref & Receipt Proof'}

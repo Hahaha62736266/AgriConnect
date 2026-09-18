@@ -56,8 +56,8 @@ export const SupplyStorePage: React.FC = () => {
     const initialMsg = user?.role === 'farmer'
       ? `Hello! I'm a farmer interested in ordering ${item.name} (₱${item.price}/${item.unit}) for my farm. Do you have stock available?`
       : user?.role === 'buyer'
-      ? `Hello! I'm interested in purchasing ${item.name} (₱${item.price}/${item.unit}). Do you offer bulk delivery?`
-      : `Hello! Inquiring about ${item.name} (₱${item.price}/${item.unit}).`;
+        ? `Hello! I'm interested in purchasing ${item.name} (₱${item.price}/${item.unit}). Do you offer bulk delivery?`
+        : `Hello! Inquiring about ${item.name} (₱${item.price}/${item.unit}).`;
 
     await openChatWith(
       item.supplierId,
@@ -388,20 +388,20 @@ export const SupplyStorePage: React.FC = () => {
           type="button"
           onClick={() => navigate('/produce')}
           className="marketplace-channel-btn"
-          aria-label="Fresh Produce and Crops marketplace"
+          aria-label="Farm Produce and Crops marketplace"
         >
           <span className="channel-icon">🌾</span>
-          <span className="channel-label">Fresh Produce</span>
+          <span className="channel-label">Farm Produce</span>
         </button>
 
         <button
           type="button"
           onClick={() => navigate('/supply')}
           className="marketplace-channel-btn active supply-active"
-          aria-label="Farm Supplies and Inputs store"
+          aria-label="Agri Supplies and Inputs store"
         >
           <span className="channel-icon">🏪</span>
-          <span className="channel-label">Farm Supplies</span>
+          <span className="channel-label">Agri Supplies</span>
         </button>
       </div>
 

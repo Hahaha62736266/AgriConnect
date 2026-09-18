@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/agriconnect/backend/internal/cache"
 	"github.com/agriconnect/backend/internal/models"
 	"github.com/agriconnect/backend/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -14,12 +15,14 @@ import (
 type PriceService struct {
 	priceRepo *repository.PriceRepository
 	userRepo  *repository.UserRepository
+	cache     *cache.Cache
 }
 
 func NewPriceService(priceRepo *repository.PriceRepository, userRepo *repository.UserRepository) *PriceService {
 	return &PriceService{
 		priceRepo: priceRepo,
 		userRepo:  userRepo,
+		cache:     cache.New(2*time.Minute, 5*time.Minute),
 	}
 }
 
@@ -61,11 +64,24 @@ func (s *PriceService) CreatePriceRecord(ctx context.Context, recorderID string,
 		return nil, err
 	}
 
+	if s.cache != nil {
+		s.cache.Clear()
+	}
+
 	return price, nil
 }
 
 // ListPriceHistory retrieves price history filterable by crop, region, and date range.
 func (s *PriceService) ListPriceHistory(ctx context.Context, cropName, region, startDateStr, endDateStr string) ([]models.MarketPrice, error) {
+	cacheKey := fmt.Sprintf("price_hist_%s_%s_%s_%s", cropName, region, startDateStr, endDateStr)
+	if s.cache != nil {
+		if val, found := s.cache.Get(cacheKey); found {
+			if cachedList, ok := val.([]models.MarketPrice); ok {
+				return cachedList, nil
+			}
+		}
+	}
+
 	var startDate, endDate *time.Time
 
 	if startDateStr != "" {
@@ -88,7 +104,11 @@ func (s *PriceService) ListPriceHistory(ctx context.Context, cropName, region, s
 		EndDate:   endDate,
 	}
 
-	return s.priceRepo.ListPriceHistory(ctx, filter)
+	res, err := s.priceRepo.ListPriceHistory(ctx, filter)
+	if err == nil && s.cache != nil {
+		s.cache.Set(cacheKey, res, 2*time.Minute)
+	}
+	return res, err
 }
 
 // GetLatestPrice returns the latest price record for a specific crop and region.
@@ -97,12 +117,21 @@ func (s *PriceService) GetLatestPrice(ctx context.Context, cropName string, regi
 		return nil, errors.New("crop name query parameter is required")
 	}
 
+	cacheKey := fmt.Sprintf("price_latest_%s_%s", cropName, region)
+	if s.cache != nil {
+		if val, found := s.cache.Get(cacheKey); found {
+			if cachedResp, ok := val.(*models.LatestPriceResponse); ok {
+				return cachedResp, nil
+			}
+		}
+	}
+
 	price, err := s.priceRepo.GetLatestPrice(ctx, cropName, region)
 	if err != nil {
 		return nil, fmt.Errorf("fetch latest price: %w", err)
 	}
 
-	return &models.LatestPriceResponse{
+	resp := &models.LatestPriceResponse{
 		CropName:       price.CropName,
 		Region:         price.Region,
 		Price:          price.Price,
@@ -110,5 +139,11 @@ func (s *PriceService) GetLatestPrice(ctx context.Context, cropName string, regi
 		MarketLocation: price.MarketLocation,
 		RecordedAt:     price.RecordedAt,
 		Source:         price.Source,
-	}, nil
+	}
+
+	if s.cache != nil {
+		s.cache.Set(cacheKey, resp, 2*time.Minute)
+	}
+
+	return resp, nil
 }

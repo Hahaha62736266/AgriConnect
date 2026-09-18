@@ -21,6 +21,8 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+import { withCache, clientCache } from '../utils/cache';
+
 // API helper methods
 export const api = {
   // Auth
@@ -39,11 +41,14 @@ export const api = {
     return res.data;
   },
   getUserPublicProfile: async (id: string): Promise<PublicUserProfile> => {
-    const res = await apiClient.get<PublicUserProfile>(`/api/users/${id}/public`);
-    return res.data;
+    return withCache(`user_public_${id}`, async () => {
+      const res = await apiClient.get<PublicUserProfile>(`/api/users/${id}/public`);
+      return res.data;
+    }, 60_000);
   },
   updateProfile: async (payload: UpdateProfilePayload): Promise<User> => {
     const res = await apiClient.put<User>('/api/users/me', payload);
+    clientCache.invalidate('user_public');
     return res.data;
   },
   uploadPhoto: async (file: File): Promise<User> => {
@@ -52,6 +57,7 @@ export const api = {
     const res = await apiClient.put<User>('/api/users/me/photo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
+    clientCache.invalidate('user_public');
     return res.data;
   },
   uploadImage: async (file: File): Promise<{ url: string; filename: string }> => {

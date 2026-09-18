@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/agriconnect/backend/internal/cache"
 	"github.com/agriconnect/backend/internal/models"
 	"github.com/agriconnect/backend/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -15,6 +17,7 @@ type SupplyService struct {
 	supplyRepo *repository.SupplyRepository
 	userRepo   *repository.UserRepository
 	notifRepo  *repository.NotificationRepository
+	cache      *cache.Cache
 }
 
 func NewSupplyService(supplyRepo *repository.SupplyRepository, userRepo *repository.UserRepository, notifRepo *repository.NotificationRepository) *SupplyService {
@@ -22,6 +25,7 @@ func NewSupplyService(supplyRepo *repository.SupplyRepository, userRepo *reposit
 		supplyRepo: supplyRepo,
 		userRepo:   userRepo,
 		notifRepo:  notifRepo,
+		cache:      cache.New(30*time.Second, 1*time.Minute),
 	}
 }
 
@@ -78,21 +82,51 @@ func (s *SupplyService) CreateProduct(ctx context.Context, supplierID string, re
 		return nil, err
 	}
 
+	if s.cache != nil {
+		s.cache.Clear()
+	}
+
 	return product, nil
 }
 
 // ListProducts retrieves products matching filters.
 func (s *SupplyService) ListProducts(ctx context.Context, filter repository.SupplyFilter) ([]models.SupplyProduct, error) {
-	return s.supplyRepo.ListProducts(ctx, filter)
+	cacheKey := fmt.Sprintf("sup_prod_%s_%s_%s", filter.Category, filter.Query, filter.SupplierID)
+	if s.cache != nil {
+		if val, found := s.cache.Get(cacheKey); found {
+			if cachedList, ok := val.([]models.SupplyProduct); ok {
+				return cachedList, nil
+			}
+		}
+	}
+
+	res, err := s.supplyRepo.ListProducts(ctx, filter)
+	if err == nil && s.cache != nil {
+		s.cache.Set(cacheKey, res, 30*time.Second)
+	}
+	return res, err
 }
 
 // GetProductByID finds a single product.
 func (s *SupplyService) GetProductByID(ctx context.Context, id string) (*models.SupplyProduct, error) {
+	cacheKey := fmt.Sprintf("sup_item_%s", id)
+	if s.cache != nil {
+		if val, found := s.cache.Get(cacheKey); found {
+			if cachedItem, ok := val.(*models.SupplyProduct); ok {
+				return cachedItem, nil
+			}
+		}
+	}
+
 	oid, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid product ID: %w", err)
 	}
-	return s.supplyRepo.GetProductByID(ctx, oid)
+	res, err := s.supplyRepo.GetProductByID(ctx, oid)
+	if err == nil && s.cache != nil {
+		s.cache.Set(cacheKey, res, 60*time.Second)
+	}
+	return res, err
 }
 
 // UpdateProduct updates product details.
@@ -141,6 +175,10 @@ func (s *SupplyService) UpdateProduct(ctx context.Context, supplierID string, pr
 		return nil, err
 	}
 
+	if s.cache != nil {
+		s.cache.Clear()
+	}
+
 	return s.supplyRepo.GetProductByID(ctx, pOID)
 }
 
@@ -160,7 +198,15 @@ func (s *SupplyService) DeleteProduct(ctx context.Context, supplierID string, pr
 		return errors.New("unauthorized to delete this product")
 	}
 
-	return s.supplyRepo.DeleteProduct(ctx, pOID)
+	if err := s.supplyRepo.DeleteProduct(ctx, pOID); err != nil {
+		return err
+	}
+
+	if s.cache != nil {
+		s.cache.Clear()
+	}
+
+	return nil
 }
 
 // CreateOrder places an order for supply products (Farmer).
@@ -330,9 +376,9 @@ func (s *SupplyService) UpdateOrderStatus(ctx context.Context, userID string, or
 	}
 
 	status := req.Status
-	// If it's a delivery order and supplier confirms/quotes shipping fee,
+	// If it's a delivery order and supplier confirms/quotes shipping fee from Pending status,
 	// move to Quoted status so buyer can approve total before processing starts.
-	if order.SupplierID.Hex() == userID && (status == models.SupplyOrderProcessing || status == models.SupplyOrderQuoted) && order.DeliveryMethod == models.DeliveryShip {
+	if order.SupplierID.Hex() == userID && order.Status == models.SupplyOrderPending && (status == models.SupplyOrderProcessing || status == models.SupplyOrderQuoted) && order.DeliveryMethod == models.DeliveryShip {
 		status = models.SupplyOrderQuoted
 	}
 

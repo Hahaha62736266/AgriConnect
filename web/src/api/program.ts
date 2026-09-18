@@ -1,4 +1,5 @@
 import { apiClient } from './index';
+import { withCache, clientCache } from '../utils/cache';
 import type {
   CreateProgramPayload,
   GovernmentProgram,
@@ -13,22 +14,30 @@ export const programApi = {
     if (status) params.append('status', status);
     if (municipality) params.append('municipality', municipality);
     if (exact) params.append('exact', 'true');
-    const res = await apiClient.get<GovernmentProgram[]>(`/api/programs?${params.toString()}`);
-    return res.data;
+
+    const cacheKey = `gov_programs_${params.toString()}`;
+    return withCache(cacheKey, async () => {
+      const res = await apiClient.get<GovernmentProgram[]>(`/api/programs?${params.toString()}`);
+      return res.data;
+    }, 60_000);
   },
 
   getProgramByID: async (id: string): Promise<GovernmentProgram> => {
-    const res = await apiClient.get<GovernmentProgram>(`/api/programs/${id}`);
-    return res.data;
+    return withCache(`gov_program_${id}`, async () => {
+      const res = await apiClient.get<GovernmentProgram>(`/api/programs/${id}`);
+      return res.data;
+    }, 60_000);
   },
 
   createProgram: async (payload: CreateProgramPayload): Promise<GovernmentProgram> => {
     const res = await apiClient.post<GovernmentProgram>('/api/programs', payload);
+    clientCache.invalidate('gov_program');
     return res.data;
   },
 
   updateProgramStatus: async (id: string, status: 'open' | 'closed'): Promise<void> => {
     await apiClient.put(`/api/programs/${id}/status`, { status });
+    clientCache.invalidate('gov_program');
   },
 
   submitApplication: async (programId: string, payload: SubmitApplicationPayload): Promise<ProgramApplication> => {

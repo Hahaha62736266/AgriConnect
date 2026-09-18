@@ -126,8 +126,8 @@ export const ProduceMarketplacePage: React.FC = () => {
     const initialMsg = user?.role === 'buyer'
       ? `Hello! I'm a buyer interested in purchasing your ${listing.cropName} harvest listed at ₱${listing.pricePerUnit}/${listing.unit || 'kg'}. Is bulk purchase available?`
       : user?.role === 'farmer'
-      ? `Hello fellow farmer! Inquiring about your ${listing.cropName} harvest (₱${listing.pricePerUnit}/${listing.unit || 'kg'}).`
-      : `Hello! Inquiring about your ${listing.cropName} listed at ₱${listing.pricePerUnit}/${listing.unit || 'kg'}.`;
+        ? `Hello fellow farmer! Inquiring about your ${listing.cropName} harvest (₱${listing.pricePerUnit}/${listing.unit || 'kg'}).`
+        : `Hello! Inquiring about your ${listing.cropName} listed at ₱${listing.pricePerUnit}/${listing.unit || 'kg'}.`;
 
     await openChatWith(
       targetFarmerId,
@@ -361,20 +361,20 @@ export const ProduceMarketplacePage: React.FC = () => {
           type="button"
           onClick={() => navigate('/produce')}
           className="marketplace-channel-btn active"
-          aria-label="Fresh Produce and Crops marketplace"
+          aria-label="Farm Produce and Crops marketplace"
         >
           <span className="channel-icon">🌾</span>
-          <span className="channel-label">Fresh Produce</span>
+          <span className="channel-label">Farm Produce</span>
         </button>
 
         <button
           type="button"
           onClick={() => navigate('/supply')}
           className="marketplace-channel-btn"
-          aria-label="Farm Supplies and Inputs store"
+          aria-label="Agri Supplies and Inputs store"
         >
           <span className="channel-icon">🏪</span>
-          <span className="channel-label">Farm Supplies</span>
+          <span className="channel-label">Agri Supplies</span>
         </button>
       </div>
 
@@ -383,7 +383,7 @@ export const ProduceMarketplacePage: React.FC = () => {
         <div className="marketplace-header-inner">
           <div className="marketplace-header-text">
             <h1 className="marketplace-header-title">
-              Fresh Produce & Harvests
+              Farm Produce & Harvests
             </h1>
             <p className="marketplace-header-subtitle">
               {user?.role === 'lgu_staff'

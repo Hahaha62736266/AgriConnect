@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/agriconnect/backend/internal/cache"
 	"github.com/agriconnect/backend/internal/models"
 	"github.com/agriconnect/backend/internal/repository"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -16,6 +17,7 @@ type ProduceService struct {
 	produceRepo *repository.ProduceRepository
 	userRepo    *repository.UserRepository
 	notifRepo   *repository.NotificationRepository
+	cache       *cache.Cache
 }
 
 func NewProduceService(produceRepo *repository.ProduceRepository, userRepo *repository.UserRepository, notifRepo *repository.NotificationRepository) *ProduceService {
@@ -23,6 +25,7 @@ func NewProduceService(produceRepo *repository.ProduceRepository, userRepo *repo
 		produceRepo: produceRepo,
 		userRepo:    userRepo,
 		notifRepo:   notifRepo,
+		cache:       cache.New(30*time.Second, 1*time.Minute),
 	}
 }
 
@@ -73,21 +76,52 @@ func (s *ProduceService) CreateListing(ctx context.Context, farmerID string, req
 		return nil, err
 	}
 
+	if s.cache != nil {
+		s.cache.Clear()
+	}
+
 	return listing, nil
 }
 
 // ListListings retrieves crop listings with filtering.
 func (s *ProduceService) ListListings(ctx context.Context, filter repository.ProduceFilter) ([]models.ProduceListing, error) {
-	return s.produceRepo.ListListings(ctx, filter)
+	cacheKey := fmt.Sprintf("prod_list_%s_%s_%s_%s_%s_%.2f_%.2f", filter.CropName, filter.Category, filter.Location, filter.Status, filter.FarmerID, filter.MinPrice, filter.MaxPrice)
+
+	if s.cache != nil {
+		if val, found := s.cache.Get(cacheKey); found {
+			if cachedList, ok := val.([]models.ProduceListing); ok {
+				return cachedList, nil
+			}
+		}
+	}
+
+	res, err := s.produceRepo.ListListings(ctx, filter)
+	if err == nil && s.cache != nil {
+		s.cache.Set(cacheKey, res, 30*time.Second)
+	}
+	return res, err
 }
 
 // GetListingByID finds a listing.
 func (s *ProduceService) GetListingByID(ctx context.Context, id string) (*models.ProduceListing, error) {
+	cacheKey := fmt.Sprintf("prod_item_%s", id)
+	if s.cache != nil {
+		if val, found := s.cache.Get(cacheKey); found {
+			if cachedItem, ok := val.(*models.ProduceListing); ok {
+				return cachedItem, nil
+			}
+		}
+	}
+
 	oid, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, fmt.Errorf("invalid listing ID: %w", err)
 	}
-	return s.produceRepo.GetListingByID(ctx, oid)
+	res, err := s.produceRepo.GetListingByID(ctx, oid)
+	if err == nil && s.cache != nil {
+		s.cache.Set(cacheKey, res, 60*time.Second)
+	}
+	return res, err
 }
 
 // UpdateListing handles farmer edits to their own listing.
@@ -143,6 +177,10 @@ func (s *ProduceService) UpdateListing(ctx context.Context, farmerID string, lis
 		return nil, err
 	}
 
+	if s.cache != nil {
+		s.cache.Clear()
+	}
+
 	return s.produceRepo.GetListingByID(ctx, lOID)
 }
 
@@ -162,7 +200,15 @@ func (s *ProduceService) DeleteListing(ctx context.Context, farmerID string, lis
 		return errors.New("unauthorized to delete this listing")
 	}
 
-	return s.produceRepo.DeleteListing(ctx, lOID)
+	if err := s.produceRepo.DeleteListing(ctx, lOID); err != nil {
+		return err
+	}
+
+	if s.cache != nil {
+		s.cache.Clear()
+	}
+
+	return nil
 }
 
 // InitiateTransaction processes a buyer's purchase request.
@@ -344,9 +390,9 @@ func (s *ProduceService) UpdateTransactionStatus(ctx context.Context, userID str
 		totalPrice = &total
 	}
 
-	// If it's a delivery order and farmer confirms/quotes shipping fee,
+	// If it's a delivery order and farmer confirms/quotes shipping fee from Pending status,
 	// move to Quoted status so buyer can approve total before dispatch.
-	if isFarmer && (status == models.TxConfirmed || status == models.TxQuoted) && tx.DeliveryMethod == "delivery" {
+	if isFarmer && tx.Status == models.TxPending && (status == models.TxConfirmed || status == models.TxQuoted) && tx.DeliveryMethod == "delivery" {
 		status = models.TxQuoted
 	}
 
@@ -387,6 +433,10 @@ func (s *ProduceService) UpdateTransactionStatus(ctx context.Context, userID str
 				feeVal = *shippingFee
 			}
 			notifMsg = fmt.Sprintf("Farmer %s quoted ₱%.2f hauling fee for %s. Please review and approve total.", tx.FarmerName, feeVal, tx.CropName)
+		} else if req.PaymentStatus != nil && *req.PaymentStatus == "paid" && tx.PaymentStatus != "paid" {
+			notifRecipient = tx.BuyerID
+			notifTitle = "✅ Payment Verified"
+			notifMsg = fmt.Sprintf("Farmer %s verified your payment of ₱%.2f for %s.", tx.FarmerName, tx.TotalPrice, tx.CropName)
 		} else if isFarmer || isAdmin {
 			notifRecipient = tx.BuyerID
 			notifTitle = "🌾 Crop Order Status Updated"

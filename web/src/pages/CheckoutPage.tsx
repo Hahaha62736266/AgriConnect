@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supplyApi } from '../api/supply';
 import { produceApi } from '../api/produce';
 import { api, getImageUrl } from '../api';
+import { getCropImageFallback } from './ProduceTransactionsPage';
 import { useToast } from '../contexts/ToastContext';
 import type { DeliveryMethod, PaymentMethod, SupplyProduct } from '../types/supply';
 import type { PublicUserProfile } from '../types/auth';
@@ -423,13 +424,28 @@ export const CheckoutPage: React.FC = () => {
                       );
                     })
                   : activeProduceItems.map((item) => {
-                      const img = item.listing?.images?.[0] ? getImageUrl(item.listing.images[0]) : '';
+                      const producePhoto =
+                        (Array.isArray(item.listing?.photos) && item.listing.photos[0]) ||
+                        (typeof item.listing?.photos === 'string' && item.listing.photos) ||
+                        item.listing?.imageUrl ||
+                        item.listing?.photo ||
+                        item.listing?.cropPhoto ||
+                        (Array.isArray(item.listing?.images) && item.listing.images[0]);
+                      const img = producePhoto
+                        ? getImageUrl(producePhoto, getCropImageFallback(item.listing?.cropName))
+                        : getCropImageFallback(item.listing?.cropName);
                       return (
                         <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
                           <img
-                            src={img || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?auto=format&fit=crop&w=200&q=80'}
+                            src={img}
                             alt={item.listing?.cropName || 'Crop'}
                             style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '10px', border: '1px solid #e2e8f0' }}
+                            onError={(e) => {
+                              const fallback = getCropImageFallback(item.listing?.cropName);
+                              if (e.currentTarget.src !== fallback) {
+                                e.currentTarget.src = fallback;
+                              }
+                            }}
                           />
                           <div style={{ flex: 1, minWidth: '180px' }}>
                             <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>{item.listing?.cropName}</div>

@@ -88,7 +88,7 @@ export const getBreadcrumbs = (pathname: string, role?: string): BreadcrumbInfo 
   }
 
   if (pathname.startsWith('/supply')) {
-    return { parent: 'Marketplace', parentPath: '/supply', current: 'Farm Supplies' };
+    return { parent: 'Marketplace', parentPath: '/supply', current: 'Agri Supplies' };
   }
 
   if (pathname === '/finances') {
