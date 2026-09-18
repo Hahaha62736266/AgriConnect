@@ -93,7 +93,23 @@ export const SupplyOrdersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
-  const [filterTab, setFilterTab] = useState<'all' | 'active' | 'completed' | 'cancelled'>('all');
+  const [filterTab, setFilterTab] = useState<'all' | 'to_pay' | 'pending' | 'quoted' | 'processing' | 'active' | 'completed' | 'cancelled'>('all');
+
+  const handleConfirmDigitalPayment = async (orderId: string) => {
+    setMarkingPaid(orderId);
+    try {
+      await supplyApi.updatePaymentStatus(orderId, {
+        paymentStatus: 'paid',
+        paymentNote: `Payment verified & confirmed by supplier on ${new Date().toLocaleDateString('en-PH', { dateStyle: 'medium' })}`,
+      });
+      toastSuccess('Payment Verified! 🎉', 'You confirmed receipt of the digital transfer for this order.');
+      await fetchOrders();
+    } catch (err: any) {
+      toastError('Payment Verification Failed', err.response?.data?.error || 'Failed to verify payment');
+    } finally {
+      setMarkingPaid(null);
+    }
+  };
   const [orderToSetShipping, setOrderToSetShipping] = useState<SupplyOrder | null>(null);
   const [shippingFeeInput, setShippingFeeInput] = useState<number>(0);
   const [shippingFeeDisplay, setShippingFeeDisplay] = useState<string>('0');
@@ -110,7 +126,31 @@ export const SupplyOrdersPage: React.FC = () => {
 
   const [orderToSubmitRef, setOrderToSubmitRef] = useState<SupplyOrder | null>(null);
   const [submittingRefInput, setSubmittingRefInput] = useState('');
+  const [submittingProofUrl, setSubmittingProofUrl] = useState('');
+  const [uploadingProof, setUploadingProof] = useState(false);
   const [isSubmittingRef, setIsSubmittingRef] = useState(false);
+
+  const handleFileUpload = async (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toastError('Invalid File', 'Please select an image file (PNG, JPG, JPEG).');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toastError('File Too Large', 'Please upload a receipt screenshot under 10MB.');
+      return;
+    }
+
+    setUploadingProof(true);
+    try {
+      const res = await api.uploadImage(file);
+      setSubmittingProofUrl(res.url);
+      toastSuccess('Receipt Uploaded!', 'Payment receipt screenshot attached successfully.');
+    } catch (err: any) {
+      toastError('Upload Failed', err.response?.data?.error || 'Failed to upload receipt screenshot.');
+    } finally {
+      setUploadingProof(false);
+    }
+  };
 
   const handleSubmitRefNo = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,11 +158,16 @@ export const SupplyOrdersPage: React.FC = () => {
 
     setIsSubmittingRef(true);
     try {
-      const updated = await supplyApi.submitPaymentRef(orderToSubmitRef.id, submittingRefInput.trim());
-      toastSuccess('Reference Number Submitted!', 'Your payment reference number has been sent to the seller for verification.');
+      const updated = await supplyApi.submitPaymentRef(
+        orderToSubmitRef.id,
+        submittingRefInput.trim(),
+        submittingProofUrl || undefined
+      );
+      toastSuccess('Reference Number & Proof Submitted! 🎉', 'Your payment reference and receipt proof have been sent to the seller for verification.');
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
       setOrderToSubmitRef(null);
       setSubmittingRefInput('');
+      setSubmittingProofUrl('');
     } catch (err: any) {
       toastError('Submission Failed', err.response?.data?.error || err.message || 'Failed to submit payment reference.');
     } finally {
@@ -264,22 +309,46 @@ export const SupplyOrdersPage: React.FC = () => {
     }
   };
 
-  // Filter orders based on active tab
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Top KPI Metrics
+  const activePendingCount = orders.filter((o) => o.status === 'pending' || (o.paymentMethod !== 'cod' && o.paymentStatus !== 'paid' && !o.paymentRefNo)).length;
+  const activeConfirmedCount = orders.filter((o) => o.status === 'processing' || o.status === 'quoted' || o.status === 'shipped_ready').length;
+  const completedCount = orders.filter((o) => o.status === 'completed').length;
+  const totalSpent = orders
+    .filter((o) => o.status === 'completed' || o.paymentStatus === 'paid')
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+  // Status counts (To Pay: Non-COD orders that are not paid yet AND customer has not submitted ref no yet)
+  const toPayCount = orders.filter((o) => o.paymentMethod !== 'cod' && o.paymentStatus !== 'paid' && !o.paymentRefNo).length;
+  const pendingCount = orders.filter((o) => o.status === 'pending').length;
+  const quotedCount = orders.filter((o) => o.status === 'quoted').length;
+  const processingCount = orders.filter((o) => o.status === 'processing' || o.status === 'shipped_ready').length;
+  const cancelledCount = orders.filter((o) => o.status === 'cancelled').length;
+
+  // Filter orders based on active tab & search query
   const filteredOrders = orders.filter((order) => {
-    if (filterTab === 'active') {
-      return order.status === 'pending' || order.status === 'quoted' || order.status === 'processing' || order.status === 'shipped_ready';
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const matchId = order.id.toLowerCase().includes(q);
+      const matchSupplier = order.supplierName?.toLowerCase().includes(q);
+      const matchBuyer = order.buyerName?.toLowerCase().includes(q);
+      const matchItems = order.items?.some((i) => i.productName.toLowerCase().includes(q));
+      if (!matchId && !matchSupplier && !matchBuyer && !matchItems) {
+        return false;
+      }
     }
-    if (filterTab === 'completed') {
-      return order.status === 'completed';
-    }
-    if (filterTab === 'cancelled') {
-      return order.status === 'cancelled';
-    }
+
+    if (filterTab === 'to_pay') return order.paymentMethod !== 'cod' && order.paymentStatus !== 'paid' && !order.paymentRefNo;
+    if (filterTab === 'pending') return order.status === 'pending';
+    if (filterTab === 'quoted') return order.status === 'quoted';
+    if (filterTab === 'processing') return order.status === 'processing' || order.status === 'shipped_ready';
+    if (filterTab === 'completed') return order.status === 'completed';
+    if (filterTab === 'cancelled') return order.status === 'cancelled';
+    if (filterTab === 'active') return order.status === 'pending' || order.status === 'quoted' || order.status === 'processing' || order.status === 'shipped_ready';
+
     return true;
   });
-
-  const activeCount = orders.filter((o) => o.status === 'pending' || o.status === 'quoted' || o.status === 'processing' || o.status === 'shipped_ready').length;
-  const completedCount = orders.filter((o) => o.status === 'completed').length;
 
   const isSupplier = user?.role === 'supplier';
   const isFarmer = user?.role === 'farmer';
@@ -436,71 +505,196 @@ export const SupplyOrdersPage: React.FC = () => {
         </button>
       </div>
 
-      {/* ─── Status Filter Tabs ─── */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
-        <button
-          onClick={() => setFilterTab('all')}
+      {/* ─── Top KPI Metric Summary Cards ─── */}
+      <div
+        className="orders-kpi-grid"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gap: '16px',
+          marginBottom: '28px',
+        }}
+      >
+        <div
           style={{
-            padding: '8px 18px',
-            borderRadius: '20px',
-            border: `1.5px solid ${filterTab === 'all' ? '#176B3A' : '#e2e8f0'}`,
-            backgroundColor: filterTab === 'all' ? '#176B3A' : '#ffffff',
-            color: filterTab === 'all' ? '#ffffff' : '#475569',
-            fontWeight: 700,
-            fontSize: '14px',
-            cursor: 'pointer',
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '20px',
+            border: '1.5px solid #E2E8F0',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
           }}
         >
-          All Orders ({orders.length})
-        </button>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+            📋
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders</div>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A' }}>{orders.length}</div>
+          </div>
+        </div>
 
-        <button
-          onClick={() => setFilterTab('active')}
+        <div
           style={{
-            padding: '8px 18px',
-            borderRadius: '20px',
-            border: `1.5px solid ${filterTab === 'active' ? '#ca8a04' : '#e2e8f0'}`,
-            backgroundColor: filterTab === 'active' ? '#ca8a04' : '#ffffff',
-            color: filterTab === 'active' ? '#ffffff' : '#475569',
-            fontWeight: 700,
-            fontSize: '14px',
-            cursor: 'pointer',
+            background: activePendingCount > 0 ? '#FEFCE8' : '#FFFFFF',
+            borderRadius: '16px',
+            padding: '20px',
+            border: `1.5px solid ${activePendingCount > 0 ? '#FDE047' : '#E2E8F0'}`,
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
           }}
         >
-          Active / In Transit ({activeCount})
-        </button>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+            ⏳
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: activePendingCount > 0 ? '#A16207' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Pending Action
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: activePendingCount > 0 ? '#A16207' : '#0F172A' }}>
+              {activePendingCount}
+            </div>
+          </div>
+        </div>
 
-        <button
-          onClick={() => setFilterTab('completed')}
+        <div
           style={{
-            padding: '8px 18px',
-            borderRadius: '20px',
-            border: `1.5px solid ${filterTab === 'completed' ? '#16a34a' : '#e2e8f0'}`,
-            backgroundColor: filterTab === 'completed' ? '#16a34a' : '#ffffff',
-            color: filterTab === 'completed' ? '#ffffff' : '#475569',
-            fontWeight: 700,
-            fontSize: '14px',
-            cursor: 'pointer',
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '20px',
+            border: '1.5px solid #E2E8F0',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
           }}
         >
-          Completed ({completedCount})
-        </button>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+            🚚
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Deliveries</div>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: '#1E40AF' }}>{activeConfirmedCount}</div>
+          </div>
+        </div>
 
-        <button
-          onClick={() => setFilterTab('cancelled')}
+        <div
           style={{
-            padding: '8px 18px',
-            borderRadius: '20px',
-            border: `1.5px solid ${filterTab === 'cancelled' ? '#dc2626' : '#e2e8f0'}`,
-            backgroundColor: filterTab === 'cancelled' ? '#dc2626' : '#ffffff',
-            color: filterTab === 'cancelled' ? '#ffffff' : '#475569',
-            fontWeight: 700,
-            fontSize: '14px',
-            cursor: 'pointer',
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '20px',
+            border: '1.5px solid #E2E8F0',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '16px',
           }}
         >
-          Cancelled
-        </button>
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+            💰
+          </div>
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {isSupplier ? 'Sales Revenue' : 'Fulfilled Volume'}
+            </div>
+            <div style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27' }}>₱{totalSpent.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Search & Status Filters Bar ─── */}
+      <div
+        className="orders-filter-card"
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+          marginBottom: '24px',
+          backgroundColor: '#FFFFFF',
+          padding: '16px 20px',
+          borderRadius: '16px',
+          border: '1.5px solid #E2E8F0',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+        }}
+      >
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {[
+            { id: 'all', label: 'All Orders', count: orders.length },
+            { id: 'pending', label: 'Pending', count: pendingCount },
+            { id: 'quoted', label: 'Quoted', count: quotedCount },
+            ...(!isSupplier ? [{ id: 'to_pay', label: '💳 To Pay', count: toPayCount }] : []),
+            { id: 'processing', label: 'Processing / Shipped', count: processingCount },
+            { id: 'completed', label: 'Completed', count: completedCount },
+            { id: 'cancelled', label: 'Cancelled', count: cancelledCount },
+          ].map((tab) => {
+            const isActive = filterTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setFilterTab(tab.id as any)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  border: 'none',
+                  backgroundColor: isActive ? '#0E4A27' : '#F1F5F9',
+                  color: isActive ? '#FFFFFF' : '#475569',
+                  fontWeight: isActive ? 800 : 700,
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                <span>{tab.label}</span>
+                <span
+                  style={{
+                    backgroundColor: isActive ? 'rgba(255,255,255,0.25)' : '#E2E8F0',
+                    color: isActive ? '#FFFFFF' : '#64748B',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    padding: '2px 7px',
+                    borderRadius: '8px',
+                  }}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Search Bar */}
+        <div style={{ position: 'relative', width: '100%', maxWidth: '300px' }}>
+          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '15px', color: '#94A3B8' }}>
+            🔍
+          </span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search item, supplier, or order ID..."
+            style={{
+              width: '100%',
+              padding: '9px 12px 9px 36px',
+              borderRadius: '10px',
+              border: '1.5px solid #CBD5E1',
+              fontSize: '13px',
+              fontWeight: 600,
+              outline: 'none',
+              boxSizing: 'border-box',
+              backgroundColor: '#FAFAFA',
+            }}
+          />
+        </div>
       </div>
 
       {/* ─── Orders List ─── */}
@@ -1003,6 +1197,30 @@ export const SupplyOrdersPage: React.FC = () => {
                         <span style={{ fontFamily: 'monospace', background: '#E0F2FE', padding: '1px 6px', borderRadius: '4px' }}>#{order.paymentRefNo}</span>
                       </div>
                     )}
+                    {order.paymentProofUrl && (
+                      <div style={{ marginTop: '4px' }}>
+                        <a
+                          href={getImageUrl(order.paymentProofUrl)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: '11.5px',
+                            color: '#0284c7',
+                            fontWeight: 700,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            background: '#F0F9FF',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            border: '1px solid #BAE6FD',
+                            textDecoration: 'none',
+                          }}
+                        >
+                          📸 View Payment Receipt Proof
+                        </a>
+                      </div>
+                    )}
                     {order.paymentNote && (
                       <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', marginTop: '4px' }}>
                         {order.paymentNote}
@@ -1014,6 +1232,7 @@ export const SupplyOrdersPage: React.FC = () => {
                         onClick={() => {
                           setOrderToSubmitRef(order);
                           setSubmittingRefInput(order.paymentRefNo || '');
+                          setSubmittingProofUrl(order.paymentProofUrl || '');
                         }}
                         style={{
                           marginTop: '8px',
@@ -1031,7 +1250,7 @@ export const SupplyOrdersPage: React.FC = () => {
                         }}
                       >
                         <span>📱</span>
-                        <span>{order.paymentRefNo ? 'Update Payment Ref No' : 'Submit Payment Ref No'}</span>
+                        <span>{order.paymentRefNo || order.paymentProofUrl ? 'Update Payment Ref / Proof' : 'Submit Payment Ref / Proof'}</span>
                       </button>
                     )}
                   </div>
@@ -1213,8 +1432,34 @@ export const SupplyOrdersPage: React.FC = () => {
                     </button>
                   )}
 
-                  {/* Cancel Order (Buyer or Supplier can cancel pending/quoted/processing orders) */}
-                  {(order.status === 'pending' || isQuoted || (isSupplier && order.status === 'processing')) && (
+                  {/* Supplier Digital Payment Verification */}
+                  {isSupplier && (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') && order.paymentStatus !== 'paid' && (
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmDigitalPayment(order.id)}
+                      disabled={markingPaid === order.id}
+                      style={{
+                        padding: '9px 18px',
+                        borderRadius: '9px',
+                        backgroundColor: markingPaid === order.id ? '#94A3B8' : '#16A34A',
+                        color: '#FFFFFF',
+                        fontWeight: 800,
+                        border: 'none',
+                        cursor: markingPaid === order.id ? 'not-allowed' : 'pointer',
+                        fontSize: '13px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: markingPaid === order.id ? 'none' : '0 2px 8px rgba(22, 163, 74, 0.3)',
+                      }}
+                    >
+                      <span>✅</span>
+                      <span>{markingPaid === order.id ? 'Verifying…' : 'Verify & Confirm Payment Received'}</span>
+                    </button>
+                  )}
+
+                  {/* Cancel Order (Disabled for paid transactions; allowed for COD or unpaid orders) */}
+                  {order.paymentStatus !== 'paid' && (order.status === 'pending' || isQuoted || (isSupplier && order.status === 'processing')) && (
                     <button
                       onClick={() => setOrderToCancel(order)}
                       disabled={updatingStatusId === order.id}
@@ -1242,18 +1487,21 @@ export const SupplyOrdersPage: React.FC = () => {
         </div>
       )}
 
-      {/* ─── Supplier Shipping Fee Confirmation Modal ─── */}
+      {/* Set Delivery / Hauling Fee Modal (Supplier Quote) */}
       {orderToSetShipping && (
         <div
           style={{
             position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.65)',
-            backdropFilter: 'blur(4px)',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(5px)',
+            zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
             padding: '20px',
           }}
           onClick={() => setOrderToSetShipping(null)}
@@ -1262,61 +1510,90 @@ export const SupplyOrdersPage: React.FC = () => {
             style={{
               backgroundColor: '#ffffff',
               borderRadius: '20px',
-              padding: '28px',
+              padding: '26px 28px',
               maxWidth: '520px',
               width: '100%',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.08)',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
               border: '1px solid #e2e8f0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '18px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <div
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div
+                  style={{
+                    width: '46px',
+                    height: '46px',
+                    borderRadius: '14px',
+                    backgroundColor: '#FEF3C7',
+                    color: '#D97706',
+                    fontSize: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(217, 119, 6, 0.15)',
+                  }}
+                >
+                  🚚
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '19px', fontWeight: 800, color: '#0F172A' }}>
+                    Set Delivery / Hauling Fee
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '12.5px', color: '#64748B' }}>
+                    Order <strong>#{orderToSetShipping.id.slice(-6).toUpperCase()}</strong> · Buyer: <strong>{orderToSetShipping.buyerName}</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOrderToSetShipping(null)}
                 style={{
-                  width: '46px',
-                  height: '46px',
-                  borderRadius: '12px',
-                  backgroundColor: '#fef3c7',
-                  color: '#ca8a04',
-                  fontSize: '24px',
+                  background: '#F1F5F9',
+                  border: 'none',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  fontSize: '16px',
+                  color: '#64748B',
+                  cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                🚚
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-                  Set Delivery / Hauling Fee
-                </h3>
-                <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
-                  Order #{orderToSetShipping.id.slice(-6).toUpperCase()} · Buyer: {orderToSetShipping.buyerName}
-                </p>
-              </div>
+                ✕
+              </button>
             </div>
 
+            {/* Delivery Address & Instructions Box */}
             <div
               style={{
-                backgroundColor: '#f8fafc',
-                borderRadius: '12px',
+                backgroundColor: '#FFFBEB',
+                borderRadius: '14px',
                 padding: '14px 16px',
-                marginBottom: '20px',
-                border: '1px solid #e2e8f0',
+                border: '1px solid #FDE68A',
                 fontSize: '13px',
               }}
             >
-              <div style={{ color: '#475569', marginBottom: '6px' }}>
-                📍 <strong>Delivery Address:</strong> {orderToSetShipping.deliveryAddress || 'Address on file'}
+              <div style={{ color: '#92400E', fontWeight: 700, marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>📍 Delivery Address:</span>
+                <span style={{ color: '#78350F' }}>{orderToSetShipping.deliveryAddress || 'Address on file'}</span>
               </div>
-              <div style={{ color: '#64748b', fontSize: '12px', lineHeight: '1.4' }}>
-                As the supplier, confirm the freight/hauling cost based on the transport vehicle you coordinated for this delivery. The buyer will review and approve the final total before warehouse fulfillment starts.
+              <div style={{ color: '#B45309', fontSize: '12px', lineHeight: '1.45' }}>
+                As the supplier, enter the freight/hauling cost based on the transport vehicle for this delivery. The buyer will review and approve the updated total before shipment.
               </div>
             </div>
 
             {/* Quick Vehicle Presets */}
-            <div style={{ marginBottom: '18px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Quick Vehicle Presets
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
@@ -1327,43 +1604,47 @@ export const SupplyOrdersPage: React.FC = () => {
                   { label: 'Light Truck', fee: 1500, icon: '🚚' },
                   { label: 'Elf 6-Wheeler', fee: 3500, icon: '🚛' },
                   { label: 'Heavy Forwarder', fee: 6500, icon: '🏗️' },
-                ].map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => {
-                      setShippingFeeInput(preset.fee);
-                      setShippingFeeDisplay(preset.fee === 0 ? '0' : preset.fee.toLocaleString());
-                    }}
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: '10px',
-                      border: `1.5px solid ${shippingFeeInput === preset.fee ? '#ca8a04' : '#e2e8f0'}`,
-                      backgroundColor: shippingFeeInput === preset.fee ? '#fefce8' : '#ffffff',
-                      color: shippingFeeInput === preset.fee ? '#854d0e' : '#334155',
-                      fontWeight: 700,
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <div>{preset.icon} {preset.label}</div>
-                    <div style={{ fontSize: '11px', color: shippingFeeInput === preset.fee ? '#ca8a04' : '#64748b', marginTop: '2px' }}>
-                      {preset.fee === 0 ? '₱0' : `₱${preset.fee.toLocaleString()}`}
-                    </div>
-                  </button>
-                ))}
+                ].map((preset) => {
+                  const isSelected = shippingFeeInput === preset.fee;
+                  return (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        setShippingFeeInput(preset.fee);
+                        setShippingFeeDisplay(preset.fee === 0 ? '0' : preset.fee.toLocaleString());
+                      }}
+                      style={{
+                        padding: '10px 8px',
+                        borderRadius: '12px',
+                        border: isSelected ? '2px solid #D97706' : '1.5px solid #E2E8F0',
+                        backgroundColor: isSelected ? '#FEFCE8' : '#FFFFFF',
+                        color: isSelected ? '#92400E' : '#334155',
+                        fontWeight: 700,
+                        fontSize: '12px',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.15s ease',
+                        boxShadow: isSelected ? '0 4px 12px rgba(217, 119, 6, 0.18)' : 'none',
+                      }}
+                    >
+                      <div style={{ fontWeight: 800 }}>{preset.icon} {preset.label}</div>
+                      <div style={{ fontSize: '11.5px', fontWeight: 900, color: isSelected ? '#D97706' : '#64748B', marginTop: '3px' }}>
+                        {preset.fee === 0 ? '₱0 (Free)' : `₱${preset.fee.toLocaleString()}`}
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {/* Custom Numeric Input */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
                 Exact Shipping / Hauling Fee (₱)
               </label>
               <div style={{ position: 'relative' }}>
-                <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontWeight: 800, color: '#64748b', fontSize: '16px' }}>
+                <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', fontWeight: 900, color: '#B45309', fontSize: '16px' }}>
                   ₱
                 </span>
                 <input
@@ -1400,10 +1681,10 @@ export const SupplyOrdersPage: React.FC = () => {
                     width: '100%',
                     padding: '12px 14px 12px 34px',
                     borderRadius: '10px',
-                    border: '1.5px solid #cbd5e1',
+                    border: '1.5px solid #D97706',
                     fontSize: '16px',
-                    fontWeight: 700,
-                    color: '#0f172a',
+                    fontWeight: 800,
+                    color: '#0F172A',
                     outline: 'none',
                     boxSizing: 'border-box',
                   }}
@@ -1412,52 +1693,54 @@ export const SupplyOrdersPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Live Calculation */}
+            {/* Live Order Cost Summary */}
             {(() => {
               const subtotal = orderToSetShipping.subtotal || (orderToSetShipping.totalAmount - (orderToSetShipping.shippingFee || 0));
               const newTotal = subtotal + shippingFeeInput;
               return (
                 <div
                   style={{
-                    backgroundColor: '#f1f5f9',
-                    borderRadius: '12px',
+                    backgroundColor: '#F8FAFC',
+                    borderRadius: '14px',
                     padding: '14px 16px',
-                    marginBottom: '24px',
+                    border: '1px solid #E2E8F0',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '6px',
+                    gap: '8px',
                     fontSize: '13px',
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B' }}>
                     <span>Items Subtotal:</span>
-                    <span style={{ fontWeight: 600 }}>₱{subtotal.toLocaleString()}</span>
+                    <span style={{ fontWeight: 700, color: '#0F172A' }}>₱{subtotal.toLocaleString()}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B' }}>
                     <span>Confirmed Delivery Fee:</span>
-                    <span style={{ fontWeight: 700, color: '#ca8a04' }}>₱{shippingFeeInput.toLocaleString()}</span>
+                    <span style={{ fontWeight: 800, color: '#D97706' }}>
+                      {shippingFeeInput === 0 ? '₱0 (Free Delivery)' : `₱${shippingFeeInput.toLocaleString()}`}
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #cbd5e1', paddingTop: '6px', fontSize: '15px', fontWeight: 800 }}>
-                    <span style={{ color: '#0f172a' }}>Updated Order Total:</span>
-                    <span style={{ color: '#0E4A27' }}>₱{newTotal.toLocaleString()}</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CBD5E1', paddingTop: '8px', fontSize: '15.5px', fontWeight: 900 }}>
+                    <span style={{ color: '#0F172A' }}>Updated Order Total:</span>
+                    <span style={{ color: '#16A34A' }}>₱{newTotal.toLocaleString()}</span>
                   </div>
                 </div>
               );
             })()}
 
             {/* Modal Actions */}
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
               <button
                 type="button"
                 onClick={() => setOrderToSetShipping(null)}
                 style={{
-                  padding: '11px 20px',
+                  padding: '11px 18px',
                   borderRadius: '10px',
-                  border: '1.5px solid #cbd5e1',
-                  backgroundColor: '#ffffff',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
                   color: '#475569',
                   fontWeight: 700,
-                  fontSize: '14px',
+                  fontSize: '13.5px',
                   cursor: 'pointer',
                 }}
               >
@@ -1472,11 +1755,11 @@ export const SupplyOrdersPage: React.FC = () => {
                   await handleUpdateStatus(targetOrder.id, 'processing', shippingFeeInput);
                 }}
                 style={{
-                  padding: '11px 24px',
+                  padding: '11px 22px',
                   borderRadius: '10px',
                   border: 'none',
-                  backgroundColor: '#ca8a04',
-                  color: '#ffffff',
+                  background: 'linear-gradient(135deg, #D97706 0%, #B45309 100%)',
+                  color: '#FFFFFF',
                   fontWeight: 800,
                   fontSize: '14px',
                   cursor: 'pointer',
@@ -1516,7 +1799,7 @@ export const SupplyOrdersPage: React.FC = () => {
         isDeleting={isCancelling}
       />
 
-      {/* Submit Payment Reference Number Modal */}
+      {/* Submit Payment Reference Number & Proof Modal */}
       {orderToSubmitRef && (
         <div style={{
           position: 'fixed',
@@ -1524,7 +1807,8 @@ export const SupplyOrdersPage: React.FC = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(4px)',
           zIndex: 9999,
           display: 'flex',
           alignItems: 'center',
@@ -1533,39 +1817,80 @@ export const SupplyOrdersPage: React.FC = () => {
         }}>
           <div style={{
             backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            maxWidth: '460px',
+            borderRadius: '20px',
+            maxWidth: '480px',
             width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
             padding: '24px',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
             display: 'flex',
             flexDirection: 'column',
             gap: '16px',
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>📱</span> Submit Payment Ref No
-              </h3>
+            {/* Modal Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📱</span> Payment Verification
+                </h3>
+                <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748B' }}>
+                  Submit your payment reference & attach receipt photo for faster seller verification.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setOrderToSubmitRef(null)}
-                style={{ background: 'none', border: 'none', fontSize: '20px', color: '#64748B', cursor: 'pointer' }}
+                style={{
+                  background: '#F1F5F9',
+                  border: 'none',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  fontSize: '16px',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ fontSize: '13px', color: '#334155', lineHeight: 1.5, background: '#F0F9FF', padding: '12px 14px', borderRadius: '10px', border: '1px solid #BAE6FD' }}>
-              Order <strong>#{orderToSubmitRef.id.slice(-6).toUpperCase()}</strong> · Total Amount: <strong>₱{orderToSubmitRef.totalAmount.toLocaleString()}</strong><br/>
-              Payment Method: <strong>{orderToSubmitRef.paymentMethod.toUpperCase()}</strong> · Supplier: <strong>{orderToSubmitRef.supplierName}</strong>
+            {/* Order Summary Banner */}
+            <div style={{
+              fontSize: '13px',
+              color: '#1E293B',
+              lineHeight: 1.5,
+              background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
+              padding: '14px 16px',
+              borderRadius: '14px',
+              border: '1px solid #BAE6FD',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, color: '#0369A1' }}>
+                  Order #{orderToSubmitRef.id.slice(-6).toUpperCase()}
+                </span>
+                <span style={{ fontSize: '16px', fontWeight: 900, color: '#16A34A' }}>
+                  ₱{orderToSubmitRef.totalAmount.toLocaleString()}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#475569' }}>
+                Supplier: <strong>{orderToSubmitRef.supplierName}</strong> • Method: <strong style={{ textTransform: 'uppercase' }}>{orderToSubmitRef.paymentMethod}</strong>
+              </div>
             </div>
 
-            {/* Seller Payment Recipient Card inside Modal */}
-            <div style={{ background: '#F8FAFC', padding: '14px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {/* Seller Payment Recipient Details Card */}
+            <div style={{ background: '#F8FAFC', padding: '14px 16px', borderRadius: '14px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span>Recipient Payment Info ({orderToSubmitRef.paymentMethod.toUpperCase()})</span>
-                <span style={{ fontSize: '12px', color: '#0284C7', fontWeight: 800 }}>
-                  Send: ₱{orderToSubmitRef.totalAmount.toLocaleString()}
+                <span>Recipient Details ({orderToSubmitRef.paymentMethod.toUpperCase()})</span>
+                <span style={{ fontSize: '11.5px', color: '#16A34A', fontWeight: 800, background: '#DCFCE7', padding: '2px 8px', borderRadius: '10px' }}>
+                  Send Total: ₱{orderToSubmitRef.totalAmount.toLocaleString()}
                 </span>
               </div>
 
@@ -1574,7 +1899,7 @@ export const SupplyOrdersPage: React.FC = () => {
               ) : (
                 <>
                   {orderToSubmitRef.paymentMethod === 'gcash' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>GCash Name:</span>
                         <span style={{ color: '#0F172A', fontWeight: 800 }}>
@@ -1584,14 +1909,14 @@ export const SupplyOrdersPage: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>GCash Number:</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ color: '#0284C7', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                          <span style={{ color: '#0284C7', fontWeight: 800, fontFamily: 'monospace', fontSize: '15px' }}>
                             {modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone || 'Not configured by seller'}
                           </span>
                           {(modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone) ? (
                             <button
                               type="button"
                               onClick={() => copyModalText(modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone || '', 'GCash Number')}
-                              style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
+                              style={{ padding: '3px 9px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
                             >
                               📋 {copiedModalText === 'GCash Number' ? 'Copied!' : 'Copy'}
                             </button>
@@ -1611,16 +1936,16 @@ export const SupplyOrdersPage: React.FC = () => {
                         </div>
                       </div>
                       {modalSupplierProfile?.gcashQrUrl && (
-                        <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
-                          <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#0284C7', marginBottom: '4px' }}>Scan QR Code with GCash App:</div>
-                          <img src={getImageUrl(modalSupplierProfile.gcashQrUrl)} alt="GCash QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
+                        <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '12px', borderRadius: '12px', border: '1.5px dashed #BAE6FD' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 800, color: '#0284C7', marginBottom: '6px' }}>Scan QR Code with GCash App:</div>
+                          <img src={getImageUrl(modalSupplierProfile.gcashQrUrl)} alt="GCash QR Code" style={{ maxWidth: '170px', maxHeight: '170px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} />
                         </div>
                       )}
                     </div>
                   )}
 
                   {orderToSubmitRef.paymentMethod === 'maya' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>Maya Name:</span>
                         <span style={{ color: '#0F172A', fontWeight: 800 }}>
@@ -1630,14 +1955,14 @@ export const SupplyOrdersPage: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>Maya Number:</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ color: '#7C3AED', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                          <span style={{ color: '#7C3AED', fontWeight: 800, fontFamily: 'monospace', fontSize: '15px' }}>
                             {modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone || 'Not configured by seller'}
                           </span>
                           {(modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone) ? (
                             <button
                               type="button"
                               onClick={() => copyModalText(modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone || '', 'Maya Number')}
-                              style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#F3E8FF', color: '#6D28D9', border: 'none', cursor: 'pointer' }}
+                              style={{ padding: '3px 9px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#F3E8FF', color: '#6D28D9', border: 'none', cursor: 'pointer' }}
                             >
                               📋 {copiedModalText === 'Maya Number' ? 'Copied!' : 'Copy'}
                             </button>
@@ -1657,16 +1982,16 @@ export const SupplyOrdersPage: React.FC = () => {
                         </div>
                       </div>
                       {modalSupplierProfile?.mayaQrUrl && (
-                        <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
-                          <div style={{ fontSize: '11.5px', fontWeight: 700, color: '#6D28D9', marginBottom: '4px' }}>Scan QR Code with Maya App:</div>
-                          <img src={getImageUrl(modalSupplierProfile.mayaQrUrl)} alt="Maya QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '8px', border: '1px solid #E2E8F0' }} />
+                        <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '12px', borderRadius: '12px', border: '1.5px dashed #DDD6FE' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 800, color: '#6D28D9', marginBottom: '6px' }}>Scan QR Code with Maya App:</div>
+                          <img src={getImageUrl(modalSupplierProfile.mayaQrUrl)} alt="Maya QR Code" style={{ maxWidth: '170px', maxHeight: '170px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} />
                         </div>
                       )}
                     </div>
                   )}
 
                   {orderToSubmitRef.paymentMethod === 'bank_transfer' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>Bank Name:</span>
                         <span style={{ color: '#0F172A', fontWeight: 800 }}>{modalSupplierProfile?.bankName || 'BDO / BPI / Landbank'}</span>
@@ -1680,14 +2005,14 @@ export const SupplyOrdersPage: React.FC = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>Account Number:</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span style={{ color: '#0F172A', fontWeight: 800, fontFamily: 'monospace', fontSize: '14px' }}>
+                          <span style={{ color: '#0F172A', fontWeight: 800, fontFamily: 'monospace', fontSize: '15px' }}>
                             {modalSupplierProfile?.bankAccountNo || 'Contact seller'}
                           </span>
                           {modalSupplierProfile?.bankAccountNo && (
                             <button
                               type="button"
                               onClick={() => copyModalText(modalSupplierProfile?.bankAccountNo || '', 'Account Number')}
-                              style={{ padding: '2px 8px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
+                              style={{ padding: '3px 9px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
                             >
                               📋 {copiedModalText === 'Account Number' ? 'Copied!' : 'Copy'}
                             </button>
@@ -1702,8 +2027,8 @@ export const SupplyOrdersPage: React.FC = () => {
 
             <form onSubmit={handleSubmitRefNo} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
-                  Transaction Reference Number *
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                  Transaction Reference Number <span style={{ color: '#EF4444' }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -1713,18 +2038,97 @@ export const SupplyOrdersPage: React.FC = () => {
                   placeholder="e.g. 1029384756123 (13 digits)"
                   style={{
                     width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
+                    padding: '11px 13px',
+                    borderRadius: '10px',
                     border: '1.5px solid #0284C7',
                     fontSize: '14px',
                     fontWeight: 700,
                     color: '#0C4A6E',
                     boxSizing: 'border-box',
+                    outline: 'none',
                   }}
                 />
                 <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '4px' }}>
                   Paste the 13-digit transaction reference number from your GCash, Maya, or Bank receipt.
                 </div>
+              </div>
+
+              {/* Receipt Image Proof Uploader */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                  Proof of Transaction / Receipt Photo <span style={{ fontSize: '11px', color: '#0284C7', fontWeight: 600 }}>(Optional / Recommended)</span>
+                </label>
+
+                {submittingProofUrl ? (
+                  <div style={{
+                    position: 'relative',
+                    borderRadius: '12px',
+                    border: '1.5px solid #16A34A',
+                    padding: '10px 14px',
+                    background: '#F0FDF4',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}>
+                    <img
+                      src={getImageUrl(submittingProofUrl)}
+                      alt="Payment Receipt Proof"
+                      style={{ width: '54px', height: '54px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #BBF7D0' }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#15803D' }}>✓ Payment Receipt Attached</div>
+                      <div style={{ fontSize: '11px', color: '#166534' }}>Ready for seller verification</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSubmittingProofUrl('')}
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid #FECACA',
+                        background: '#FEF2F2',
+                        color: '#DC2626',
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🗑️ Remove
+                    </button>
+                  </div>
+                ) : (
+                  <label style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '16px',
+                    borderRadius: '12px',
+                    border: '2px dashed #CBD5E1',
+                    background: '#F8FAFC',
+                    cursor: uploadingProof ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'center',
+                  }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingProof}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                      style={{ display: 'none' }}
+                    />
+                    <span style={{ fontSize: '24px', marginBottom: '2px' }}>📸</span>
+                    <span style={{ fontSize: '12.5px', fontWeight: 800, color: '#334155' }}>
+                      {uploadingProof ? 'Uploading Receipt Screenshot…' : 'Click to Upload Payment Receipt / Proof'}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                      Supports PNG, JPG, JPEG (Max 10MB)
+                    </span>
+                  </label>
+                )}
               </div>
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
@@ -1733,7 +2137,7 @@ export const SupplyOrdersPage: React.FC = () => {
                   onClick={() => setOrderToSubmitRef(null)}
                   style={{
                     padding: '10px 16px',
-                    borderRadius: '8px',
+                    borderRadius: '10px',
                     border: '1px solid #CBD5E1',
                     backgroundColor: '#FFFFFF',
                     color: '#475569',
@@ -1746,19 +2150,20 @@ export const SupplyOrdersPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingRef || !submittingRefInput.trim()}
+                  disabled={isSubmittingRef || uploadingProof || !submittingRefInput.trim()}
                   style={{
-                    padding: '10px 18px',
-                    borderRadius: '8px',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
                     border: 'none',
-                    backgroundColor: '#0284C7',
+                    backgroundColor: isSubmittingRef || uploadingProof || !submittingRefInput.trim() ? '#94A3B8' : '#0284C7',
                     color: '#FFFFFF',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     fontSize: '13px',
-                    cursor: 'pointer',
+                    cursor: isSubmittingRef || uploadingProof || !submittingRefInput.trim() ? 'not-allowed' : 'pointer',
+                    boxShadow: isSubmittingRef || uploadingProof || !submittingRefInput.trim() ? 'none' : '0 4px 12px rgba(2, 132, 199, 0.3)',
                   }}
                 >
-                  {isSubmittingRef ? 'Submitting…' : 'Submit Reference Number'}
+                  {isSubmittingRef ? 'Submitting…' : 'Submit Ref & Receipt Proof'}
                 </button>
               </div>
             </form>

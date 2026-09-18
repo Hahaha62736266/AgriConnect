@@ -5,7 +5,8 @@ import { useToast } from '../contexts/ToastContext';
 import { useChat } from '../contexts/ChatContext';
 import { produceApi } from '../api/produce';
 import { supplyApi } from '../api/supply';
-import { getImageUrl } from '../api';
+import { api, getImageUrl } from '../api';
+import type { PublicUserProfile } from '../types/auth';
 
 export interface OrderItem {
   id: string;
@@ -28,6 +29,10 @@ export interface OrderItem {
   status: 'Pending' | 'Quoted' | 'Confirmed' | 'Completed' | 'Cancelled';
   date: string;
   contactMessage?: string;
+  paymentMethod?: string;
+  paymentStatus?: string;
+  paymentRefNo?: string;
+  paymentProofUrl?: string;
 }
 
 export interface ParsedContactInfo {
@@ -71,6 +76,27 @@ export function parseContactMessage(msg?: string): ParsedContactInfo {
     notes: notes || '',
   };
 }
+
+export const paymentMethodLabels: Record<string, { label: string; icon: string }> = {
+  cod: { label: 'Cash on Delivery', icon: '💵' },
+  gcash: { label: 'GCash', icon: '📱' },
+  maya: { label: 'Maya', icon: '💳' },
+  bank_transfer: { label: 'Bank Transfer', icon: '🏦' },
+  card: { label: 'Credit / Debit Card', icon: '💳' },
+};
+
+export const getPaymentBadge = (paymentMethod?: string, paymentStatus?: string, paymentRefNo?: string) => {
+  if (paymentMethod === 'cod') {
+    return { label: 'COD (Pay on Delivery)', bg: '#F1F5F9', color: '#475569', icon: '💵' };
+  }
+  if (paymentStatus === 'paid') {
+    return { label: 'Paid & Verified', bg: '#DCFCE7', color: '#166534', icon: '✅' };
+  }
+  if (paymentRefNo) {
+    return { label: 'Pending Verification', bg: '#FEF3C7', color: '#92400E', icon: '⌛' };
+  }
+  return { label: 'Awaiting Payment', bg: '#FEF9C3', color: '#854D0E', icon: '⏳' };
+};
 
 export function getCropIcon(cropName: string = ''): string {
   const c = cropName.toLowerCase();
@@ -163,7 +189,7 @@ export const ProduceTransactionsPage: React.FC = () => {
     navigate('/messages');
   };
 
-  const [selectedTab, setSelectedTab] = useState<'All Orders' | 'Pending' | 'Quoted' | 'Confirmed' | 'Completed' | 'Cancelled'>('All Orders');
+  const [selectedTab, setSelectedTab] = useState<'All Orders' | 'Pending' | 'Quoted' | 'To Pay' | 'Confirmed' | 'Completed' | 'Cancelled'>('All Orders');
   const [searchQuery, setSearchQuery] = useState('');
   const [orders, setOrders] = useState<OrderItem[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<OrderItem | null>(null);
@@ -171,6 +197,124 @@ export const ProduceTransactionsPage: React.FC = () => {
   const [orderToSetShipping, setOrderToSetShipping] = useState<OrderItem | null>(null);
   const [shippingFeeInput, setShippingFeeInput] = useState<number>(0);
   const [shippingFeeDisplay, setShippingFeeDisplay] = useState<string>('0');
+
+  // Payment proof modal states
+  const [orderToSubmitRef, setOrderToSubmitRef] = useState<OrderItem | null>(null);
+  const [submittingRefInput, setSubmittingRefInput] = useState('');
+  const [submittingProofUrl, setSubmittingProofUrl] = useState('');
+  const [isSubmittingRef, setIsSubmittingRef] = useState(false);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const [modalFarmerProfile, setModalFarmerProfile] = useState<PublicUserProfile | null>(null);
+  const [loadingModalProfile, setLoadingModalProfile] = useState(false);
+  const [copiedModalText, setCopiedModalText] = useState<string | null>(null);
+
+  const copyModalText = (text: string, label: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedModalText(label);
+    toastSuccess('Copied to Clipboard!', `${label} (${text}) copied to clipboard.`);
+    setTimeout(() => setCopiedModalText(null), 2000);
+  };
+
+  const [farmerProfiles, setFarmerProfiles] = useState<Record<string, PublicUserProfile>>({});
+
+  useEffect(() => {
+    if (orders.length > 0) {
+      const farmerIds = Array.from(new Set(orders.map((o) => o.farmerId).filter(Boolean))) as string[];
+      farmerIds.forEach((fId) => {
+        if (!farmerProfiles[fId]) {
+          api.getUserPublicProfile(fId)
+            .then((profile) => {
+              setFarmerProfiles((prev) => ({ ...prev, [fId]: profile }));
+            })
+            .catch(() => {});
+        }
+      });
+    }
+  }, [orders]);
+
+  useEffect(() => {
+    if (orderToSubmitRef?.farmerId) {
+      setLoadingModalProfile(true);
+      api.getUserPublicProfile(orderToSubmitRef.farmerId)
+        .then((profile) => setModalFarmerProfile(profile))
+        .catch(() => setModalFarmerProfile(null))
+        .finally(() => setLoadingModalProfile(false));
+    } else {
+      setModalFarmerProfile(null);
+    }
+  }, [orderToSubmitRef]);
+
+  const handleProofFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingProof(true);
+    try {
+      const res = await api.uploadImage(file);
+      setSubmittingProofUrl(res.url);
+      toastSuccess('Receipt Uploaded!', 'Proof of payment image uploaded successfully.');
+    } catch (err: any) {
+      toastError('Upload Failed', err.message || 'Failed to upload receipt photo.');
+    } finally {
+      setUploadingProof(false);
+    }
+  };
+
+  const handleSubmitRefNo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orderToSubmitRef || !submittingRefInput.trim()) return;
+
+    setIsSubmittingRef(true);
+    try {
+      await produceApi.submitPaymentRef(
+        orderToSubmitRef.id,
+        submittingRefInput.trim(),
+        submittingProofUrl || undefined
+      );
+      toastSuccess('Payment Reference Submitted! 🎉', 'Your payment reference and proof receipt have been sent to the selling farmer for verification.');
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderToSubmitRef.id
+            ? {
+                ...o,
+                paymentRefNo: submittingRefInput.trim(),
+                paymentProofUrl: submittingProofUrl || o.paymentProofUrl,
+                paymentStatus: 'pending_verification',
+              }
+            : o
+        )
+      );
+      setOrderToSubmitRef(null);
+      setSubmittingRefInput('');
+      setSubmittingProofUrl('');
+    } catch (err: any) {
+      toastError('Submission Failed', err.response?.data?.error || err.message || 'Failed to submit payment reference.');
+    } finally {
+      setIsSubmittingRef(false);
+    }
+  };
+
+  const handleVerifyPayment = async (orderId: string) => {
+    setIsUpdatingStatus(true);
+    try {
+      const target = orders.find((o) => o.id === orderId);
+      if (!target) return;
+      await produceApi.updateTransactionStatus(
+        orderId,
+        target.status.toLowerCase() as any,
+        target.shippingFee,
+        'paid'
+      );
+      toastSuccess('Payment Verified! ✅', 'Payment received and verified successfully.');
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, paymentStatus: 'paid' } : o))
+      );
+    } catch (err: any) {
+      toastError('Verification Failed', err.message || 'Failed to verify payment.');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
 
   useEffect(() => {
     if (orderToSetShipping) {
@@ -183,10 +327,11 @@ export const ProduceTransactionsPage: React.FC = () => {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const tabs: ('All Orders' | 'Pending' | 'Quoted' | 'Confirmed' | 'Completed' | 'Cancelled')[] = [
+  const tabs: ('All Orders' | 'Pending' | 'Quoted' | 'To Pay' | 'Confirmed' | 'Completed' | 'Cancelled')[] = [
     'All Orders',
     'Pending',
     'Quoted',
+    'To Pay',
     'Confirmed',
     'Completed',
     'Cancelled',
@@ -236,6 +381,16 @@ export const ProduceTransactionsPage: React.FC = () => {
           const subtotal = t.subtotal ?? (t.unitPrice ? t.unitPrice * t.quantity : t.totalPrice);
           const shippingFee = t.shippingFee ?? 0;
 
+          let pm = t.paymentMethod;
+          if (!pm) {
+            const pLower = parsedContact.payment.toLowerCase();
+            if (pLower.includes('gcash')) pm = 'gcash';
+            else if (pLower.includes('maya')) pm = 'maya';
+            else if (pLower.includes('bank')) pm = 'bank_transfer';
+            else if (pLower.includes('cod') || pLower.includes('cash on delivery')) pm = 'cod';
+            else pm = 'gcash';
+          }
+
           return {
             id: t.id,
             isBackend: true,
@@ -257,6 +412,10 @@ export const ProduceTransactionsPage: React.FC = () => {
             status: capStatus,
             date: timeStr,
             contactMessage: t.contactMessage,
+            paymentMethod: pm,
+            paymentStatus: t.paymentStatus || 'unpaid',
+            paymentRefNo: t.paymentRefNo || '',
+            paymentProofUrl: t.paymentProofUrl || '',
           };
         });
         setOrders(mapped);
@@ -388,13 +547,25 @@ export const ProduceTransactionsPage: React.FC = () => {
   // KPI recalculations based on active pool
   const activePendingCount = activeOrders.filter((o) => o.status === 'Pending').length;
   const activeQuotedCount = activeOrders.filter((o) => o.status === 'Quoted').length;
+  const activeToPayCount = activeOrders.filter((o) => {
+    const isCOD = o.paymentMethod === 'cod' || parseContactMessage(o.contactMessage).payment.toLowerCase().includes('cash on delivery') || parseContactMessage(o.contactMessage).payment.toLowerCase().includes('cod');
+    return !isCOD && o.paymentStatus !== 'paid' && !o.paymentRefNo && o.status !== 'Pending' && o.status !== 'Quoted' && o.status !== 'Completed' && o.status !== 'Cancelled';
+  }).length;
   const activeConfirmedCount = activeOrders.filter((o) => o.status === 'Confirmed').length;
   const activeCompletedCount = activeOrders.filter((o) => o.status === 'Completed').length;
   const activeCancelledCount = activeOrders.filter((o) => o.status === 'Cancelled').length;
 
   // Filtering
   const filteredOrders = activeOrders.filter((ord) => {
-    const matchesTab = selectedTab === 'All Orders' || ord.status.toLowerCase() === selectedTab.toLowerCase();
+    const isCOD = ord.paymentMethod === 'cod' || parseContactMessage(ord.contactMessage).payment.toLowerCase().includes('cash on delivery') || parseContactMessage(ord.contactMessage).payment.toLowerCase().includes('cod');
+    const isToPay = !isCOD && ord.paymentStatus !== 'paid' && !ord.paymentRefNo && ord.status !== 'Pending' && ord.status !== 'Quoted' && ord.status !== 'Completed' && ord.status !== 'Cancelled';
+
+    const matchesTab =
+      selectedTab === 'All Orders'
+        ? true
+        : selectedTab === 'To Pay'
+        ? isToPay
+        : ord.status.toLowerCase() === selectedTab.toLowerCase();
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch =
       query === '' ||
@@ -496,7 +667,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             transition: 'all 0.15s ease',
           }}
         >
-          <span>{isFarmer ? '🌾 Crop Sales' : '🌱 My Purchases'}</span>
+          <span>{isFarmer ? '🌾 Crop Sales Orders' : '🌱 My Produce Purchases'}</span>
           <span style={{
             backgroundColor: !isViewingPurchases ? '#176B3A' : '#cbd5e1',
             color: '#ffffff',
@@ -535,7 +706,7 @@ export const ProduceTransactionsPage: React.FC = () => {
               transition: 'all 0.15s ease',
             }}
           >
-            <span>🛒 Purchases</span>
+            <span>🛒 My Crop Purchases</span>
             <span style={{
               backgroundColor: isViewingPurchases ? '#7C3AED' : '#cbd5e1',
               color: '#ffffff',
@@ -576,7 +747,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             e.currentTarget.style.color = '#64748b';
           }}
         >
-          <span>🏪 Supplies</span>
+          <span>{user?.role === 'supplier' ? '📦 Customer Supply Orders' : '🏪 My Supply Purchases'}</span>
           {supplyOrdersCount !== null && (
             <span style={{
               backgroundColor: '#cbd5e1',
@@ -739,6 +910,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             let count = activeOrders.length;
             if (tab === 'Pending') count = activePendingCount;
             if (tab === 'Quoted') count = activeQuotedCount;
+            if (tab === 'To Pay') count = activeToPayCount;
             if (tab === 'Confirmed') count = activeConfirmedCount;
             if (tab === 'Completed') count = activeCompletedCount;
             if (tab === 'Cancelled') count = activeCancelledCount;
@@ -764,7 +936,7 @@ export const ProduceTransactionsPage: React.FC = () => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                <span>{tab}</span>
+                <span>{tab === 'To Pay' ? '💳 To Pay' : tab}</span>
                 <span
                   style={{
                     fontSize: '12px',
@@ -1083,54 +1255,266 @@ export const ProduceTransactionsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Right Column: Buyer / Seller Info depending on viewMode */}
-                  <div className="order-party-box" style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '14px', border: '1px solid #E2E8F0' }}>
-                    {/* Party Identity */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: isViewingAsBuyer ? '#4C1D95' : '#0E4A27', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 800 }}>
-                        {isViewingAsBuyer
-                          ? (ord.farmerName || 'S').charAt(0).toUpperCase()
-                          : ord.buyerName.charAt(0).toUpperCase()}
+                  {/* ─── Delivery Details & Payment Details Grid (Matching Supply Orders UI/UX) ─── */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                      gap: '16px',
+                      alignItems: 'start',
+                    }}
+                  >
+                    {/* Left: DELIVERY DETAILS */}
+                    <div
+                      style={{
+                        padding: '14px 16px',
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: '14px',
+                        border: '1px solid #E2E8F0',
+                        fontSize: '13px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          color: '#64748B',
+                          fontSize: '11.5px',
+                          letterSpacing: '0.4px',
+                          textTransform: 'uppercase',
+                          marginBottom: '2px',
+                        }}
+                      >
+                        DELIVERY DETAILS
                       </div>
-                      <div>
-                        <div style={{ fontSize: '11px', fontWeight: 700, color: isViewingAsBuyer ? '#6D28D9' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                          {isViewingAsBuyer ? 'Selling Farmer' : 'Buyer'}
-                        </div>
-                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
-                          {isViewingAsBuyer ? (ord.farmerName || 'Unknown Farmer') : ord.buyerName}
-                        </div>
+                      <div style={{ color: '#0F172A' }}>
+                        <strong>Method:</strong> {ord.deliveryMethod === 'pickup' ? 'Farm-Gate Pickup' : 'Home / Farm Delivery'}
                       </div>
-                    </div>
-
-                    {/* Logistics Chips */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '13.5px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155' }}>
-                        <span>📍</span>
-                        <span style={{ fontWeight: 600 }}>{parsed.fulfillment}</span>
+                      <div style={{ color: '#334155' }}>
+                        <strong>Address:</strong> {ord.deliveryAddress || ord.buyerLocation || 'Buyer Address'}
                       </div>
-
-                      {parsed.phone && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>📞</span>
-                          <a
-                            href={`tel:${parsed.phone.replace(/[^0-9+]/g, '')}`}
-                            style={{ color: '#0369A1', fontWeight: 700, textDecoration: 'none' }}
-                          >
-                            {parsed.phone}
-                          </a>
+                      <div style={{ color: '#475569' }}>
+                        <strong>Customer / Buyer:</strong> {ord.buyerName} {isViewingAsBuyer && <span style={{ color: '#854D0E', fontWeight: 700 }}>(You)</span>}
+                      </div>
+                      {isViewingAsBuyer && ord.farmerName && (
+                        <div style={{ color: '#4C1D95', fontSize: '12.5px', marginTop: '2px' }}>
+                          <strong>Selling Farmer:</strong> {ord.farmerName}
                         </div>
                       )}
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569' }}>
-                        <span>💳</span>
-                        <span style={{ fontWeight: 600, color: '#0F172A' }}>{parsed.payment}</span>
-                      </div>
-
                       {parsed.notes && (
-                        <div style={{ marginTop: '4px', padding: '6px 10px', borderRadius: '8px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', fontStyle: 'italic', color: '#64748B', fontSize: '13px' }}>
+                        <div style={{ marginTop: '4px', padding: '6px 10px', borderRadius: '8px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', fontStyle: 'italic', color: '#64748B', fontSize: '12px' }}>
                           "{parsed.notes}"
                         </div>
                       )}
+                    </div>
+
+                    {/* Right: PAYMENT DETAILS */}
+                    <div
+                      style={{
+                        padding: '14px 16px',
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: '14px',
+                        border: '1px solid #E2E8F0',
+                        fontSize: '13px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontWeight: 800,
+                          color: '#64748B',
+                          fontSize: '11.5px',
+                          letterSpacing: '0.4px',
+                          textTransform: 'uppercase',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <span>PAYMENT DETAILS</span>
+                      </div>
+
+                      {(() => {
+                        const pmKey = ord.paymentMethod || 'gcash';
+                        const pInfo = paymentMethodLabels[pmKey] || { label: pmKey.toUpperCase(), icon: '💳' };
+                        const pBadge = getPaymentBadge(ord.paymentMethod, ord.paymentStatus, ord.paymentRefNo);
+                        const fProf = ord.farmerId ? farmerProfiles[ord.farmerId] : null;
+                        const isNonCOD = ord.paymentMethod !== 'cod';
+
+                        const recipientName =
+                          fProf?.gcashName ||
+                          fProf?.mayaName ||
+                          fProf?.bankAccountName ||
+                          (fProf?.firstName ? `${fProf.firstName} ${fProf.lastName}` : ord.farmerName || 'Selling Farmer');
+                        const recipientNum =
+                          (ord.paymentMethod === 'maya'
+                            ? fProf?.mayaNumber
+                            : ord.paymentMethod === 'bank_transfer'
+                            ? fProf?.bankAccountNo
+                            : (fProf?.gcashNumber || fProf?.phone)) || fProf?.phone;
+
+                        return (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span>{pInfo.icon}</span>
+                              <strong style={{ color: '#0F172A' }}>{pInfo.label}</strong>
+                              <span
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 800,
+                                  padding: '2px 8px',
+                                  borderRadius: '8px',
+                                  backgroundColor: pBadge.bg,
+                                  color: pBadge.color,
+                                }}
+                              >
+                                {pBadge.icon} {pBadge.label}
+                              </span>
+                            </div>
+
+                            {/* Recipient Details Box on Order Card */}
+                            {isNonCOD && (
+                              <div
+                                style={{
+                                  marginTop: '4px',
+                                  padding: '8px 10px',
+                                  background: '#FFFFFF',
+                                  borderRadius: '8px',
+                                  border: '1px solid #CBD5E1',
+                                  fontSize: '12px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '4px',
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569' }}>
+                                  <span>Recipient Name:</span>
+                                  <strong style={{ color: '#0F172A' }}>{recipientName}</strong>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span>{(ord.paymentMethod || 'GCash').toUpperCase()} Number:</span>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#0284C7', fontSize: '13px' }}>
+                                      {recipientNum || 'Contact farmer'}
+                                    </span>
+                                    {recipientNum && (
+                                      <button
+                                        type="button"
+                                        onClick={() => copyModalText(recipientNum, `${(ord.paymentMethod || 'GCash').toUpperCase()} Number`)}
+                                        style={{
+                                          padding: '2px 6px',
+                                          fontSize: '10px',
+                                          fontWeight: 700,
+                                          borderRadius: '4px',
+                                          background: '#E0F2FE',
+                                          color: '#0369A1',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                        }}
+                                      >
+                                        📋 Copy
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {ord.paymentRefNo && (
+                              <div style={{ fontSize: '12px', color: '#0369A1', fontWeight: 800, marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <span>🧾 Ref No:</span>
+                                <span style={{ fontFamily: 'monospace', background: '#E0F2FE', padding: '1px 6px', borderRadius: '4px' }}>#{ord.paymentRefNo}</span>
+                              </div>
+                            )}
+
+                            {ord.paymentProofUrl && (
+                              <div style={{ marginTop: '2px' }}>
+                                <a
+                                  href={getImageUrl(ord.paymentProofUrl)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    fontSize: '11.5px',
+                                    color: '#0284C7',
+                                    fontWeight: 700,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    background: '#F0F9FF',
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #BAE6FD',
+                                    textDecoration: 'none',
+                                  }}
+                                >
+                                  📸 View Payment Receipt Proof
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Primary Submit Payment Ref / Proof Action Button (Inside Payment Details Card for Buyer after quote approval / confirmation) */}
+                            {isViewingAsBuyer && isNonCOD && ord.paymentStatus !== 'paid' && (ord.status === 'Confirmed' || ord.status === 'Completed' || ord.paymentRefNo || ord.paymentProofUrl) && ord.status !== 'Cancelled' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOrderToSubmitRef(ord);
+                                  setSubmittingRefInput(ord.paymentRefNo || '');
+                                  setSubmittingProofUrl(ord.paymentProofUrl || '');
+                                }}
+                                style={{
+                                  marginTop: '6px',
+                                  padding: '8px 14px',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  backgroundColor: '#0284C7',
+                                  color: '#FFFFFF',
+                                  fontWeight: 800,
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  boxShadow: '0 2px 4px rgba(2,132,199,0.25)',
+                                }}
+                              >
+                                <span>📱</span>
+                                <span>{ord.paymentRefNo || ord.paymentProofUrl ? 'Update Payment Ref / Proof' : 'Submit Payment Ref / Proof'}</span>
+                              </button>
+                            )}
+
+                            {/* Seller Verify Payment Button (Inside Payment Details Card for Seller) */}
+                            {!isViewingAsBuyer && isNonCOD && Boolean(ord.paymentRefNo) && ord.paymentStatus !== 'paid' && ord.status !== 'Completed' && ord.status !== 'Cancelled' && (
+                              <button
+                                type="button"
+                                disabled={isUpdatingStatus}
+                                onClick={() => handleVerifyPayment(ord.id)}
+                                style={{
+                                  marginTop: '6px',
+                                  padding: '8px 14px',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  backgroundColor: '#16A34A',
+                                  color: '#FFFFFF',
+                                  fontWeight: 800,
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  boxShadow: '0 2px 4px rgba(22,163,74,0.25)',
+                                }}
+                              >
+                                <span>✅</span>
+                                <span>Verify & Confirm Payment Received</span>
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
@@ -1316,8 +1700,8 @@ export const ProduceTransactionsPage: React.FC = () => {
                               boxShadow: '0 2px 4px rgba(22,163,74,0.2)',
                             }}
                           >
-                            <span>✓</span>
-                            <span>Accept & Confirm Order</span>
+                            <span>{ord.deliveryMethod === 'pickup' ? '✓' : '⚡'}</span>
+                            <span>{ord.deliveryMethod === 'pickup' ? 'Accept & Confirm Order' : 'Quote Shipping Fee'}</span>
                           </button>
                         )}
 
@@ -1395,33 +1779,88 @@ export const ProduceTransactionsPage: React.FC = () => {
                           </button>
                         )}
 
-                        {/* Direct Cancel Order button for Pending Orders */}
+
+                        {/* Seller Verify Payment button */}
+                        {isFarmer &&
+                          !isViewingPurchases &&
+                          ord.paymentMethod !== 'cod' &&
+                          Boolean(ord.paymentRefNo) &&
+                          ord.paymentStatus !== 'paid' && (
+                            <button
+                              type="button"
+                              className="order-primary-btn"
+                              disabled={isUpdatingStatus}
+                              onClick={() => handleVerifyPayment(ord.id)}
+                              style={{
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                backgroundColor: '#16A34A',
+                                color: '#FFFFFF',
+                                fontWeight: 800,
+                                fontSize: '14px',
+                                border: 'none',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                boxShadow: '0 2px 6px rgba(22,163,74,0.3)',
+                              }}
+                            >
+                              <span>✅</span>
+                              <span>Verify & Confirm Payment Received</span>
+                            </button>
+                          )}
+
+                        {/* Cancel Order button with Seller Restriction Guard */}
                         {ord.status === 'Pending' && (
-                          <button
-                            type="button"
-                            className="order-cancel-btn"
-                            disabled={isUpdatingStatus}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOrderToCancel(ord);
-                            }}
-                            style={{
-                              padding: '10px 16px',
-                              borderRadius: '10px',
-                              border: '1.5px solid #FECACA',
-                              backgroundColor: '#FEF2F2',
-                              color: '#DC2626',
-                              fontWeight: 700,
-                              fontSize: '14px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                            }}
-                          >
-                            <span>✕</span>
-                            <span>Cancel Order</span>
-                          </button>
+                          <>
+                            {isFarmer && !isViewingPurchases && ord.paymentMethod !== 'cod' && (ord.paymentStatus === 'paid' || ord.paymentRefNo) ? (
+                              <span
+                                title="Customer has already submitted payment for this non-COD order. Seller cancellation is restricted."
+                                style={{
+                                  padding: '8px 14px',
+                                  borderRadius: '10px',
+                                  backgroundColor: '#F1F5F9',
+                                  border: '1.5px solid #CBD5E1',
+                                  color: '#64748B',
+                                  fontSize: '12px',
+                                  fontWeight: 700,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                }}
+                              >
+                                <span>🔒</span>
+                                <span>Paid — Cancellation Restricted</span>
+                              </span>
+                            ) : (
+                              <button
+                                type="button"
+                                className="order-cancel-btn"
+                                disabled={isUpdatingStatus}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setOrderToCancel(ord);
+                                }}
+                                style={{
+                                  padding: '10px 16px',
+                                  borderRadius: '10px',
+                                  border: '1.5px solid #FECACA',
+                                  backgroundColor: '#FEF2F2',
+                                  color: '#DC2626',
+                                  fontWeight: 700,
+                                  fontSize: '14px',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                }}
+                              >
+                                <span>✕</span>
+                                <span>Cancel Order</span>
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     )}
@@ -2767,6 +3206,224 @@ export const ProduceTransactionsPage: React.FC = () => {
                 Confirm & Send Quote to Buyer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Non-COD Payment Reference & Receipt Proof Submission Modal ─── */}
+      {orderToSubmitRef && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '20px',
+          }}
+          onClick={() => setOrderToSubmitRef(null)}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '20px',
+              padding: '26px',
+              maxWidth: '520px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+              border: '1px solid #E2E8F0',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>💳 Submit Payment Reference & Proof</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setOrderToSubmitRef(null)}
+                style={{ background: 'none', border: 'none', fontSize: '20px', color: '#94A3B8', cursor: 'pointer' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Order Summary Banner */}
+            <div style={{
+              fontSize: '13px',
+              color: '#1E293B',
+              lineHeight: 1.5,
+              background: 'linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%)',
+              padding: '14px 16px',
+              borderRadius: '14px',
+              border: '1px solid #BAE6FD',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '4px',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 800, color: '#0369A1' }}>
+                  Harvest Order #{orderToSubmitRef.id.slice(-6).toUpperCase()}
+                </span>
+                <span style={{ fontSize: '16px', fontWeight: 900, color: '#16A34A' }}>
+                  ₱{orderToSubmitRef.total.toLocaleString()}
+                </span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#475569' }}>
+                Farmer: <strong>{orderToSubmitRef.farmerName || 'Selling Farmer'}</strong> • Crop: <strong>{orderToSubmitRef.product} ({orderToSubmitRef.quantity})</strong>
+              </div>
+            </div>
+
+            {/* Seller Account Details Card */}
+            <div style={{ background: '#F8FAFC', padding: '14px 16px', borderRadius: '14px', border: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span>Seller Payment Details</span>
+                <span style={{ fontSize: '11.5px', color: '#16A34A', fontWeight: 800, background: '#DCFCE7', padding: '2px 8px', borderRadius: '10px' }}>
+                  Send Total: ₱{orderToSubmitRef.total.toLocaleString()}
+                </span>
+              </div>
+
+              {loadingModalProfile ? (
+                <div style={{ fontSize: '12px', color: '#64748B', fontStyle: 'italic' }}>Loading farmer payment details…</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748B', fontWeight: 600 }}>GCash / Maya / Phone:</span>
+                    <span style={{ color: '#0F172A', fontWeight: 800 }}>
+                      {modalFarmerProfile?.phone || modalFarmerProfile?.gcashNumber || 'Not specified'}
+                    </span>
+                  </div>
+                  {(modalFarmerProfile?.phone || modalFarmerProfile?.gcashNumber) && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                      <button
+                        type="button"
+                        onClick={() => copyModalText(modalFarmerProfile?.phone || modalFarmerProfile?.gcashNumber || '', 'Payment Number')}
+                        style={{ padding: '4px 10px', fontSize: '12px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
+                      >
+                        📋 {copiedModalText === 'Payment Number' ? 'Copied!' : 'Copy Payment Number'}
+                      </button>
+                    </div>
+                  )}
+                  {modalFarmerProfile?.gcashQrUrl && (
+                    <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '12px', border: '1.5px dashed #BAE6FD' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0284C7', marginBottom: '6px' }}>Scan QR Code to Pay Farmer:</div>
+                      <img src={getImageUrl(modalFarmerProfile.gcashQrUrl)} alt="Payment QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '10px', border: '1px solid #E2E8F0' }} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <form onSubmit={handleSubmitRefNo} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                  Transaction Reference Number <span style={{ color: '#EF4444' }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={submittingRefInput}
+                  onChange={(e) => setSubmittingRefInput(e.target.value)}
+                  placeholder="e.g. 1029384756123 (13 digits)"
+                  style={{
+                    width: '100%',
+                    padding: '11px 13px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #0284C7',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    color: '#0C4A6E',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                  }}
+                />
+                <div style={{ fontSize: '11.5px', color: '#64748B', marginTop: '4px' }}>
+                  Enter the transaction reference number from your GCash, Maya, or Bank receipt.
+                </div>
+              </div>
+
+              {/* Receipt Image Proof Uploader */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                  Proof of Transaction / Receipt Photo <span style={{ fontSize: '11px', color: '#0284C7', fontWeight: 600 }}>(Optional / Recommended)</span>
+                </label>
+
+                {submittingProofUrl ? (
+                  <div style={{ position: 'relative', background: '#F8FAFC', padding: '10px', borderRadius: '12px', border: '1.5px solid #16A34A', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img src={getImageUrl(submittingProofUrl)} alt="Receipt Proof Preview" style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #CBD5E1' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#166534' }}>✓ Receipt Photo Uploaded</div>
+                      <div style={{ fontSize: '11px', color: '#64748B' }}>Click change to upload a different image receipt.</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSubmittingProofUrl('')}
+                      style={{ padding: '6px 12px', fontSize: '12px', fontWeight: 700, borderRadius: '8px', background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', cursor: 'pointer' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProofFileChange}
+                      disabled={uploadingProof}
+                      style={{ display: 'none' }}
+                      id="produce-receipt-upload-input"
+                    />
+                    <label
+                      htmlFor="produce-receipt-upload-input"
+                      style={{
+                        padding: '14px',
+                        borderRadius: '12px',
+                        border: '2px dashed #0284C7',
+                        background: '#F0F9FF',
+                        color: '#0369A1',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        textAlign: 'center',
+                        cursor: uploadingProof ? 'wait' : 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <span style={{ fontSize: '24px' }}>📸</span>
+                      <span>{uploadingProof ? 'Uploading Receipt Image…' : 'Click to Upload Transaction Receipt Image'}</span>
+                      <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 500 }}>Supports JPG, PNG, WEBP receipts</span>
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setOrderToSubmitRef(null)}
+                  style={{ padding: '10px 18px', borderRadius: '10px', border: '1.5px solid #CBD5E1', background: '#FFFFFF', color: '#475569', fontWeight: 700, fontSize: '14px', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingRef || uploadingProof}
+                  style={{ padding: '10px 22px', borderRadius: '10px', border: 'none', background: '#0284C7', color: '#FFFFFF', fontWeight: 800, fontSize: '14px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(2,132,199,0.3)' }}
+                >
+                  {isSubmittingRef ? 'Submitting…' : 'Submit Reference & Proof'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

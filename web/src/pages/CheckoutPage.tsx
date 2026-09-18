@@ -50,13 +50,6 @@ const getPaymentOptions = (isPickup: boolean): {
     icon: '🏦',
     desc: 'Direct transfer to seller bank account.',
   },
-  {
-    id: 'card',
-    label: 'Credit / Debit Card',
-    icon: '💳',
-    desc: 'Visa, Mastercard via gateway.',
-    comingSoon: true,
-  },
 ];
 
 export const CheckoutPage: React.FC = () => {
@@ -119,12 +112,11 @@ export const CheckoutPage: React.FC = () => {
 
   // Payment States
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
-  const [paymentRefNo, setPaymentRefNo] = useState('');
+  const paymentRefNo = '';
   const [placingOrder, setPlacingOrder] = useState(false);
 
   // Seller Details Fetch
   const [sellerProfile, setSellerProfile] = useState<PublicUserProfile | null>(null);
-  const [loadingSeller, setLoadingSeller] = useState(false);
 
   const primarySupplierId = orderType === 'supplies'
     ? activeSupplyItems[0]?.product?.supplierId
@@ -132,11 +124,9 @@ export const CheckoutPage: React.FC = () => {
 
   useEffect(() => {
     if (primarySupplierId) {
-      setLoadingSeller(true);
       api.getUserPublicProfile(primarySupplierId)
         .then((data: PublicUserProfile) => setSellerProfile(data))
-        .catch(() => setSellerProfile(null))
-        .finally(() => setLoadingSeller(false));
+        .catch(() => setSellerProfile(null));
     }
   }, [primarySupplierId]);
 
@@ -558,64 +548,12 @@ export const CheckoutPage: React.FC = () => {
                 })}
               </div>
 
-              {/* Digital Payment Info & Seller Details Box */}
+              {/* Digital Payment Instructions Tip Banner */}
               {(paymentMethod === 'gcash' || paymentMethod === 'maya' || paymentMethod === 'bank_transfer') && (
-                <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
-                  <div style={{ fontWeight: 800, fontSize: '14px', color: '#0f172a', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    📱 Seller Direct Payment Details:
-                  </div>
-
-                  {loadingSeller ? (
-                    <div style={{ fontSize: '13px', color: '#64748b' }}>Loading seller details…</div>
-                  ) : sellerProfile ? (
-                    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '14px' }}>
-                      <div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>Account Name</div>
-                        <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '14px' }}>
-                          {sellerProfile.gcashName || `${sellerProfile.firstName || ''} ${sellerProfile.lastName || ''}`.trim()}
-                        </div>
-                      </div>
-                      <div>
-                        <div style={{ fontSize: '12px', color: '#64748b' }}>Number / Phone</div>
-                        <div style={{ fontWeight: 700, color: '#16a34a', fontSize: '15px' }}>
-                          {paymentMethod === 'gcash' ? (sellerProfile.gcashNumber || sellerProfile.phone) : (sellerProfile.mayaNumber || sellerProfile.phone)}
-                        </div>
-                      </div>
-                      {sellerProfile.gcashQrUrl && (
-                        <div>
-                          <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>QR Code</div>
-                          <img
-                            src={getImageUrl(sellerProfile.gcashQrUrl)}
-                            alt="Seller Payment QR"
-                            style={{ width: '90px', height: '90px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #cbd5e1' }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '12px' }}>
-                      Contact seller after order placement to confirm transfer details.
-                    </div>
-                  )}
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
-                      Transaction Reference Number (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 100234589012"
-                      value={paymentRefNo}
-                      onChange={(e) => setPaymentRefNo(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px',
-                        borderRadius: '8px',
-                        border: '1.5px solid #cbd5e1',
-                        fontSize: '14px',
-                        outline: 'none',
-                      }}
-                    />
+                <div style={{ background: '#f0fdf4', borderRadius: '12px', padding: '14px 16px', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '22px' }}>💡</span>
+                  <div style={{ fontSize: '13px', color: '#166534', lineHeight: 1.45 }}>
+                    <strong>Direct E-Wallet / Bank Payment:</strong> After placing your order, you can view the seller's verified QR code & payment account details under <strong>"My Orders"</strong> to transfer payment and upload your transaction reference number.
                   </div>
                 </div>
               )}
