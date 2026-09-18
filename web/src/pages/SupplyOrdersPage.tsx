@@ -29,30 +29,30 @@ const getSupplyFallback = (name: string = ''): string => {
 
 // ── Fulfillment status badge config ─────────────────────────────────────────
 const statusBadges: Record<SupplyOrderStatus, { label: string; bg: string; color: string; icon: string }> = {
-  pending:       { label: 'Order Placed · Pending Confirmation', bg: '#fef9c3', color: '#854d0e', icon: '📝' },
-  quoted:        { label: 'Delivery Fee Quoted · Action Required', bg: '#fef3c7', color: '#92400e', icon: '⚡' },
-  processing:    { label: 'Processing in Warehouse',           bg: '#dbeafe', color: '#1e40af', icon: '📦' },
-  shipped_ready: { label: 'Shipped / Ready for Pickup',        bg: '#e0e7ff', color: '#3730a3', icon: '🚚' },
-  completed:     { label: 'Order Completed & Delivered',       bg: '#dcfce7', color: '#166534', icon: '✓' },
-  cancelled:     { label: 'Order Cancelled',                   bg: '#fee2e2', color: '#991b1b', icon: '✕' },
+  pending: { label: 'Order Placed · Pending Confirmation', bg: '#fef9c3', color: '#854d0e', icon: '📝' },
+  quoted: { label: 'Delivery Fee Quoted · Action Required', bg: '#fef3c7', color: '#92400e', icon: '⚡' },
+  processing: { label: 'Processing in Warehouse', bg: '#dbeafe', color: '#1e40af', icon: '📦' },
+  shipped_ready: { label: 'Shipped / Ready for Pickup', bg: '#e0e7ff', color: '#3730a3', icon: '🚚' },
+  completed: { label: 'Order Completed & Delivered', bg: '#dcfce7', color: '#166534', icon: '✓' },
+  cancelled: { label: 'Order Cancelled', bg: '#fee2e2', color: '#991b1b', icon: '✕' },
 };
 
 // ── Payment status badge config ──────────────────────────────────────────────
 const paymentStatusBadges: Record<PaymentStatus, { label: string; bg: string; color: string; icon: string }> = {
-  pending_payment:             { label: 'Awaiting Payment',               bg: '#fef9c3', color: '#92400e', icon: '⏳' },
+  pending_payment: { label: 'Awaiting Payment', bg: '#fef9c3', color: '#92400e', icon: '⏳' },
   payment_pending_verification: { label: 'Payment Pending Verification', bg: '#e0f2fe', color: '#0369a1', icon: '🔍' },
-  paid:                        { label: 'Paid',                           bg: '#dcfce7', color: '#166534', icon: '✅' },
-  failed:                      { label: 'Payment Failed',                 bg: '#fee2e2', color: '#991b1b', icon: '❌' },
-  refunded:                    { label: 'Refunded',                       bg: '#f1f5f9', color: '#475569', icon: '↩️' },
+  paid: { label: 'Paid', bg: '#dcfce7', color: '#166534', icon: '✅' },
+  failed: { label: 'Payment Failed', bg: '#fee2e2', color: '#991b1b', icon: '❌' },
+  refunded: { label: 'Refunded', bg: '#f1f5f9', color: '#475569', icon: '↩️' },
 };
 
 // ── Payment method display config ────────────────────────────────────────────
 const paymentMethodLabels: Record<PaymentMethod, { label: string; icon: string }> = {
-  cod:           { label: 'Cash on Delivery (COD)', icon: '💵' },
-  gcash:         { label: 'GCash',                  icon: '📱' },
-  maya:          { label: 'Maya',                   icon: '💜' },
-  bank_transfer: { label: 'Bank Transfer',          icon: '🏦' },
-  card:          { label: 'Credit / Debit Card',    icon: '💳' },
+  cod: { label: 'Cash on Delivery (COD)', icon: '💵' },
+  gcash: { label: 'GCash', icon: '📱' },
+  maya: { label: 'Maya', icon: '💜' },
+  bank_transfer: { label: 'Bank Transfer', icon: '🏦' },
+  card: { label: 'Credit / Debit Card', icon: '💳' },
 };
 
 const STEP_ORDER: SupplyOrderStatus[] = ['pending', 'processing', 'shipped_ready', 'completed'];
@@ -179,11 +179,11 @@ export const SupplyOrdersPage: React.FC = () => {
       prev.map((o) =>
         o.id === currentOrder.id
           ? {
-              ...o,
-              paymentRefNo: refNo,
-              paymentProofUrl: proofUrl,
-              paymentStatus: 'payment_pending_verification',
-            }
+            ...o,
+            paymentRefNo: refNo,
+            paymentProofUrl: proofUrl,
+            paymentStatus: 'payment_pending_verification',
+          }
           : o
       )
     );
@@ -246,7 +246,7 @@ export const SupplyOrdersPage: React.FC = () => {
             .then((profile) => {
               setSupplierProfiles((prev) => ({ ...prev, [supId]: profile }));
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       });
     }
@@ -326,11 +326,11 @@ export const SupplyOrdersPage: React.FC = () => {
       prev.map((o) =>
         o.id === id
           ? {
-              ...o,
-              status: isQuoting ? 'quoted' : status,
-              shippingFee: fee,
-              totalAmount: total,
-            }
+            ...o,
+            status: isQuoting ? 'quoted' : status,
+            shippingFee: fee,
+            totalAmount: total,
+          }
           : o
       )
     );
@@ -376,12 +376,12 @@ export const SupplyOrdersPage: React.FC = () => {
       prev.map((o) =>
         o.id === orderId
           ? {
-              ...o,
-              status: optStatus,
-              deliveryMethod: optMethod,
-              shippingFee: optFee,
-              totalAmount: optTotal,
-            }
+            ...o,
+            status: optStatus,
+            deliveryMethod: optMethod,
+            shippingFee: optFee,
+            totalAmount: optTotal,
+          }
           : o
       )
     );
@@ -492,7 +492,7 @@ export const SupplyOrdersPage: React.FC = () => {
       <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', flexWrap: 'wrap' }}>
         {!isSupplier && (
           <>
-            {/* Tab 1: Crop Sales Orders (Farmer) or My Produce Purchases (Buyer) */}
+            {/* Tab 1: Crop Sales Orders (Farmer) or Farm Purchases (Buyer) */}
             <button
               type="button"
               onClick={() => navigate('/produce/orders')}
@@ -519,7 +519,7 @@ export const SupplyOrdersPage: React.FC = () => {
                 e.currentTarget.style.color = '#64748b';
               }}
             >
-              <span>{isFarmer ? '🌾 Crop Sales Orders' : '🌱 My Produce Purchases'}</span>
+              <span>{isFarmer ? '🌾 Crop Sales Orders' : '🌱 Farm Purchases'}</span>
               {(isFarmer ? produceSalesCount : producePurchasesCount) !== null && (
                 <span style={{
                   backgroundColor: '#cbd5e1',
@@ -580,7 +580,7 @@ export const SupplyOrdersPage: React.FC = () => {
           </>
         )}
 
-        {/* Tab 3: My Supply Purchases (active) */}
+        {/* Tab 3: Agri Supply Purchases (active) */}
         <button
           type="button"
           onClick={() => navigate('/supply/orders')}
@@ -599,7 +599,7 @@ export const SupplyOrdersPage: React.FC = () => {
             boxShadow: '0 2px 8px rgba(202, 138, 4, 0.15)',
           }}
         >
-          <span>{isSupplier ? '📦 Customer Supply Orders' : '🏪 My Supply Purchases'}</span>
+          <span>{isSupplier ? '📦 Customer Supply Orders' : '🏪 Agri Supply Purchases'}</span>
           <span style={{
             backgroundColor: '#ca8a04',
             color: '#ffffff',
@@ -619,7 +619,7 @@ export const SupplyOrdersPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
             <span style={{ fontSize: '32px' }}>{isSupplier ? '📦' : '🏪'}</span>
             <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0E4A27', margin: 0 }}>
-              {isSupplier ? 'Customer Supply Orders' : 'My Supply Purchases'}
+              {isSupplier ? 'Customer Supply Orders' : 'Agri Supply Purchases'}
             </h1>
           </div>
           <p style={{ fontSize: '16px', color: '#525450', margin: 0 }}>
@@ -874,12 +874,12 @@ export const SupplyOrdersPage: React.FC = () => {
 
             const orderDateStr = order.createdAt
               ? new Date(order.createdAt).toLocaleDateString('en-PH', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
               : 'Recently';
 
             return (
@@ -961,10 +961,10 @@ export const SupplyOrdersPage: React.FC = () => {
                         const tooltipText = isNextStep
                           ? `Click to advance order to: ${s.title}`
                           : isCurrent
-                          ? `Current Status: ${s.title}`
-                          : isDone
-                          ? `Completed: ${s.title}`
-                          : `Locked: Complete previous steps first`;
+                            ? `Current Status: ${s.title}`
+                            : isDone
+                              ? `Completed: ${s.title}`
+                              : `Locked: Complete previous steps first`;
 
                         return (
                           <div
@@ -998,13 +998,13 @@ export const SupplyOrdersPage: React.FC = () => {
                                 backgroundColor: isDone
                                   ? (isCurrent ? '#ca8a04' : '#16a34a')
                                   : isNextStep
-                                  ? '#fef3c7'
-                                  : '#e2e8f0',
+                                    ? '#fef3c7'
+                                    : '#e2e8f0',
                                 color: isDone
                                   ? '#ffffff'
                                   : isNextStep
-                                  ? '#ca8a04'
-                                  : '#94a3b8',
+                                    ? '#ca8a04'
+                                    : '#94a3b8',
                                 border: isNextStep ? '2px dashed #ca8a04' : 'none',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -1014,8 +1014,8 @@ export const SupplyOrdersPage: React.FC = () => {
                                 boxShadow: isCurrent
                                   ? '0 0 0 4px rgba(202, 138, 4, 0.25)'
                                   : isNextStep
-                                  ? '0 0 0 3px rgba(202, 138, 4, 0.15)'
-                                  : 'none',
+                                    ? '0 0 0 3px rgba(202, 138, 4, 0.15)'
+                                    : 'none',
                                 transition: 'all 0.2s ease',
                               }}
                             >
@@ -1117,8 +1117,8 @@ export const SupplyOrdersPage: React.FC = () => {
                         {order.deliveryMethod === 'pickup'
                           ? '₱0 (FREE)'
                           : order.shippingFee !== undefined && order.shippingFee > 0
-                          ? `₱${order.shippingFee.toLocaleString()}`
-                          : (order.status === 'pending' ? 'Pending Supplier Confirmation' : '₱0 (FREE)')}
+                            ? `₱${order.shippingFee.toLocaleString()}`
+                            : (order.status === 'pending' ? 'Pending Supplier Confirmation' : '₱0 (FREE)')}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px dashed #e2e8f0', fontSize: '15px', fontWeight: 800 }}>
@@ -1290,13 +1290,13 @@ export const SupplyOrdersPage: React.FC = () => {
                       const eWalletNum = order.paymentMethod === 'gcash'
                         ? (supProf?.gcashNumber || supProf?.phone)
                         : order.paymentMethod === 'maya'
-                        ? (supProf?.mayaNumber || supProf?.phone)
-                        : supProf?.bankAccountNo;
+                          ? (supProf?.mayaNumber || supProf?.phone)
+                          : supProf?.bankAccountNo;
                       const eWalletName = order.paymentMethod === 'gcash'
                         ? (supProf?.gcashName || (supProf?.firstName ? `${supProf.firstName} ${supProf.lastName}` : order.supplierName))
                         : order.paymentMethod === 'maya'
-                        ? (supProf?.mayaName || (supProf?.firstName ? `${supProf.firstName} ${supProf.lastName}` : order.supplierName))
-                        : (supProf?.bankAccountName || order.supplierName);
+                          ? (supProf?.mayaName || (supProf?.firstName ? `${supProf.firstName} ${supProf.lastName}` : order.supplierName))
+                          : (supProf?.bankAccountName || order.supplierName);
 
                       return (
                         <div style={{ marginTop: '8px', padding: '8px 10px', background: '#FFFFFF', borderRadius: '8px', border: '1px solid #CBD5E1', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -1579,29 +1579,29 @@ export const SupplyOrdersPage: React.FC = () => {
                     order.paymentStatus !== 'paid' &&
                     order.status !== 'cancelled' &&
                     order.status !== 'completed' && (
-                    <button
-                      type="button"
-                      onClick={() => handleConfirmDigitalPayment(order.id)}
-                      disabled={markingPaid === order.id}
-                      style={{
-                        padding: '9px 18px',
-                        borderRadius: '9px',
-                        backgroundColor: markingPaid === order.id ? '#94A3B8' : '#16A34A',
-                        color: '#FFFFFF',
-                        fontWeight: 800,
-                        border: 'none',
-                        cursor: markingPaid === order.id ? 'not-allowed' : 'pointer',
-                        fontSize: '13px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: markingPaid === order.id ? 'none' : '0 2px 8px rgba(22, 163, 74, 0.3)',
-                      }}
-                    >
-                      <span>✅</span>
-                      <span>{markingPaid === order.id ? 'Verifying…' : 'Verify & Confirm Payment Received'}</span>
-                    </button>
-                  )}
+                      <button
+                        type="button"
+                        onClick={() => handleConfirmDigitalPayment(order.id)}
+                        disabled={markingPaid === order.id}
+                        style={{
+                          padding: '9px 18px',
+                          borderRadius: '9px',
+                          backgroundColor: markingPaid === order.id ? '#94A3B8' : '#16A34A',
+                          color: '#FFFFFF',
+                          fontWeight: 800,
+                          border: 'none',
+                          cursor: markingPaid === order.id ? 'not-allowed' : 'pointer',
+                          fontSize: '13px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          boxShadow: markingPaid === order.id ? 'none' : '0 2px 8px rgba(22, 163, 74, 0.3)',
+                        }}
+                      >
+                        <span>✅</span>
+                        <span>{markingPaid === order.id ? 'Verifying…' : 'Verify & Confirm Payment Received'}</span>
+                      </button>
+                    )}
 
                   {/* Cancel Order (Disabled for paid transactions; allowed for COD or unpaid orders) */}
                   {order.paymentStatus !== 'paid' && (order.status === 'pending' || isQuoted || (isSupplier && order.status === 'processing')) && (
@@ -1928,13 +1928,13 @@ export const SupplyOrdersPage: React.FC = () => {
         item={
           orderToCancel
             ? {
-                id: orderToCancel.id,
-                name: `Supply Order #${orderToCancel.id.slice(-6).toUpperCase()}`,
-                category: `${orderToCancel.items?.length || 0} items`,
-                price: orderToCancel.totalAmount,
-                image: orderToCancel.items?.[0]?.productImage,
-                typeLabel: 'Supply Order',
-              }
+              id: orderToCancel.id,
+              name: `Supply Order #${orderToCancel.id.slice(-6).toUpperCase()}`,
+              category: `${orderToCancel.items?.length || 0} items`,
+              price: orderToCancel.totalAmount,
+              image: orderToCancel.items?.[0]?.productImage,
+              typeLabel: 'Supply Order',
+            }
             : null
         }
         title="Cancel Supply Order?"

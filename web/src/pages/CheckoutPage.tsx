@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supplyApi } from '../api/supply';
@@ -12,6 +12,20 @@ import type { PublicUserProfile } from '../types/auth';
 interface CartItem {
   product: SupplyProduct;
   quantity: number;
+}
+
+interface SupplierPackage {
+  supplierId: string;
+  supplierName: string;
+  items: CartItem[];
+  subtotal: number;
+}
+
+interface FarmerPackage {
+  farmerId: string;
+  farmerName: string;
+  items: ProduceCartItem[];
+  subtotal: number;
 }
 
 interface ProduceCartItem {
@@ -119,15 +133,56 @@ export const CheckoutPage: React.FC = () => {
   // Seller Details Fetch
   const [sellerProfile, setSellerProfile] = useState<PublicUserProfile | null>(null);
 
+  const supplyItemsBySupplier: SupplierPackage[] = useMemo(() => {
+    const map: Record<string, SupplierPackage> = {};
+    for (const item of activeSupplyItems) {
+      const sId = item.product.supplierId || 'unknown';
+      const sName = item.product.supplierName || 'Verified Supplier';
+      if (!map[sId]) {
+        map[sId] = { supplierId: sId, supplierName: sName, items: [], subtotal: 0 };
+      }
+      map[sId].items.push(item);
+      map[sId].subtotal += item.product.price * item.quantity;
+    }
+    return Object.values(map);
+  }, [activeSupplyItems]);
+
+  const produceItemsByFarmer: FarmerPackage[] = useMemo(() => {
+    const map: Record<string, FarmerPackage> = {};
+    for (const item of activeProduceItems) {
+      const fId = item.listing?.farmerId || 'unknown';
+      const fName = item.listing?.sellerName || item.listing?.farmerName || 'Verified Farmer';
+      if (!map[fId]) {
+        map[fId] = { farmerId: fId, farmerName: fName, items: [], subtotal: 0 };
+      }
+      map[fId].items.push(item);
+      map[fId].subtotal += (item.listing?.pricePerUnit || 0) * item.quantity;
+    }
+    return Object.values(map);
+  }, [activeProduceItems]);
+
+  const isMultiSeller = orderType === 'supplies'
+    ? supplyItemsBySupplier.length > 1
+    : produceItemsByFarmer.length > 1;
+
+  const sellerCount = orderType === 'supplies'
+    ? supplyItemsBySupplier.length
+    : produceItemsByFarmer.length;
+
+  const sellerEntityName = orderType === 'supplies' ? 'Supplier' : 'Farmer';
+  const sellerEntityNamePlural = orderType === 'supplies' ? 'Suppliers' : 'Farmers';
+
   const primarySupplierId = orderType === 'supplies'
-    ? activeSupplyItems[0]?.product?.supplierId
-    : activeProduceItems[0]?.listing?.farmerId;
+    ? (isMultiSeller ? null : activeSupplyItems[0]?.product?.supplierId)
+    : (isMultiSeller ? null : activeProduceItems[0]?.listing?.farmerId);
 
   useEffect(() => {
     if (primarySupplierId) {
       api.getUserPublicProfile(primarySupplierId, true)
         .then((data: PublicUserProfile) => setSellerProfile(data))
         .catch(() => setSellerProfile(null));
+    } else {
+      setSellerProfile(null);
     }
   }, [primarySupplierId]);
 
@@ -204,34 +259,62 @@ export const CheckoutPage: React.FC = () => {
 
     if (orderType === 'supplies') {
       try {
-        await supplyApi.createOrder({
-          items: activeSupplyItems.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
-          deliveryMethod,
-          deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : undefined,
-          paymentMethod,
-          paymentRefNo: paymentRefNo.trim() || undefined,
-        });
+        const successfulProductIds: string[] = [];
+        const createdOrders: any[] = [];
+        const failedErrors: string[] = [];
 
-        // Remove ordered items from cart
-        const rawSupply = localStorage.getItem('agriconnect_cart');
-        if (rawSupply) {
+        // Create separate order transactions for each supplier
+        for (const pkg of supplyItemsBySupplier) {
           try {
-            const parsed: CartItem[] = JSON.parse(rawSupply);
-            const orderedIds = new Set(activeSupplyItems.map((i) => i.product.id));
-            const remaining = parsed.filter((i) => !orderedIds.has(i.product.id));
-            localStorage.setItem('agriconnect_cart', JSON.stringify(remaining));
-          } catch {}
+            const orderRes = await supplyApi.createOrder({
+              items: pkg.items.map((item) => ({ productId: item.product.id, quantity: item.quantity })),
+              deliveryMethod,
+              deliveryAddress: deliveryMethod === 'delivery' ? deliveryAddress : undefined,
+              paymentMethod,
+              paymentRefNo: paymentRefNo.trim() || undefined,
+            });
+            createdOrders.push(orderRes);
+            pkg.items.forEach((i) => successfulProductIds.push(i.product.id));
+          } catch (err: any) {
+            const errMsg = err.response?.data?.error || err.message || `Failed to place order for ${pkg.supplierName}`;
+            failedErrors.push(`${pkg.supplierName}: ${errMsg}`);
+          }
+        }
+
+        // Remove successfully ordered items from cart
+        if (successfulProductIds.length > 0) {
+          const rawSupply = localStorage.getItem('agriconnect_cart');
+          if (rawSupply) {
+            try {
+              const parsed: CartItem[] = JSON.parse(rawSupply);
+              const remaining = parsed.filter((i) => !successfulProductIds.includes(i.product.id));
+              localStorage.setItem('agriconnect_cart', JSON.stringify(remaining));
+            } catch {}
+          }
         }
         sessionStorage.removeItem('agriconnect_checkout_supplies');
 
-        toastSuccess(
-          'Order Placed Successfully! 🎉',
-          paymentMethod === 'cod'
-            ? 'Your order has been sent to the supplier. Redirecting to My Supply Orders…'
-            : 'Order submitted with payment details! Redirecting to My Supply Orders…'
-        );
-
-        setTimeout(() => navigate('/supply/orders'), 1800);
+        if (createdOrders.length > 0) {
+          if (createdOrders.length === 1) {
+            toastSuccess(
+              'Order Placed Successfully! 🎉',
+              paymentMethod === 'cod'
+                ? 'Your order has been sent to the supplier. Redirecting to My Supply Orders…'
+                : 'Order submitted with payment details! Redirecting to My Supply Orders…'
+            );
+          } else {
+            toastSuccess(
+              `${createdOrders.length} Orders Placed Successfully! 🎉`,
+              `Separate orders have been created for ${createdOrders.length} suppliers. Redirecting to My Supply Orders…`
+            );
+          }
+          if (failedErrors.length > 0) {
+            toastWarning('Some Orders Failed', failedErrors.join(' • '));
+          }
+          setTimeout(() => navigate('/supply/orders'), 1800);
+        } else {
+          toastError('Order Failed', failedErrors.join(' • ') || 'Failed to place supply orders.');
+        }
       } catch (err: any) {
         toastError('Order Failed', err.response?.data?.error || err.message || 'Failed to place supply order.');
       } finally {
@@ -279,7 +362,14 @@ export const CheckoutPage: React.FC = () => {
         }
 
         if (successfulItemIds.length > 0) {
-          toastSuccess('Harvest Crop Order Placed! 🌾', 'Order created successfully! Redirecting to My Crop Orders…');
+          if (produceItemsByFarmer.length > 1) {
+            toastSuccess(
+              `${produceItemsByFarmer.length} Crop Orders Placed! 🌾`,
+              `Separate orders have been created for ${produceItemsByFarmer.length} farmers. Redirecting to My Crop Orders…`
+            );
+          } else {
+            toastSuccess('Harvest Crop Order Placed! 🌾', 'Order created successfully! Redirecting to My Crop Orders…');
+          }
           setTimeout(() => navigate('/produce/orders'), 1800);
         }
       } catch (err: any) {
@@ -289,10 +379,6 @@ export const CheckoutPage: React.FC = () => {
       }
     }
   };
-
-  const sellerDisplayName = sellerProfile
-    ? `${sellerProfile.firstName || ''} ${sellerProfile.lastName || ''}`.trim() || 'Seller Account'
-    : (orderType === 'supplies' ? activeSupplyItems[0]?.product?.supplierName || 'Farm Supplier' : 'Farmer / Seller');
 
   return (
     <div style={{ background: '#f8fafc', minHeight: '100vh', paddingBottom: '60px' }}>
@@ -397,42 +483,71 @@ export const CheckoutPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 2. Order Items Grouped by Seller */}
-            <div
-              style={{
-                background: '#ffffff',
-                borderRadius: '16px',
-                border: '1px solid #e2e8f0',
-                padding: '20px 24px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-              }}
-            >
-              {/* Seller Header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px solid #f1f5f9', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#15803d' }}>
-                    {orderType === 'supplies' ? '🏪' : '🌾'}
-                  </div>
-                  <div>
-                    <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '15px' }}>
-                      {sellerDisplayName}
-                    </div>
-                    {sellerProfile?.municipality && (
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        📍 {sellerProfile.municipality}, {sellerProfile.province}
-                      </div>
-                    )}
-                  </div>
+            {/* 2. Order Items Grouped by Seller / Supplier / Farmer */}
+            {isMultiSeller && (
+              <div
+                style={{
+                  background: '#eff6ff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: '12px',
+                  padding: '14px 18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  fontSize: '13.5px',
+                  color: '#1e40af',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>{orderType === 'supplies' ? '📦' : '🌾'}</span>
+                <div>
+                  <strong>{orderType === 'supplies' ? 'Multi-Supplier' : 'Multi-Farmer'} Checkout ({sellerCount} {sellerEntityNamePlural}):</strong> Your items are grouped into <strong>{sellerCount} separate orders</strong>. Each {sellerEntityName.toLowerCase()} will receive and fulfill their order independently.
                 </div>
-                <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
-                  Verified Seller
-                </span>
               </div>
+            )}
 
-              {/* Items Table / List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {orderType === 'supplies'
-                  ? activeSupplyItems.map((item) => {
+            {orderType === 'supplies' ? (
+              supplyItemsBySupplier.map((pkg, idx) => (
+                <div
+                  key={pkg.supplierId}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '1px solid #e2e8f0',
+                    padding: '20px 24px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  {/* Supplier Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px solid #f1f5f9', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#15803d' }}>
+                        🏪
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{pkg.supplierName}</span>
+                          {isMultiSeller && (
+                            <span style={{ fontSize: '11px', color: '#2563eb', background: '#dbeafe', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                              Package {idx + 1} of {supplyItemsBySupplier.length}
+                            </span>
+                          )}
+                        </div>
+                        {!isMultiSeller && sellerProfile?.municipality && (
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>
+                            📍 {sellerProfile.municipality}, {sellerProfile.province}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
+                      Verified Supplier
+                    </span>
+                  </div>
+
+                  {/* Items Table / List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {pkg.items.map((item) => {
                       const img = item.product.images?.[0] ? getImageUrl(item.product.images[0]) : '';
                       return (
                         <div key={item.product.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
@@ -453,8 +568,59 @@ export const CheckoutPage: React.FC = () => {
                           </div>
                         </div>
                       );
-                    })
-                  : activeProduceItems.map((item) => {
+                    })}
+                  </div>
+
+                  {/* Package Subtotal */}
+                  <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px dashed #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748b' }}>
+                    <span>Order Subtotal ({pkg.items.reduce((s, i) => s + i.quantity, 0)} items):</span>
+                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '15px' }}>₱{pkg.subtotal.toLocaleString()}</span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              /* Produce Items Cards Grouped by Farmer */
+              produceItemsByFarmer.map((pkg, idx) => (
+                <div
+                  key={pkg.farmerId}
+                  style={{
+                    background: '#ffffff',
+                    borderRadius: '16px',
+                    border: '1px solid #e2e8f0',
+                    padding: '20px 24px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  {/* Farmer Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '14px', borderBottom: '1px solid #f1f5f9', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#15803d' }}>
+                        🌾
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>{pkg.farmerName}</span>
+                          {isMultiSeller && (
+                            <span style={{ fontSize: '11px', color: '#2563eb', background: '#dbeafe', padding: '2px 8px', borderRadius: '12px', fontWeight: 700 }}>
+                              Package {idx + 1} of {produceItemsByFarmer.length}
+                            </span>
+                          )}
+                        </div>
+                        {!isMultiSeller && sellerProfile?.municipality && (
+                          <div style={{ fontSize: '12px', color: '#64748b' }}>
+                            📍 {sellerProfile.municipality}, {sellerProfile.province}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ background: '#eff6ff', color: '#1d4ed8', fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '20px' }}>
+                      Verified Farmer
+                    </span>
+                  </div>
+
+                  {/* Produce Items List */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {pkg.items.map((item) => {
                       const producePhoto =
                         (Array.isArray(item.listing?.photos) && item.listing.photos[0]) ||
                         (typeof item.listing?.photos === 'string' && item.listing.photos) ||
@@ -491,61 +657,79 @@ export const CheckoutPage: React.FC = () => {
                         </div>
                       );
                     })}
-              </div>
+                  </div>
 
-              {/* Delivery Option Selector inside seller card */}
-              <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px dashed #e2e8f0', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                  <span style={{ fontWeight: 700, fontSize: '14px', color: '#334155' }}>Fulfillment Option:</span>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryMethod('delivery')}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        border: deliveryMethod === 'delivery' ? '2px solid #16a34a' : '1px solid #cbd5e1',
-                        background: deliveryMethod === 'delivery' ? '#f0fdf4' : '#ffffff',
-                        color: deliveryMethod === 'delivery' ? '#15803d' : '#475569',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      🚚 Local Delivery (To be quoted by seller)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDeliveryMethod('pickup')}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        border: deliveryMethod === 'pickup' ? '2px solid #16a34a' : '1px solid #cbd5e1',
-                        background: deliveryMethod === 'pickup' ? '#f0fdf4' : '#ffffff',
-                        color: deliveryMethod === 'pickup' ? '#15803d' : '#475569',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      🏬 Store / Farm Pickup (FREE - ₱0)
-                    </button>
+                  {/* Package Subtotal */}
+                  <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px dashed #e2e8f0', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', fontSize: '13px', color: '#64748b' }}>
+                    <span>Order Subtotal ({pkg.items.reduce((s: number, i: ProduceCartItem) => s + i.quantity, 0)} items):</span>
+                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '15px' }}>₱{pkg.subtotal.toLocaleString()}</span>
                   </div>
                 </div>
+              ))
+            )}
 
-                {/* Explanatory Banner */}
-                {deliveryMethod === 'delivery' ? (
-                  <div style={{ padding: '10px 14px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '12.5px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '10px', lineHeight: '1.4' }}>
-                    <span style={{ fontSize: '16px' }}>ℹ️</span>
-                    <span><strong>Seller Delivery Quote:</strong> The shipping/hauling fee will be quoted by the seller upon order acceptance based on delivery location and item weight. You can review and confirm the total fee before payment.</span>
-                  </div>
-                ) : (
-                  <div style={{ padding: '10px 14px', borderRadius: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12.5px', color: '#166534', display: 'flex', alignItems: 'center', gap: '10px', lineHeight: '1.4' }}>
-                    <span style={{ fontSize: '16px' }}>🏬</span>
-                    <span><strong>Self Pickup:</strong> ₱0 shipping fee. Collect your item(s) directly at the seller's location after order acceptance.</span>
-                  </div>
-                )}
+            {/* Fulfillment Option Card */}
+            <div
+              style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                border: '1px solid #e2e8f0',
+                padding: '20px 24px',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
+                <span style={{ fontWeight: 800, fontSize: '15px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🚚 Fulfillment Option
+                </span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMethod('delivery')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      border: deliveryMethod === 'delivery' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                      background: deliveryMethod === 'delivery' ? '#f0fdf4' : '#ffffff',
+                      color: deliveryMethod === 'delivery' ? '#15803d' : '#475569',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🚚 Local Delivery (To be quoted by seller{isMultiSeller ? 's' : ''})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryMethod('pickup')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      border: deliveryMethod === 'pickup' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                      background: deliveryMethod === 'pickup' ? '#f0fdf4' : '#ffffff',
+                      color: deliveryMethod === 'pickup' ? '#15803d' : '#475569',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    🏬 Store / Farm Pickup (FREE - ₱0)
+                  </button>
+                </div>
               </div>
+
+              {/* Explanatory Banner */}
+              {deliveryMethod === 'delivery' ? (
+                <div style={{ padding: '10px 14px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '12.5px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '10px', lineHeight: '1.4' }}>
+                  <span style={{ fontSize: '16px' }}>ℹ️</span>
+                  <span><strong>Seller Delivery Quote:</strong> The shipping/hauling fee will be quoted by each seller upon order acceptance based on delivery location and item weight. You can review and confirm each quote in My Orders.</span>
+                </div>
+              ) : (
+                <div style={{ padding: '10px 14px', borderRadius: '10px', background: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '12.5px', color: '#166534', display: 'flex', alignItems: 'center', gap: '10px', lineHeight: '1.4' }}>
+                  <span style={{ fontSize: '16px' }}>🏬</span>
+                  <span><strong>Self Pickup:</strong> ₱0 shipping fee. Collect your item(s) directly at each seller's store location after order acceptance.</span>
+                </div>
+              )}
             </div>
 
             {/* 3. Payment Method Selection (Shopee Style) */}
@@ -561,6 +745,13 @@ export const CheckoutPage: React.FC = () => {
               <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 💳 Select Payment Method
               </h3>
+
+              {isMultiSeller && (
+                <div style={{ padding: '10px 14px', borderRadius: '10px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '12.5px', color: '#1e40af', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+                  <span style={{ fontSize: '16px' }}>ℹ️</span>
+                  <span><strong>Applied across all {sellerCount} orders:</strong> Your selected payment method will be set for each {sellerEntityName.toLowerCase()}. For digital payments (GCash, Maya, Bank), each {sellerEntityName.toLowerCase()}'s specific QR and account details will be accessible in <strong>{orderType === 'supplies' ? 'My Supply Orders' : 'My Crop Orders'}</strong>.</span>
+                </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '20px' }}>
                 {getPaymentOptions(deliveryMethod === 'pickup').map((opt) => {
@@ -660,6 +851,12 @@ export const CheckoutPage: React.FC = () => {
               </h3>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px', fontSize: '14px' }}>
+                {isMultiSeller && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#eff6ff', padding: '8px 12px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e40af' }}>Separate Orders:</span>
+                    <span style={{ fontWeight: 800, color: '#1e40af', fontSize: '13px' }}>{sellerCount} {sellerEntityNamePlural}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                   <span>Merchandise Subtotal:</span>
                   <span style={{ fontWeight: 600, color: '#1e293b' }}>₱{itemsSubtotal.toLocaleString()}</span>
@@ -685,7 +882,7 @@ export const CheckoutPage: React.FC = () => {
                   </div>
                   {deliveryMethod === 'delivery' && (
                     <div style={{ fontSize: '11px', color: '#d97706', fontWeight: 600, textAlign: 'right', marginTop: '4px' }}>
-                      + Delivery fee to be quoted by seller
+                      + Delivery fee to be quoted by seller{isMultiSeller ? 's' : ''}
                     </div>
                   )}
                 </div>
@@ -710,7 +907,9 @@ export const CheckoutPage: React.FC = () => {
                   transition: 'all 0.15s ease',
                 }}
               >
-                {placingOrder ? 'Processing Order…' : 'Place Order Now'}
+                {placingOrder
+                  ? (isMultiSeller ? `Placing ${sellerCount} Orders…` : 'Processing Order…')
+                  : (isMultiSeller ? `Place ${sellerCount} Orders (₱${grandTotal.toLocaleString()})` : 'Place Order Now')}
               </button>
 
               <div style={{ fontSize: '12px', color: '#64748b', textAlign: 'center', marginTop: '14px', lineHeight: '1.4' }}>

@@ -463,6 +463,9 @@ export const SupplyCartPage: React.FC = () => {
   const uniqueSelectedSuppliers = Array.from(new Set(selectedSupplyItems.map((i) => i.product.supplierName || 'Supplier')));
   const hasMultipleSelectedSuppliers = uniqueSelectedSuppliers.length > 1;
 
+  const uniqueSelectedFarmers = Array.from(new Set(selectedProduceItems.map((i) => i.listing?.sellerName || i.listing?.farmerName || 'Farmer')));
+  const hasMultipleSelectedFarmers = uniqueSelectedFarmers.length > 1;
+
   const handleProceedToCheckout = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -474,14 +477,6 @@ export const SupplyCartPage: React.FC = () => {
 
       if (user?.role !== 'farmer' && user?.role !== 'buyer' && user?.role !== 'super_admin') {
         toastError('Restricted', 'Only registered Farmers or Buyers can place supply orders.');
-        return;
-      }
-
-      if (hasMultipleSelectedSuppliers) {
-        toastWarning(
-          'Multiple Suppliers',
-          `Your selected items come from multiple suppliers (${uniqueSelectedSuppliers.join(', ')}). Please select items from only 1 supplier per order.`
-        );
         return;
       }
 
@@ -956,14 +951,29 @@ export const SupplyCartPage: React.FC = () => {
                   <div style={{
                     padding: '12px 14px',
                     borderRadius: '10px',
-                    backgroundColor: '#fff1f2',
-                    border: '1.5px solid #fecdd3',
-                    color: '#9f1239',
-                    fontSize: '13px',
+                    backgroundColor: '#eff6ff',
+                    border: '1.5px solid #bfdbfe',
+                    color: '#1e40af',
+                    fontSize: '12.5px',
                     marginBottom: '16px',
-                    lineHeight: 1.4,
+                    lineHeight: 1.45,
                   }}>
-                    ⚠️ <strong>Multiple Suppliers:</strong> Selected items come from {uniqueSelectedSuppliers.join(', ')}. Please select items from only 1 supplier to checkout.
+                    📦 <strong>Multi-Supplier Cart ({uniqueSelectedSuppliers.length} Suppliers):</strong> Items from {uniqueSelectedSuppliers.join(', ')} will be seamlessly split into separate orders at checkout.
+                  </div>
+                )}
+
+                {activeTab === 'produce' && hasMultipleSelectedFarmers && (
+                  <div style={{
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    backgroundColor: '#eff6ff',
+                    border: '1.5px solid #bfdbfe',
+                    color: '#1e40af',
+                    fontSize: '12.5px',
+                    marginBottom: '16px',
+                    lineHeight: 1.45,
+                  }}>
+                    🌾 <strong>Multi-Farmer Cart ({uniqueSelectedFarmers.length} Farmers):</strong> Harvests from {uniqueSelectedFarmers.join(', ')} will be seamlessly split into separate orders at checkout.
                   </div>
                 )}
 
@@ -986,18 +996,18 @@ export const SupplyCartPage: React.FC = () => {
 
                 <button
                   type="submit"
-                  disabled={currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers)}
+                  disabled={currentSelectedCount === 0}
                   style={{
                     width: '100%',
                     padding: '16px',
                     borderRadius: '12px',
-                    background: currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers)
+                    background: currentSelectedCount === 0
                       ? '#cbd5e1'
                       : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
                     color: '#fff',
                     fontWeight: 800,
                     border: 'none',
-                    cursor: currentSelectedCount === 0 || (activeTab === 'supplies' && hasMultipleSelectedSuppliers) ? 'not-allowed' : 'pointer',
+                    cursor: currentSelectedCount === 0 ? 'not-allowed' : 'pointer',
                     fontSize: '16px',
                     boxShadow: currentSelectedCount > 0 ? '0 4px 14px rgba(22, 163, 74, 0.35)' : 'none',
                     transition: 'all 0.2s',

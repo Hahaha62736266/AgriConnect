@@ -227,7 +227,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             .then((profile) => {
               setFarmerProfiles((prev) => ({ ...prev, [fId]: profile }));
             })
-            .catch(() => {});
+            .catch(() => { });
         }
       });
     }
@@ -280,11 +280,11 @@ export const ProduceTransactionsPage: React.FC = () => {
       prev.map((o) =>
         o.id === currentOrder.id
           ? {
-              ...o,
-              paymentRefNo: refNo,
-              paymentProofUrl: proofUrl || o.paymentProofUrl,
-              paymentStatus: 'pending_verification',
-            }
+            ...o,
+            paymentRefNo: refNo,
+            paymentProofUrl: proofUrl || o.paymentProofUrl,
+            paymentStatus: 'pending_verification',
+          }
           : o
       )
     );
@@ -292,11 +292,11 @@ export const ProduceTransactionsPage: React.FC = () => {
       setSelectedOrder((prev) =>
         prev
           ? {
-              ...prev,
-              paymentRefNo: refNo,
-              paymentProofUrl: proofUrl || prev.paymentProofUrl,
-              paymentStatus: 'pending_verification',
-            }
+            ...prev,
+            paymentRefNo: refNo,
+            paymentProofUrl: proofUrl || prev.paymentProofUrl,
+            paymentStatus: 'pending_verification',
+          }
           : null
       );
     }
@@ -610,12 +610,12 @@ export const ProduceTransactionsPage: React.FC = () => {
       prev.map((o) =>
         o.id === orderId
           ? {
-              ...o,
-              status: optimisticStatus,
-              deliveryMethod: optimisticDeliveryMethod,
-              shippingFee: optimisticShippingFee,
-              total: optimisticTotal,
-            }
+            ...o,
+            status: optimisticStatus,
+            deliveryMethod: optimisticDeliveryMethod,
+            shippingFee: optimisticShippingFee,
+            total: optimisticTotal,
+          }
           : o
       )
     );
@@ -623,12 +623,12 @@ export const ProduceTransactionsPage: React.FC = () => {
       setSelectedOrder((prev) =>
         prev
           ? {
-              ...prev,
-              status: optimisticStatus,
-              deliveryMethod: optimisticDeliveryMethod,
-              shippingFee: optimisticShippingFee,
-              total: optimisticTotal,
-            }
+            ...prev,
+            status: optimisticStatus,
+            deliveryMethod: optimisticDeliveryMethod,
+            shippingFee: optimisticShippingFee,
+            total: optimisticTotal,
+          }
           : null
       );
     }
@@ -655,12 +655,12 @@ export const ProduceTransactionsPage: React.FC = () => {
         setSelectedOrder((prev) =>
           prev
             ? {
-                ...prev,
-                status: capStatus,
-                deliveryMethod: updated.deliveryMethod || prev.deliveryMethod,
-                shippingFee: updated.shippingFee,
-                total: updated.totalPrice,
-              }
+              ...prev,
+              status: capStatus,
+              deliveryMethod: updated.deliveryMethod || prev.deliveryMethod,
+              shippingFee: updated.shippingFee,
+              total: updated.totalPrice,
+            }
             : null
         );
       }
@@ -726,8 +726,8 @@ export const ProduceTransactionsPage: React.FC = () => {
       selectedTab === 'All Orders'
         ? true
         : selectedTab === 'To Pay'
-        ? isToPay
-        : ord.status.toLowerCase() === selectedTab.toLowerCase();
+          ? isToPay
+          : ord.status.toLowerCase() === selectedTab.toLowerCase();
     const query = searchQuery.trim().toLowerCase();
     const matchesSearch =
       query === '' ||
@@ -829,7 +829,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             transition: 'all 0.15s ease',
           }}
         >
-          <span>{isFarmer ? '🌾 Crop Sales Orders' : '🌱 My Produce Purchases'}</span>
+          <span>{isFarmer ? '🌾 Crop Sales Orders' : '🌱 Farm Purchases'}</span>
           <span style={{
             backgroundColor: !isViewingPurchases ? '#176B3A' : '#cbd5e1',
             color: '#ffffff',
@@ -909,7 +909,7 @@ export const ProduceTransactionsPage: React.FC = () => {
             e.currentTarget.style.color = '#64748b';
           }}
         >
-          <span>{user?.role === 'supplier' ? '📦 Customer Supply Orders' : '🏪 My Supply Purchases'}</span>
+          <span>{user?.role === 'supplier' ? '📦 Customer Supply Orders' : '🏪 Agri Supply Purchases'}</span>
           {supplyOrdersCount !== null && (
             <span style={{
               backgroundColor: '#cbd5e1',
@@ -931,7 +931,7 @@ export const ProduceTransactionsPage: React.FC = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '6px' }}>
             <span style={{ fontSize: '32px' }}>{isViewingPurchases ? '🛒' : (isFarmer ? '🌾' : '🛒')}</span>
             <h1 className="orders-header-title" style={{ fontSize: '32px', fontWeight: 800, color: isViewingPurchases ? '#4C1D95' : '#0E4A27', margin: 0 }}>
-              {isViewingPurchases ? 'My Crop Purchases' : (isFarmer ? 'Crop Sales & Buyer Orders' : 'My Produce Purchases')}
+              {isViewingPurchases ? 'My Crop Purchases' : (isFarmer ? 'Crop Sales & Buyer Orders' : 'Farm Purchases')}
             </h1>
           </div>
           <p className="orders-header-subtitle" style={{ fontSize: '16px', color: '#525450', margin: 0 }}>
@@ -1291,18 +1291,18 @@ export const ProduceTransactionsPage: React.FC = () => {
                         const stepDone = ord.status === 'Completed'
                           ? true
                           : ord.status === 'Confirmed'
-                          ? s.stepNum <= 3
-                          : ord.status === 'Quoted'
-                          ? s.stepNum <= 2
-                          : s.stepNum === 1;
+                            ? s.stepNum <= 3
+                            : ord.status === 'Quoted'
+                              ? s.stepNum <= 2
+                              : s.stepNum === 1;
 
                         const isCurrent = ord.status === 'Completed'
                           ? s.stepNum === 4
                           : ord.status === 'Confirmed'
-                          ? s.stepNum === 3
-                          : ord.status === 'Quoted'
-                          ? s.stepNum === 2
-                          : s.stepNum === 1;
+                            ? s.stepNum === 3
+                            : ord.status === 'Quoted'
+                              ? s.stepNum === 2
+                              : s.stepNum === 1;
 
                         return (
                           <div
@@ -1516,8 +1516,8 @@ export const ProduceTransactionsPage: React.FC = () => {
                           (ord.paymentMethod === 'maya'
                             ? fProf?.mayaNumber
                             : ord.paymentMethod === 'bank_transfer'
-                            ? fProf?.bankAccountNo
-                            : (fProf?.gcashNumber || fProf?.phone)) || fProf?.phone;
+                              ? fProf?.bankAccountNo
+                              : (fProf?.gcashNumber || fProf?.phone)) || fProf?.phone;
 
                         return (
                           <>
@@ -1821,8 +1821,8 @@ export const ProduceTransactionsPage: React.FC = () => {
                         {ord.deliveryMethod === 'pickup'
                           ? '🏪 Farm-Gate Pickup (₱0)'
                           : ord.shippingFee && ord.shippingFee > 0
-                          ? `🚚 Delivery: ₱${ord.shippingFee.toLocaleString()}`
-                          : (ord.status === 'Pending' ? '🚚 Delivery: Fee Pending Farmer Confirmation' : '🚚 Delivery: ₱0')}
+                            ? `🚚 Delivery: ₱${ord.shippingFee.toLocaleString()}`
+                            : (ord.status === 'Pending' ? '🚚 Delivery: Fee Pending Farmer Confirmation' : '🚚 Delivery: ₱0')}
                       </span>
                     </div>
                     <div className="order-total-amount" style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27', marginTop: '2px' }}>
@@ -1957,8 +1957,8 @@ export const ProduceTransactionsPage: React.FC = () => {
                                 {isUpdatingStatus
                                   ? 'Updating...'
                                   : (isFarmer && !isViewingPurchases)
-                                  ? (isCOD ? `Confirm COD Payment & Complete (₱${ord.total.toLocaleString()})` : '✓ Mark Order as Completed')
-                                  : 'Confirm Produce Received & Paid'}
+                                    ? (isCOD ? `Confirm COD Payment & Complete (₱${ord.total.toLocaleString()})` : '✓ Mark Order as Completed')
+                                    : 'Confirm Produce Received & Paid'}
                               </span>
                             </button>
                           );
@@ -2089,8 +2089,8 @@ export const ProduceTransactionsPage: React.FC = () => {
             {searchQuery
               ? `No match found for "${searchQuery}". Try clearing your search query.`
               : isFarmer
-              ? 'No incoming crop orders yet. When buyers request to purchase your harvest on AgriConnect, their order slips and delivery requests will appear here.'
-              : 'You have not ordered any fresh crops yet. Connect directly with local farmers across Northern Mindanao.'}
+                ? 'No incoming crop orders yet. When buyers request to purchase your harvest on AgriConnect, their order slips and delivery requests will appear here.'
+                : 'You have not ordered any fresh crops yet. Connect directly with local farmers across Northern Mindanao.'}
           </p>
           {searchQuery ? (
             <button
@@ -2384,8 +2384,8 @@ export const ProduceTransactionsPage: React.FC = () => {
                         {selectedOrder.deliveryMethod === 'pickup'
                           ? '₱0 (FREE)'
                           : selectedOrder.shippingFee !== undefined && selectedOrder.shippingFee > 0
-                          ? `₱${selectedOrder.shippingFee.toLocaleString()}`
-                          : (isPending ? 'Pending Farmer Confirmation' : '₱0 (FREE)')}
+                            ? `₱${selectedOrder.shippingFee.toLocaleString()}`
+                            : (isPending ? 'Pending Farmer Confirmation' : '₱0 (FREE)')}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid #E2E8F0', fontSize: '15px', fontWeight: 800 }}>
@@ -2490,18 +2490,18 @@ export const ProduceTransactionsPage: React.FC = () => {
                           const stepDone = isCompleted
                             ? true
                             : isConfirmed
-                            ? s.stepNum <= 3
-                            : isQuoted
-                            ? s.stepNum <= 2
-                            : s.stepNum === 1;
+                              ? s.stepNum <= 3
+                              : isQuoted
+                                ? s.stepNum <= 2
+                                : s.stepNum === 1;
 
                           const isCurrent = isCompleted
                             ? s.stepNum === 4
                             : isConfirmed
-                            ? s.stepNum === 3
-                            : isQuoted
-                            ? s.stepNum === 2
-                            : s.stepNum === 1;
+                              ? s.stepNum === 3
+                              : isQuoted
+                                ? s.stepNum === 2
+                                : s.stepNum === 1;
 
                           return (
                             <div
@@ -2929,8 +2929,8 @@ export const ProduceTransactionsPage: React.FC = () => {
                           {isUpdatingStatus
                             ? 'Updating...'
                             : (isFarmer && !isViewingPurchases)
-                            ? (isSelectedCOD ? `Confirm COD Payment & Complete (₱${selectedOrder.total.toLocaleString()})` : '✓ Mark Order as Completed')
-                            : 'Confirm Produce Received & Paid'}
+                              ? (isSelectedCOD ? `Confirm COD Payment & Complete (₱${selectedOrder.total.toLocaleString()})` : '✓ Mark Order as Completed')
+                              : 'Confirm Produce Received & Paid'}
                         </span>
                       </button>
                     );
