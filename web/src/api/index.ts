@@ -40,7 +40,10 @@ export const api = {
     const res = await apiClient.get<User>('/api/users/me');
     return res.data;
   },
-  getUserPublicProfile: async (id: string): Promise<PublicUserProfile> => {
+  getUserPublicProfile: async (id: string, bypassCache = false): Promise<PublicUserProfile> => {
+    if (bypassCache) {
+      clientCache.invalidate(`user_public_${id}`);
+    }
     return withCache(`user_public_${id}`, async () => {
       const res = await apiClient.get<PublicUserProfile>(`/api/users/${id}/public`);
       return res.data;

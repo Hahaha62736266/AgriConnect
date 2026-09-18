@@ -125,11 +125,27 @@ export const CheckoutPage: React.FC = () => {
 
   useEffect(() => {
     if (primarySupplierId) {
-      api.getUserPublicProfile(primarySupplierId)
+      api.getUserPublicProfile(primarySupplierId, true)
         .then((data: PublicUserProfile) => setSellerProfile(data))
         .catch(() => setSellerProfile(null));
     }
   }, [primarySupplierId]);
+
+  useEffect(() => {
+    if (sellerProfile) {
+      const gcashOk = !!(sellerProfile.gcashNumber || sellerProfile.gcashQrUrl);
+      const mayaOk = !!(sellerProfile.mayaNumber || sellerProfile.mayaQrUrl);
+      const bankOk = !!(sellerProfile.bankAccountNo || sellerProfile.bankQrUrl);
+
+      if (paymentMethod === 'gcash' && !gcashOk) {
+        setPaymentMethod('cod');
+      } else if (paymentMethod === 'maya' && !mayaOk) {
+        setPaymentMethod(gcashOk ? 'gcash' : 'cod');
+      } else if (paymentMethod === 'bank_transfer' && !bankOk) {
+        setPaymentMethod(gcashOk ? 'gcash' : 'cod');
+      }
+    }
+  }, [sellerProfile]);
 
   // Pricing calculations
   const itemsSubtotal = orderType === 'supplies'
@@ -167,6 +183,21 @@ export const CheckoutPage: React.FC = () => {
       toastWarning('Phone Required', 'Please provide a contact phone number.');
       setShowAddressModal(true);
       return;
+    }
+
+    if (sellerProfile) {
+      if (paymentMethod === 'gcash' && !sellerProfile.gcashNumber && !sellerProfile.gcashQrUrl) {
+        toastWarning('Payment Unavailable', 'The seller has not configured GCash. Please select another payment method.');
+        return;
+      }
+      if (paymentMethod === 'maya' && !sellerProfile.mayaNumber && !sellerProfile.mayaQrUrl) {
+        toastWarning('Payment Unavailable', 'The seller has not configured Maya. Please select another payment method.');
+        return;
+      }
+      if (paymentMethod === 'bank_transfer' && !sellerProfile.bankAccountNo && !sellerProfile.bankQrUrl) {
+        toastWarning('Payment Unavailable', 'The seller has not configured Bank details. Please select another payment method.');
+        return;
+      }
     }
 
     setPlacingOrder(true);
@@ -534,17 +565,42 @@ export const CheckoutPage: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '20px' }}>
                 {getPaymentOptions(deliveryMethod === 'pickup').map((opt) => {
                   const isSelected = paymentMethod === opt.id;
+                  let isConfigured = true;
+                  let unconfiguredMsg = '';
+
+                  if (sellerProfile) {
+                    if (opt.id === 'gcash' && !sellerProfile.gcashNumber && !sellerProfile.gcashQrUrl) {
+                      isConfigured = false;
+                      unconfiguredMsg = 'Seller hasn’t set up GCash';
+                    } else if (opt.id === 'maya' && !sellerProfile.mayaNumber && !sellerProfile.mayaQrUrl) {
+                      isConfigured = false;
+                      unconfiguredMsg = 'Seller hasn’t set up Maya';
+                    } else if (opt.id === 'bank_transfer' && !sellerProfile.bankAccountNo && !sellerProfile.bankQrUrl) {
+                      isConfigured = false;
+                      unconfiguredMsg = 'Seller hasn’t set up Bank Account';
+                    }
+                  }
+
+                  const isDisabled = opt.comingSoon || !isConfigured;
+
                   return (
                     <div
                       key={opt.id}
-                      onClick={() => !opt.comingSoon && setPaymentMethod(opt.id)}
+                      onClick={() => {
+                        if (opt.comingSoon) return;
+                        if (!isConfigured) {
+                          toastWarning('Payment Not Configured', `${opt.label} has not been set up by this seller yet. Please choose an available method.`);
+                          return;
+                        }
+                        setPaymentMethod(opt.id);
+                      }}
                       style={{
                         padding: '14px',
                         borderRadius: '12px',
-                        border: isSelected ? '2px solid #16a34a' : '1.5px solid #e2e8f0',
-                        background: isSelected ? '#f0fdf4' : (opt.comingSoon ? '#f8fafc' : '#ffffff'),
-                        cursor: opt.comingSoon ? 'not-allowed' : 'pointer',
-                        opacity: opt.comingSoon ? 0.6 : 1,
+                        border: isSelected ? '2px solid #16a34a' : (isConfigured ? '1.5px solid #e2e8f0' : '1.5px dashed #fcd34d'),
+                        background: isSelected ? '#f0fdf4' : (isDisabled ? '#f8fafc' : '#ffffff'),
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        opacity: isDisabled ? 0.65 : 1,
                         transition: 'all 0.15s ease',
                         position: 'relative',
                       }}
@@ -552,10 +608,19 @@ export const CheckoutPage: React.FC = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span style={{ fontSize: '22px' }}>{opt.icon}</span>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700, fontSize: '14px', color: isSelected ? '#15803d' : '#1e293b' }}>
-                            {opt.label}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '14px', color: isSelected ? '#15803d' : (isDisabled ? '#94a3b8' : '#1e293b') }}>
+                              {opt.label}
+                            </div>
+                            {!isConfigured && (
+                              <span style={{ fontSize: '10px', fontWeight: 700, color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: '6px', whiteSpace: 'nowrap' }}>
+                                Not Configured
+                              </span>
+                            )}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{opt.desc}</div>
+                          <div style={{ fontSize: '11px', color: !isConfigured ? '#b45309' : '#64748b', marginTop: '2px' }}>
+                            {!isConfigured ? unconfiguredMsg : opt.desc}
+                          </div>
                         </div>
                         {isSelected && <span style={{ color: '#16a34a', fontWeight: 900 }}>✓</span>}
                       </div>

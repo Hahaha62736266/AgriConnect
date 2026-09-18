@@ -236,7 +236,7 @@ export const ProduceTransactionsPage: React.FC = () => {
   useEffect(() => {
     if (orderToSubmitRef?.farmerId) {
       setLoadingModalProfile(true);
-      api.getUserPublicProfile(orderToSubmitRef.farmerId)
+      api.getUserPublicProfile(orderToSubmitRef.farmerId, true)
         .then((profile) => setModalFarmerProfile(profile))
         .catch(() => setModalFarmerProfile(null))
         .finally(() => setLoadingModalProfile(false));
@@ -3486,10 +3486,96 @@ export const ProduceTransactionsPage: React.FC = () => {
                       </button>
                     </div>
                   )}
-                  {modalFarmerProfile?.gcashQrUrl && (
+                  {/* Warning if selected method not configured */}
+                  {orderToSubmitRef.paymentMethod === 'maya' && !modalFarmerProfile?.mayaNumber && !modalFarmerProfile?.mayaQrUrl && (
+                    <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '10px', padding: '10px 12px', marginTop: '4px' }}>
+                      <div style={{ fontWeight: 800, color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        ⚠️ Farmer Has Not Configured Maya
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#78350F', lineHeight: 1.4, marginBottom: '6px' }}>
+                        This farmer hasn't set up Maya yet. You can transfer using their alternate verified accounts below or scan their QRPh code:
+                      </div>
+                      {(modalFarmerProfile?.gcashNumber || modalFarmerProfile?.phone) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                            📱 GCash: {modalFarmerProfile.gcashNumber || modalFarmerProfile.phone}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => copyModalText(modalFarmerProfile.gcashNumber || modalFarmerProfile.phone || '', 'GCash Number')}
+                            style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#E0F2FE', color: '#0284C7', border: 'none', cursor: 'pointer' }}
+                          >
+                            📋 {copiedModalText === 'GCash Number' ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+                      {modalFarmerProfile?.bankAccountNo && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A' }}>
+                          <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                            🏦 {modalFarmerProfile.bankName || 'Bank'}: {modalFarmerProfile.bankAccountNo}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => copyModalText(modalFarmerProfile.bankAccountNo || '', 'Bank Account')}
+                            style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
+                          >
+                            📋 {copiedModalText === 'Bank Account' ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {orderToSubmitRef.paymentMethod === 'bank_transfer' && !modalFarmerProfile?.bankAccountNo && !modalFarmerProfile?.bankQrUrl && (
+                    <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '10px', padding: '10px 12px', marginTop: '4px' }}>
+                      <div style={{ fontWeight: 800, color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                        ⚠️ Farmer Has Not Configured Bank Account
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#78350F', lineHeight: 1.4, marginBottom: '6px' }}>
+                        This farmer hasn't set up bank details yet. You can transfer using their alternate accounts below:
+                      </div>
+                      {(modalFarmerProfile?.gcashNumber || modalFarmerProfile?.phone) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                          <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                            📱 GCash: {modalFarmerProfile.gcashNumber || modalFarmerProfile.phone}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => copyModalText(modalFarmerProfile.gcashNumber || modalFarmerProfile.phone || '', 'GCash Number')}
+                            style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#E0F2FE', color: '#0284C7', border: 'none', cursor: 'pointer' }}
+                          >
+                            📋 {copiedModalText === 'GCash Number' ? 'Copied!' : 'Copy'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* GCash QR */}
+                  {(!orderToSubmitRef.paymentMethod || orderToSubmitRef.paymentMethod === 'gcash') && modalFarmerProfile?.gcashQrUrl && (
                     <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '12px', border: '1.5px dashed #BAE6FD' }}>
-                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0284C7', marginBottom: '6px' }}>Scan QR Code to Pay Farmer:</div>
-                      <img src={getImageUrl(modalFarmerProfile.gcashQrUrl)} alt="Payment QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '10px', border: '1px solid #E2E8F0' }} />
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0284C7', marginBottom: '6px' }}>Scan GCash QR Code:</div>
+                      <img src={getImageUrl(modalFarmerProfile.gcashQrUrl)} alt="GCash QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '10px', border: '1px solid #E2E8F0' }} />
+                    </div>
+                  )}
+
+                  {/* Maya QR */}
+                  {(!orderToSubmitRef.paymentMethod || orderToSubmitRef.paymentMethod === 'maya') && (modalFarmerProfile?.mayaQrUrl || (orderToSubmitRef.paymentMethod === 'maya' && modalFarmerProfile?.gcashQrUrl)) && (
+                    <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '12px', border: '1.5px dashed #DDD6FE' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#6D28D9', marginBottom: '6px' }}>
+                        {modalFarmerProfile?.mayaQrUrl ? 'Scan Maya QR Code:' : 'Scan Seller QR Code (QRPh / Maya Compatible):'}
+                      </div>
+                      <img src={getImageUrl(modalFarmerProfile?.mayaQrUrl || modalFarmerProfile?.gcashQrUrl || '')} alt="Maya QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '10px', border: '1px solid #E2E8F0' }} />
+                    </div>
+                  )}
+
+                  {/* Bank QR */}
+                  {(!orderToSubmitRef.paymentMethod || orderToSubmitRef.paymentMethod === 'bank_transfer') && (modalFarmerProfile?.bankQrUrl || (orderToSubmitRef.paymentMethod === 'bank_transfer' && modalFarmerProfile?.gcashQrUrl)) && (
+                    <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '10px', borderRadius: '12px', border: '1.5px dashed #CBD5E1' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                        {modalFarmerProfile?.bankQrUrl ? 'Scan Bank / InstaPay QR Code:' : 'Scan Seller QR Code (InstaPay / QRPh Compatible):'}
+                      </div>
+                      <img src={getImageUrl(modalFarmerProfile?.bankQrUrl || modalFarmerProfile?.gcashQrUrl || '')} alt="Bank QR Code" style={{ maxWidth: '160px', maxHeight: '160px', borderRadius: '10px', border: '1px solid #E2E8F0' }} />
                     </div>
                   )}
                 </div>

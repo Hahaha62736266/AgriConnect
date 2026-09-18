@@ -227,7 +227,7 @@ export const SupplyOrdersPage: React.FC = () => {
   useEffect(() => {
     if (orderToSubmitRef?.supplierId) {
       setLoadingModalProfile(true);
-      api.getUserPublicProfile(orderToSubmitRef.supplierId)
+      api.getUserPublicProfile(orderToSubmitRef.supplierId, true)
         .then((profile) => setModalSupplierProfile(profile))
         .catch(() => setModalSupplierProfile(null))
         .finally(() => setLoadingModalProfile(false));
@@ -2045,6 +2045,44 @@ export const SupplyOrdersPage: React.FC = () => {
                 <>
                   {orderToSubmitRef.paymentMethod === 'gcash' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                      {!modalSupplierProfile?.gcashNumber && !modalSupplierProfile?.gcashQrUrl && (
+                        <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '10px', padding: '10px 12px', marginBottom: '4px' }}>
+                          <div style={{ fontWeight: 800, color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            ⚠️ Seller Has Not Configured GCash
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#78350F', lineHeight: 1.4, marginBottom: '6px' }}>
+                            This seller hasn't set up GCash yet. You can transfer using their alternate accounts below, or chat with them directly:
+                          </div>
+                          {(modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone) && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                                💜 Maya: {modalSupplierProfile.mayaNumber || modalSupplierProfile.phone}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyModalText(modalSupplierProfile.mayaNumber || modalSupplierProfile.phone || '', 'Maya Number')}
+                                style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#F3E8FF', color: '#6D28D9', border: 'none', cursor: 'pointer' }}
+                              >
+                                📋 {copiedModalText === 'Maya Number' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          )}
+                          {modalSupplierProfile?.bankAccountNo && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                                🏦 {modalSupplierProfile.bankName || 'Bank'}: {modalSupplierProfile.bankAccountNo}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyModalText(modalSupplierProfile.bankAccountNo || '', 'Bank Account')}
+                                style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
+                              >
+                                📋 {copiedModalText === 'Bank Account' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>GCash Name:</span>
                         <span style={{ color: '#0F172A', fontWeight: 800 }}>
@@ -2061,7 +2099,7 @@ export const SupplyOrdersPage: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => copyModalText(modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone || '', 'GCash Number')}
-                              style={{ padding: '3px 9px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0369A1', border: 'none', cursor: 'pointer' }}
+                              style={{ padding: '3px 9px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#E0F2FE', color: '#0284C7', border: 'none', cursor: 'pointer' }}
                             >
                               📋 {copiedModalText === 'GCash Number' ? 'Copied!' : 'Copy'}
                             </button>
@@ -2091,6 +2129,57 @@ export const SupplyOrdersPage: React.FC = () => {
 
                   {orderToSubmitRef.paymentMethod === 'maya' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                      {!modalSupplierProfile?.mayaNumber && !modalSupplierProfile?.mayaQrUrl && (
+                        <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '10px', padding: '10px 12px', marginBottom: '4px' }}>
+                          <div style={{ fontWeight: 800, color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            ⚠️ Seller Has Not Configured Maya
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#78350F', lineHeight: 1.4, marginBottom: '6px' }}>
+                            This seller hasn't set up Maya yet. You can transfer using their alternate accounts below, scan their QRPh code, or chat with them directly:
+                          </div>
+                          {(modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone) && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                                📱 GCash: {modalSupplierProfile.gcashNumber || modalSupplierProfile.phone}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyModalText(modalSupplierProfile.gcashNumber || modalSupplierProfile.phone || '', 'GCash Number')}
+                                style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#E0F2FE', color: '#0284C7', border: 'none', cursor: 'pointer' }}
+                              >
+                                📋 {copiedModalText === 'GCash Number' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          )}
+                          {modalSupplierProfile?.bankAccountNo && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                                🏦 {modalSupplierProfile.bankName || 'Bank'}: {modalSupplierProfile.bankAccountNo}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyModalText(modalSupplierProfile.bankAccountNo || '', 'Bank Account')}
+                                style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#E2E8F0', color: '#334155', border: 'none', cursor: 'pointer' }}
+                              >
+                                📋 {copiedModalText === 'Bank Account' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          )}
+                          <div style={{ marginTop: '6px', textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const orderRef = orderToSubmitRef;
+                                setOrderToSubmitRef(null);
+                                handleChatOrderParty(orderRef);
+                              }}
+                              style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#16A34A', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
+                            >
+                              💬 Chat Seller for Details
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>Maya Name:</span>
                         <span style={{ color: '#0F172A', fontWeight: 800 }}>
@@ -2126,10 +2215,12 @@ export const SupplyOrdersPage: React.FC = () => {
                           )}
                         </div>
                       </div>
-                      {modalSupplierProfile?.mayaQrUrl && (
+                      {(modalSupplierProfile?.mayaQrUrl || modalSupplierProfile?.gcashQrUrl) && (
                         <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '12px', borderRadius: '12px', border: '1.5px dashed #DDD6FE' }}>
-                          <div style={{ fontSize: '12px', fontWeight: 800, color: '#6D28D9', marginBottom: '6px' }}>Scan QR Code with Maya App:</div>
-                          <img src={getImageUrl(modalSupplierProfile.mayaQrUrl)} alt="Maya QR Code" style={{ maxWidth: '170px', maxHeight: '170px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} />
+                          <div style={{ fontSize: '12px', fontWeight: 800, color: '#6D28D9', marginBottom: '6px' }}>
+                            {modalSupplierProfile?.mayaQrUrl ? 'Scan QR Code with Maya App:' : 'Scan Seller QR Code (QRPh / Maya Compatible):'}
+                          </div>
+                          <img src={getImageUrl(modalSupplierProfile.mayaQrUrl || modalSupplierProfile.gcashQrUrl || '')} alt="Maya QR Code" style={{ maxWidth: '170px', maxHeight: '170px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} />
                         </div>
                       )}
                     </div>
@@ -2137,6 +2228,57 @@ export const SupplyOrdersPage: React.FC = () => {
 
                   {orderToSubmitRef.paymentMethod === 'bank_transfer' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                      {!modalSupplierProfile?.bankAccountNo && !modalSupplierProfile?.bankQrUrl && (
+                        <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: '10px', padding: '10px 12px', marginBottom: '4px' }}>
+                          <div style={{ fontWeight: 800, color: '#92400E', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                            ⚠️ Seller Has Not Configured Bank Account
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#78350F', lineHeight: 1.4, marginBottom: '6px' }}>
+                            This seller hasn't set up bank details yet. You can transfer using their alternate accounts below, scan their QRPh code, or chat with them directly:
+                          </div>
+                          {(modalSupplierProfile?.gcashNumber || modalSupplierProfile?.phone) && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                                📱 GCash: {modalSupplierProfile.gcashNumber || modalSupplierProfile.phone}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyModalText(modalSupplierProfile.gcashNumber || modalSupplierProfile.phone || '', 'GCash Number')}
+                                style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#E0F2FE', color: '#0284C7', border: 'none', cursor: 'pointer' }}
+                              >
+                                📋 {copiedModalText === 'GCash Number' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          )}
+                          {(modalSupplierProfile?.mayaNumber || modalSupplierProfile?.phone) && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#FFFFFF', padding: '5px 8px', borderRadius: '6px', border: '1px solid #FDE68A', marginBottom: '4px' }}>
+                              <span style={{ fontSize: '12px', color: '#0F172A', fontWeight: 700 }}>
+                                💜 Maya: {modalSupplierProfile.mayaNumber || modalSupplierProfile.phone}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => copyModalText(modalSupplierProfile.mayaNumber || modalSupplierProfile.phone || '', 'Maya Number')}
+                                style={{ padding: '2px 8px', fontSize: '10.5px', fontWeight: 700, borderRadius: '4px', background: '#F3E8FF', color: '#6D28D9', border: 'none', cursor: 'pointer' }}
+                              >
+                                📋 {copiedModalText === 'Maya Number' ? 'Copied!' : 'Copy'}
+                              </button>
+                            </div>
+                          )}
+                          <div style={{ marginTop: '6px', textAlign: 'right' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const orderRef = orderToSubmitRef;
+                                setOrderToSubmitRef(null);
+                                handleChatOrderParty(orderRef);
+                              }}
+                              style={{ padding: '4px 10px', fontSize: '11px', fontWeight: 700, borderRadius: '6px', background: '#16A34A', color: '#FFFFFF', border: 'none', cursor: 'pointer' }}
+                            >
+                              💬 Chat Seller for Details
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#64748B', fontWeight: 600 }}>Bank Name:</span>
                         <span style={{ color: '#0F172A', fontWeight: 800 }}>{modalSupplierProfile?.bankName || 'BDO / BPI / Landbank'}</span>
@@ -2164,6 +2306,14 @@ export const SupplyOrdersPage: React.FC = () => {
                           )}
                         </div>
                       </div>
+                      {(modalSupplierProfile?.bankQrUrl || modalSupplierProfile?.gcashQrUrl) && (
+                        <div style={{ marginTop: '6px', textAlign: 'center', background: '#FFFFFF', padding: '12px', borderRadius: '12px', border: '1.5px dashed #CBD5E1' }}>
+                          <div style={{ fontSize: '12px', fontWeight: 800, color: '#0F172A', marginBottom: '6px' }}>
+                            {modalSupplierProfile?.bankQrUrl ? 'Scan Bank QR Code (InstaPay / PESONet):' : 'Scan Seller QR Code (InstaPay / QRPh Compatible):'}
+                          </div>
+                          <img src={getImageUrl(modalSupplierProfile.bankQrUrl || modalSupplierProfile.gcashQrUrl || '')} alt="Bank QR Code" style={{ maxWidth: '170px', maxHeight: '170px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
