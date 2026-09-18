@@ -23,6 +23,7 @@ export interface User {
   bankName?: string;
   bankAccountNo?: string;
   bankAccountName?: string;
+  bankQrUrl?: string;
   isVerified?: boolean;
   status: 'pending' | 'approved' | 'rejected' | 'suspended';
   createdAt: string;
@@ -69,6 +70,7 @@ export interface UpdateProfilePayload {
   bankName?: string;
   bankAccountNo?: string;
   bankAccountName?: string;
+  bankQrUrl?: string;
 }
 
 export interface PublicUserProfile {
@@ -91,5 +93,6 @@ export interface PublicUserProfile {
   bankName?: string;
   bankAccountNo?: string;
   bankAccountName?: string;
+  bankQrUrl?: string;
 }
 

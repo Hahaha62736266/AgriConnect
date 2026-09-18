@@ -64,6 +64,7 @@ type User struct {
 	BankName        string `bson:"bank_name,omitempty"        json:"bankName,omitempty"`
 	BankAccountNo   string `bson:"bank_account_no,omitempty"  json:"bankAccountNo,omitempty"`
 	BankAccountName string `bson:"bank_account_name,omitempty" json:"bankAccountName,omitempty"`
+	BankQrURL       string `bson:"bank_qr_url,omitempty"       json:"bankQrUrl,omitempty"`
 
 	IsVerified bool      `bson:"is_verified"             json:"isVerified"`
 	Status     string    `bson:"status"                  json:"status"`
@@ -117,6 +118,7 @@ type UpdateProfileRequest struct {
 	BankName        *string `json:"bankName,omitempty"`
 	BankAccountNo   *string `json:"bankAccountNo,omitempty"`
 	BankAccountName *string `json:"bankAccountName,omitempty"`
+	BankQrURL       *string `json:"bankQrUrl,omitempty"`
 }
 
 // ChangePasswordRequest is the JSON body for PUT /api/users/me/password.
@@ -151,5 +153,6 @@ type PublicUserProfile struct {
 	BankName        string   `json:"bankName,omitempty"`
 	BankAccountNo   string   `json:"bankAccountNo,omitempty"`
 	BankAccountName string   `json:"bankAccountName,omitempty"`
+	BankQrURL       string   `json:"bankQrUrl,omitempty"`
 }
 

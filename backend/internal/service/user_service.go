@@ -62,6 +62,7 @@ func (s *UserService) GetPublicProfile(ctx context.Context, userID string) (*mod
 		BankName:        u.BankName,
 		BankAccountNo:   u.BankAccountNo,
 		BankAccountName: u.BankAccountName,
+		BankQrURL:       u.BankQrURL,
 	}, nil
 }
 
@@ -144,6 +145,9 @@ func (s *UserService) UpdateProfile(ctx context.Context, userID string, req mode
 	}
 	if req.BankAccountName != nil {
 		update["bank_account_name"] = *req.BankAccountName
+	}
+	if req.BankQrURL != nil {
+		update["bank_qr_url"] = *req.BankQrURL
 	}
 
 	if len(update) == 0 {
