@@ -7,6 +7,7 @@ import { supplyApi } from '../api/supply';
 import { produceApi } from '../api/produce';
 import { api, getImageUrl } from '../api';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
+import { OrderCardSkeleton } from '../components/PageSkeletons';
 import type { PaymentMethod, PaymentStatus, SupplyOrder, SupplyOrderStatus } from '../types/supply';
 import type { PublicUserProfile } from '../types/auth';
 
@@ -836,9 +837,10 @@ export const SupplyOrdersPage: React.FC = () => {
 
       {/* ─── Orders List ─── */}
       {loading ? (
-        <div style={{ padding: '60px', textAlign: 'center', color: '#64748b' }}>
-          <div style={{ fontSize: '36px', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</div>
-          <p style={{ marginTop: '12px', fontSize: '16px', fontWeight: 600 }}>Loading your supply orders…</p>
+        <div style={{ display: 'grid', gap: '22px' }} role="status" aria-label="Loading your supply orders...">
+          <OrderCardSkeleton />
+          <OrderCardSkeleton />
+          <OrderCardSkeleton />
         </div>
       ) : filteredOrders.length === 0 ? (
         <div className="card" style={{ padding: '60px 20px', textAlign: 'center', borderRadius: '20px' }}>

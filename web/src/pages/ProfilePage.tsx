@@ -7,6 +7,7 @@ import { supplyApi } from '../api/supply';
 import type { SupplyOrder, PaymentMethod, PaymentStatus } from '../types/supply';
 
 import { LocationSelector } from '../components/LocationSelector';
+import { OrderCardSkeleton } from '../components/PageSkeletons';
 import gcashLogo from '../assets/gcash.png';
 import mayaLogo from '../assets/maya.webp';
 
@@ -459,8 +460,9 @@ export const ProfilePage: React.FC = () => {
             {/* Tab Orders Content */}
             <div className="profile-purchases-content" style={{ marginTop: '24px' }}>
               {ordersLoading ? (
-                <div style={{ padding: '24px', textAlign: 'center', color: '#525450', fontSize: '18px', fontWeight: 600 }}>
-                  Loading your supply orders…
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} role="status" aria-label="Loading your supply orders...">
+                  <OrderCardSkeleton />
+                  <OrderCardSkeleton />
                 </div>
               ) : currentTabOrders.length === 0 ? (
                 <div style={{ padding: '40px 16px', textAlign: 'center', color: '#525450' }}>
