@@ -8,6 +8,7 @@ import { ReactionPicker, ReactionBadgeList } from '../components/community/React
 import { VideoPlayer } from '../components/community/VideoPlayer';
 import { ReactionModal } from '../components/community/ReactionModal';
 import { ShareModal } from '../components/community/ShareModal';
+import { CommunityPostSkeleton } from '../components/PageSkeletons';
 
 export const CommunityPostDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -148,8 +149,8 @@ export const CommunityPostDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="app-container" style={{ padding: '48px 0', textAlign: 'center' }}>
-        <div style={{ fontSize: '18px', color: '#64748b', fontWeight: 600 }}>Loading discussion thread...</div>
+      <div className="app-container" style={{ padding: '24px 0', maxWidth: '780px', margin: '0 auto' }}>
+        <CommunityPostSkeleton />
       </div>
     );
   }

@@ -9,6 +9,7 @@ import { ReactionPicker, ReactionBadgeList } from '../components/community/React
 import { VideoPlayer } from '../components/community/VideoPlayer';
 import { ReactionModal } from '../components/community/ReactionModal';
 import { ShareModal } from '../components/community/ShareModal';
+import { CommunityPostSkeleton } from '../components/PageSkeletons';
 
 interface FarmingGuide {
   id: string;
@@ -1159,8 +1160,10 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
 
           {/* ─── Feed Posts List ─── */}
           {loadingPosts ? (
-            <div className="card" style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
-              <div style={{ fontSize: '18px', fontWeight: 600 }}>Loading community feed...</div>
+            <div role="status" aria-label="Loading community posts...">
+              <CommunityPostSkeleton />
+              <CommunityPostSkeleton />
+              <CommunityPostSkeleton />
             </div>
           ) : posts.length === 0 ? (
             <div className="card" style={{ padding: '48px', textAlign: 'center', color: '#64748b' }}>
@@ -2039,9 +2042,9 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
       {activeTab === 'myposts' && (
         <div style={{ maxWidth: '820px', margin: '0 auto' }}>
           {loadingMyPosts ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📝</div>
-              <p style={{ fontSize: '16px', margin: 0 }}>Loading your posts…</p>
+            <div role="status" aria-label="Loading your posts...">
+              <CommunityPostSkeleton />
+              <CommunityPostSkeleton />
             </div>
           ) : myPosts.length === 0 ? (
             <div
