@@ -702,7 +702,10 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
             }}
           >
             <span>🌾</span>
-            <span>Community Feed</span>
+            <span>
+              <span className="community-tab-text-full">Community Feed</span>
+              <span className="community-tab-text-short">Community</span>
+            </span>
           </button>
 
           <button
@@ -725,7 +728,10 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
             }}
           >
             <span>📖</span>
-            <span>Learn & Field Guides</span>
+            <span>
+              <span className="community-tab-text-full">Learn & Field Guides</span>
+              <span className="community-tab-text-short">Guides</span>
+            </span>
           </button>
 
           {user && (

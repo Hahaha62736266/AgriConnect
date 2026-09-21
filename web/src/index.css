@@ -5008,26 +5008,43 @@ details[open] .help-faq-summary::after {
     flex-direction: row !important;
     width: 100% !important;
     background: #E8ECEF !important;
-    border-radius: 12px !important;
-    padding: 3px !important;
-    gap: 3px !important;
-    margin-bottom: 10px !important;
+    border-radius: 14px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    margin-bottom: 12px !important;
     box-sizing: border-box !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .community-tabs-bar::-webkit-scrollbar {
+    display: none !important;
   }
 
   .community-tabs-bar .segmented-tab-btn {
-    flex: 1 1 50% !important;
-    width: 50% !important;
-    padding: 7px 6px !important;
-    border-radius: 9px !important;
+    flex: 1 1 0px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    padding: 8px 6px !important;
+    border-radius: 10px !important;
     border: none !important;
-    font-size: 12.5px !important;
+    font-size: 12px !important;
     font-weight: 700 !important;
     justify-content: center !important;
     text-align: center !important;
     gap: 5px !important;
-    min-height: 34px !important;
+    min-height: 36px !important;
     box-shadow: none !important;
+    white-space: nowrap !important;
+  }
+
+  .community-tab-text-short {
+    display: inline !important;
+  }
+
+  .community-tab-text-full {
+    display: none !important;
   }
 
   .community-composer-card {
@@ -6191,6 +6208,14 @@ details[open] .help-faq-summary::after {
 }
 
 .guide-card-btn-text-full {
+  display: inline;
+}
+
+.community-tab-text-short {
+  display: none;
+}
+
+.community-tab-text-full {
   display: inline;
 }
 
