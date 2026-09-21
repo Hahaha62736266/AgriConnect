@@ -67,6 +67,16 @@
   --topbar-height: 68px;
   --bottomnav-height: 72px;
   --max-content-width: 1400px;
+
+  /* Skeleton Loading Tokens (Accessible warm shimmer) */
+  --skeleton-base: #E8E5DD;
+  --skeleton-highlight: #F5F4EE;
+  --skeleton-shine: linear-gradient(
+    90deg,
+    var(--skeleton-base) 0%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 100%
+  );
 }
 
 /* ─── Reset & Base Rules ─────────────────────────────────────────── */
@@ -904,6 +914,14 @@ header [role="button"] {
   --color-success-bg: #172D1E;
   --color-error-bg: #2B1515;
   --color-error-border: #4D2525;
+  --skeleton-base: #1E2721;
+  --skeleton-highlight: #2A382F;
+  --skeleton-shine: linear-gradient(
+    90deg,
+    var(--skeleton-base) 0%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 100%
+  );
 }
 
 [data-theme='dark'] body,
@@ -7452,5 +7470,143 @@ details[open] .help-faq-summary::after {
   .produce-buy-actions-row {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ─── AgriConnect Skeleton Loading System ────────────────────────────
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes skeletonPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Base Skeleton Element */
+.skeleton {
+  display: block;
+  background-color: var(--skeleton-base);
+  background-image: var(--skeleton-shine);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  border-radius: var(--radius-sm);
+  animation: skeletonShimmer 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Skeleton Shape & Size Modifiers */
+.skeleton-text {
+  height: 14px;
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text-sm {
+  height: 11px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.skeleton-text-lg {
+  height: 22px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.skeleton-title {
+  height: 20px;
+  width: 70%;
+  border-radius: 7px;
+  margin-bottom: 10px;
+}
+
+.skeleton-circular {
+  border-radius: 50% !important;
+  flex-shrink: 0;
+}
+
+.skeleton-rounded {
+  border-radius: var(--radius-md);
+}
+
+.skeleton-pill {
+  border-radius: var(--radius-full);
+}
+
+/* Card Wrappers for Skeletons */
+.skeleton-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Marketplace Card Skeleton specific styles */
+.skeleton-marketplace-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+.skeleton-marketplace-card .skeleton-img {
+  width: 100%;
+  height: 180px;
+  border-radius: 0;
+}
+
+.skeleton-marketplace-card .skeleton-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 8px;
+}
+
+/* Table Row Skeleton */
+.skeleton-table-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Post Skeleton */
+.skeleton-post-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+/* Motion Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: skeletonPulse 2.4s ease-in-out infinite;
+    background-image: none;
   }
 }
