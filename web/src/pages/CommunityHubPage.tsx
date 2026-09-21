@@ -216,6 +216,8 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
   useEffect(() => {
     if (location.pathname.includes('/guides') || location.hash === '#guides') {
       setActiveTab('guides');
+    } else if (location.hash === '#myposts') {
+      setActiveTab('myposts');
     } else if (location.hash === '#community' || location.pathname === '/community') {
       setActiveTab('community');
     }
