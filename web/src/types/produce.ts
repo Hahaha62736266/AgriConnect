@@ -142,4 +142,5 @@ export interface CreateProduceTransactionPayload {
   contactMessage?: string;
   deliveryMethod?: string;
   deliveryAddress?: string;
+  paymentMethod?: string;
 }

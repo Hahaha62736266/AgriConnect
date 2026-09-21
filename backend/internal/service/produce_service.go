@@ -280,6 +280,7 @@ func (s *ProduceService) InitiateTransaction(ctx context.Context, buyerID string
 		DeliveryMethod:  deliveryMethod,
 		DeliveryAddress: deliveryAddress,
 		ContactMessage:  req.ContactMessage,
+		PaymentMethod:   func() string { if req.PaymentMethod != "" { return req.PaymentMethod }; return "cod" }(),
 		Status:          models.TxPending,
 	}
 
