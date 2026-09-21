@@ -649,6 +649,7 @@ export const SupplyOrdersPage: React.FC = () => {
         }}
       >
         <div
+          className="orders-kpi-card"
           style={{
             background: '#FFFFFF',
             borderRadius: '16px',
@@ -660,16 +661,17 @@ export const SupplyOrdersPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             📋
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders</div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A' }}>{orders.length}</div>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders</div>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A' }}>{orders.length}</div>
           </div>
         </div>
 
         <div
+          className="orders-kpi-card"
           style={{
             background: activePendingCount > 0 ? '#FEFCE8' : '#FFFFFF',
             borderRadius: '16px',
@@ -681,20 +683,21 @@ export const SupplyOrdersPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             ⏳
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: activePendingCount > 0 ? '#A16207' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: activePendingCount > 0 ? '#A16207' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Pending Action
             </div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: activePendingCount > 0 ? '#A16207' : '#0F172A' }}>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: activePendingCount > 0 ? '#A16207' : '#0F172A' }}>
               {activePendingCount}
             </div>
           </div>
         </div>
 
         <div
+          className="orders-kpi-card"
           style={{
             background: '#FFFFFF',
             borderRadius: '16px',
@@ -706,16 +709,17 @@ export const SupplyOrdersPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             🚚
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Deliveries</div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: '#1E40AF' }}>{activeConfirmedCount}</div>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Deliveries</div>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: '#1E40AF' }}>{activeConfirmedCount}</div>
           </div>
         </div>
 
         <div
+          className="orders-kpi-card"
           style={{
             background: '#FFFFFF',
             borderRadius: '16px',
@@ -727,14 +731,14 @@ export const SupplyOrdersPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             💰
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {isSupplier ? 'Sales Revenue' : 'Fulfilled Volume'}
             </div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27' }}>₱{totalSpent.toLocaleString()}</div>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27' }}>₱{totalSpent.toLocaleString()}</div>
           </div>
         </div>
       </div>
@@ -1397,233 +1401,259 @@ export const SupplyOrdersPage: React.FC = () => {
                 </div>
 
                 {/* Action Buttons for Buyer (Farmer) and Supplier */}
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap', paddingTop: '4px' }}>
-                  {/* Chat with other party */}
-                  {((isSupplier && order.buyerId) || (!isSupplier && order.supplierId)) && (
-                    <button
-                      type="button"
-                      onClick={() => handleChatOrderParty(order)}
-                      style={{
-                        padding: '9px 16px',
-                        borderRadius: '9px',
-                        backgroundColor: '#EFFDF5',
-                        color: '#0E4A27',
-                        fontWeight: 700,
-                        fontSize: '13px',
-                        border: '1.5px solid #16A34A',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                      title={isSupplier ? `Chat with Customer (${order.buyerName})` : `Chat with Supplier (${order.supplierName})`}
-                    >
-                      <span>💬</span>
-                      <span>{isSupplier ? 'Chat Customer' : 'Chat Supplier'}</span>
-                    </button>
-                  )}
-
-                  {/* Supplier waiting for buyer quote decision */}
-                  {isSupplier && isQuoted && (
-                    <span
-                      style={{
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        color: '#D97706',
-                        backgroundColor: '#FEF3C7',
-                        padding: '8px 14px',
-                        borderRadius: '9px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <span>⏳</span>
-                      <span>Waiting for Buyer Quote Approval</span>
-                    </span>
-                  )}
-
-                  {/* Buyer waiting for supplier confirmation */}
-                  {isBuyer && order.status === 'pending' && (
-                    <span
-                      style={{
-                        fontSize: '13px',
-                        fontWeight: 700,
-                        color: '#D97706',
-                        backgroundColor: '#FEF3C7',
-                        padding: '8px 14px',
-                        borderRadius: '9px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <span>⏳</span>
-                      <span>Waiting for Supplier Confirmation</span>
-                    </span>
-                  )}
-
-                  {/* Farmer / Buyer can mark as received when shipped */}
-                  {isBuyer && order.status === 'shipped_ready' && (
-                    <button
-                      onClick={() => handleUpdateStatus(order.id, 'completed')}
-                      disabled={updatingStatusId === order.id}
-                      style={{
-                        padding: '10px 20px',
-                        borderRadius: '10px',
-                        backgroundColor: '#16a34a',
-                        color: '#ffffff',
-                        fontWeight: 800,
-                        border: 'none',
-                        cursor: updatingStatusId === order.id ? 'not-allowed' : 'pointer',
-                        fontSize: '14px',
-                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)',
-                      }}
-                    >
-                      {updatingStatusId === order.id ? 'Updating…' : '✓ Confirm Received & Complete Order'}
-                    </button>
-                  )}
-
-                  {/* Supplier fulfillment workflow actions */}
-                  {isSupplier && order.status === 'pending' && (
-                    <button
-                      onClick={() => {
-                        if (order.deliveryMethod === 'delivery') {
-                          setOrderToSetShipping(order);
-                          setShippingFeeInput(order.shippingFee || 0);
-                        } else {
-                          handleUpdateStatus(order.id, 'processing');
-                        }
-                      }}
-                      disabled={updatingStatusId === order.id}
-                      style={{
-                        padding: '9px 18px',
-                        borderRadius: '9px',
-                        backgroundColor: '#ca8a04',
-                        color: '#fff',
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                      }}
-                    >
-                      ▶ Start Processing
-                    </button>
-                  )}
-
-                  {isSupplier && order.status === 'processing' && (
-                    <button
-                      onClick={() => handleUpdateStatus(order.id, 'shipped_ready')}
-                      disabled={updatingStatusId === order.id}
-                      style={{
-                        padding: '9px 18px',
-                        borderRadius: '9px',
-                        backgroundColor: '#3730a3',
-                        color: '#fff',
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                      }}
-                    >
-                      🚚 Mark Shipped / Ready
-                    </button>
-                  )}
-
-                  {isSupplier && order.status === 'shipped_ready' && (
-                    <button
-                      onClick={() => handleUpdateStatus(order.id, 'completed')}
-                      disabled={updatingStatusId === order.id}
-                      style={{
-                        padding: '9px 18px',
-                        borderRadius: '9px',
-                        backgroundColor: '#16a34a',
-                        color: '#fff',
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                      }}
-                    >
-                      ✓ Mark as Completed
-                    </button>
-                  )}
-
-                  {/* Supplier COD Confirmation */}
-                  {canMarkCODPaid && (
-                    <button
-                      onClick={() => handleMarkCODPaid(order.id)}
-                      disabled={markingPaid === order.id}
-                      style={{
-                        padding: '9px 18px',
-                        borderRadius: '9px',
-                        backgroundColor: markingPaid === order.id ? '#a3a3a3' : '#166534',
-                        color: '#fff',
-                        fontWeight: 700,
-                        border: 'none',
-                        cursor: markingPaid === order.id ? 'not-allowed' : 'pointer',
-                        fontSize: '13px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      💵 {markingPaid === order.id ? 'Confirming…' : 'Confirm COD Payment Received'}
-                    </button>
-                  )}
-
-                  {/* Supplier Digital Payment Verification */}
-                  {isSupplier &&
-                    (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') &&
-                    Boolean(order.paymentRefNo && order.paymentProofUrl) &&
-                    order.paymentStatus !== 'paid' &&
-                    order.status !== 'cancelled' &&
-                    order.status !== 'completed' && (
+                <div className="order-action-buttons" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', flexWrap: 'wrap', paddingTop: '4px' }}>
+                  {/* Secondary Utility Actions (Chat & Cancel) - sits on left on desktop, row 2 on mobile */}
+                  <div className="order-actions-secondary-row">
+                    {/* Chat with other party */}
+                    {((isSupplier && order.buyerId) || (!isSupplier && order.supplierId)) && (
                       <button
                         type="button"
-                        onClick={() => handleConfirmDigitalPayment(order.id)}
-                        disabled={markingPaid === order.id}
+                        className="order-chat-btn"
+                        onClick={() => handleChatOrderParty(order)}
                         style={{
-                          padding: '9px 18px',
+                          padding: '9px 16px',
                           borderRadius: '9px',
-                          backgroundColor: markingPaid === order.id ? '#94A3B8' : '#16A34A',
-                          color: '#FFFFFF',
-                          fontWeight: 800,
-                          border: 'none',
-                          cursor: markingPaid === order.id ? 'not-allowed' : 'pointer',
+                          backgroundColor: '#EFFDF5',
+                          color: '#0E4A27',
+                          fontWeight: 700,
                           fontSize: '13px',
+                          border: '1.5px solid #16A34A',
+                          cursor: 'pointer',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '6px',
-                          boxShadow: markingPaid === order.id ? 'none' : '0 2px 8px rgba(22, 163, 74, 0.3)',
                         }}
+                        title={isSupplier ? `Chat with Customer (${order.buyerName})` : `Chat with Supplier (${order.supplierName})`}
                       >
-                        <span>✅</span>
-                        <span>{markingPaid === order.id ? 'Verifying…' : 'Verify & Confirm Payment Received'}</span>
+                        <span>💬</span>
+                        <span>{isSupplier ? 'Chat Customer' : 'Chat Supplier'}</span>
                       </button>
                     )}
 
-                  {/* Cancel Order (Disabled for paid transactions; allowed for COD or unpaid orders) */}
-                  {order.paymentStatus !== 'paid' && (order.status === 'pending' || isQuoted || (isSupplier && order.status === 'processing')) && (
-                    <button
-                      onClick={() => setOrderToCancel(order)}
-                      disabled={updatingStatusId === order.id}
-                      style={{
-                        padding: '9px 16px',
-                        borderRadius: '9px',
-                        border: '1.5px solid #fecaca',
-                        backgroundColor: '#fef2f2',
-                        color: '#dc2626',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      ✕ Cancel Order
-                    </button>
+                    {/* Cancel Order (Disabled for paid transactions; allowed for COD or unpaid orders) */}
+                    {order.paymentStatus !== 'paid' && (order.status === 'pending' || isQuoted || (isSupplier && order.status === 'processing')) && (
+                      <button
+                        type="button"
+                        className="order-cancel-btn"
+                        onClick={() => setOrderToCancel(order)}
+                        disabled={updatingStatusId === order.id}
+                        style={{
+                          padding: '9px 16px',
+                          borderRadius: '9px',
+                          border: '1.5px solid #fecaca',
+                          backgroundColor: '#fef2f2',
+                          color: '#dc2626',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        ✕ Cancel Order
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Primary Workflow Actions (Fulfillment / Stage Progression) - sits on right on desktop, row 1 on mobile */}
+                  {(
+                    (isSupplier && isQuoted) ||
+                    (isBuyer && order.status === 'pending') ||
+                    (isBuyer && order.status === 'shipped_ready') ||
+                    (isSupplier && (order.status === 'pending' || order.status === 'processing' || order.status === 'shipped_ready')) ||
+                    canMarkCODPaid ||
+                    (isSupplier && (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') && Boolean(order.paymentRefNo && order.paymentProofUrl) && order.paymentStatus !== 'paid' && order.status !== 'cancelled' && order.status !== 'completed')
+                  ) && (
+                    <div className="order-actions-primary-row">
+                      {/* Supplier waiting for buyer quote decision */}
+                      {isSupplier && isQuoted && (
+                        <span
+                          className="order-status-waiting"
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            color: '#D97706',
+                            backgroundColor: '#FEF3C7',
+                            padding: '8px 14px',
+                            borderRadius: '9px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <span>⏳</span>
+                          <span>Waiting for Buyer Quote Approval</span>
+                        </span>
+                      )}
+
+                      {/* Buyer waiting for supplier confirmation */}
+                      {isBuyer && order.status === 'pending' && (
+                        <span
+                          className="order-status-waiting"
+                          style={{
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            color: '#D97706',
+                            backgroundColor: '#FEF3C7',
+                            padding: '8px 14px',
+                            borderRadius: '9px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <span>⏳</span>
+                          <span>Waiting for Supplier Confirmation</span>
+                        </span>
+                      )}
+
+                      {/* Farmer / Buyer can mark as received when shipped */}
+                      {isBuyer && order.status === 'shipped_ready' && (
+                        <button
+                          className="order-primary-btn"
+                          onClick={() => handleUpdateStatus(order.id, 'completed')}
+                          disabled={updatingStatusId === order.id}
+                          style={{
+                            padding: '10px 20px',
+                            borderRadius: '10px',
+                            backgroundColor: '#16a34a',
+                            color: '#ffffff',
+                            fontWeight: 800,
+                            border: 'none',
+                            cursor: updatingStatusId === order.id ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)',
+                          }}
+                        >
+                          {updatingStatusId === order.id ? 'Updating…' : '✓ Confirm Received & Complete Order'}
+                        </button>
+                      )}
+
+                      {/* Supplier fulfillment workflow actions */}
+                      {isSupplier && order.status === 'pending' && (
+                        <button
+                          className="order-primary-btn"
+                          onClick={() => {
+                            if (order.deliveryMethod === 'delivery') {
+                              setOrderToSetShipping(order);
+                              setShippingFeeInput(order.shippingFee || 0);
+                            } else {
+                              handleUpdateStatus(order.id, 'processing');
+                            }
+                          }}
+                          disabled={updatingStatusId === order.id}
+                          style={{
+                            padding: '9px 18px',
+                            borderRadius: '9px',
+                            backgroundColor: '#ca8a04',
+                            color: '#fff',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                          }}
+                        >
+                          ▶ Start Processing
+                        </button>
+                      )}
+
+                      {isSupplier && order.status === 'processing' && (
+                        <button
+                          className="order-primary-btn"
+                          onClick={() => handleUpdateStatus(order.id, 'shipped_ready')}
+                          disabled={updatingStatusId === order.id}
+                          style={{
+                            padding: '9px 18px',
+                            borderRadius: '9px',
+                            backgroundColor: '#3730a3',
+                            color: '#fff',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                          }}
+                        >
+                          🚚 Mark Shipped / Ready
+                        </button>
+                      )}
+
+                      {isSupplier && order.status === 'shipped_ready' && (
+                        <button
+                          className="order-primary-btn"
+                          onClick={() => handleUpdateStatus(order.id, 'completed')}
+                          disabled={updatingStatusId === order.id}
+                          style={{
+                            padding: '9px 18px',
+                            borderRadius: '9px',
+                            backgroundColor: '#16a34a',
+                            color: '#fff',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                          }}
+                        >
+                          ✓ Mark as Completed
+                        </button>
+                      )}
+
+                      {/* Supplier COD Confirmation */}
+                      {canMarkCODPaid && (
+                        <button
+                          className="order-primary-btn"
+                          onClick={() => handleMarkCODPaid(order.id)}
+                          disabled={markingPaid === order.id}
+                          style={{
+                            padding: '9px 18px',
+                            borderRadius: '9px',
+                            backgroundColor: markingPaid === order.id ? '#a3a3a3' : '#166534',
+                            color: '#fff',
+                            fontWeight: 700,
+                            border: 'none',
+                            cursor: markingPaid === order.id ? 'not-allowed' : 'pointer',
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          💵 {markingPaid === order.id ? 'Confirming…' : 'Confirm COD Payment Received'}
+                        </button>
+                      )}
+
+                      {/* Supplier Digital Payment Verification */}
+                      {isSupplier &&
+                        (order.paymentMethod === 'gcash' || order.paymentMethod === 'maya' || order.paymentMethod === 'bank_transfer') &&
+                        Boolean(order.paymentRefNo && order.paymentProofUrl) &&
+                        order.paymentStatus !== 'paid' &&
+                        order.status !== 'cancelled' &&
+                        order.status !== 'completed' && (
+                          <button
+                            className="order-primary-btn"
+                            type="button"
+                            onClick={() => handleConfirmDigitalPayment(order.id)}
+                            disabled={markingPaid === order.id}
+                            style={{
+                              padding: '9px 18px',
+                              borderRadius: '9px',
+                              backgroundColor: markingPaid === order.id ? '#94A3B8' : '#16A34A',
+                              color: '#FFFFFF',
+                              fontWeight: 800,
+                              border: 'none',
+                              cursor: markingPaid === order.id ? 'not-allowed' : 'pointer',
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: markingPaid === order.id ? 'none' : '0 2px 8px rgba(22, 163, 74, 0.3)',
+                            }}
+                          >
+                            <span>✅</span>
+                            <span>{markingPaid === order.id ? 'Verifying…' : 'Verify & Confirm Payment Received'}</span>
+                          </button>
+                        )}
+                    </div>
                   )}
                 </div>
               </div>

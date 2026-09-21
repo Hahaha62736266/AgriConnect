@@ -961,6 +961,7 @@ export const ProduceTransactionsPage: React.FC = () => {
         }}
       >
         <div
+          className="orders-kpi-card"
           style={{
             background: '#FFFFFF',
             borderRadius: '16px',
@@ -972,16 +973,17 @@ export const ProduceTransactionsPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#F0FDF4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             📋
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders</div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A' }}>{activeOrders.length}</div>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Orders</div>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: '#0F172A' }}>{activeOrders.length}</div>
           </div>
         </div>
 
         <div
+          className="orders-kpi-card"
           style={{
             background: activePendingCount > 0 ? '#FEFCE8' : '#FFFFFF',
             borderRadius: '16px',
@@ -993,20 +995,21 @@ export const ProduceTransactionsPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#FEF9C3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             ⏳
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: activePendingCount > 0 ? '#A16207' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: activePendingCount > 0 ? '#A16207' : '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Pending Action
             </div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: activePendingCount > 0 ? '#A16207' : '#0F172A' }}>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: activePendingCount > 0 ? '#A16207' : '#0F172A' }}>
               {activePendingCount}
             </div>
           </div>
         </div>
 
         <div
+          className="orders-kpi-card"
           style={{
             background: '#FFFFFF',
             borderRadius: '16px',
@@ -1018,16 +1021,17 @@ export const ProduceTransactionsPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             🚚
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Deliveries</div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: '#1E40AF' }}>{activeConfirmedCount}</div>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Deliveries</div>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: '#1E40AF' }}>{activeConfirmedCount}</div>
           </div>
         </div>
 
         <div
+          className="orders-kpi-card"
           style={{
             background: '#FFFFFF',
             borderRadius: '16px',
@@ -1039,12 +1043,12 @@ export const ProduceTransactionsPage: React.FC = () => {
             gap: '16px',
           }}
         >
-          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
+          <div className="orders-kpi-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
             💰
           </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fulfilled Volume</div>
-            <div style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27' }}>₱{totalRevenue.toLocaleString()}</div>
+          <div className="orders-kpi-info" style={{ minWidth: 0, flex: 1 }}>
+            <div className="orders-kpi-label" style={{ fontSize: '13px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Fulfilled Volume</div>
+            <div className="orders-kpi-value" style={{ fontSize: '26px', fontWeight: 800, color: '#0E4A27' }}>₱{totalRevenue.toLocaleString()}</div>
           </div>
         </div>
       </div>

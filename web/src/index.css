@@ -4360,10 +4360,45 @@ details[open] .help-faq-summary::after {
     margin-bottom: 14px !important;
   }
 
-  .orders-kpi-card {
-    padding: 10px 12px !important;
-    border-radius: 12px !important;
-    gap: 10px !important;
+  .orders-kpi-card,
+  .orders-kpi-grid > div {
+    padding: 10px 10px !important;
+    border-radius: 14px !important;
+    gap: 8px !important;
+  }
+
+  .orders-kpi-icon,
+  .orders-kpi-grid > div > div:first-child {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    border-radius: 10px !important;
+    font-size: 19px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .orders-kpi-info,
+  .orders-kpi-grid > div > div:last-child {
+    min-width: 0 !important;
+    flex: 1 !important;
+    overflow: hidden !important;
+  }
+
+  .orders-kpi-label,
+  .orders-kpi-grid > div > div:last-child > div:first-child {
+    font-size: 11px !important;
+    letter-spacing: 0.3px !important;
+    line-height: 1.2 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .orders-kpi-value,
+  .orders-kpi-grid > div > div:last-child > div:last-child {
+    font-size: 18px !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .cart-channel-switcher {
@@ -5552,8 +5587,17 @@ details[open] .help-faq-summary::after {
     gap: 8px !important;
   }
 
-  .order-actions-primary-row,
+  .order-actions-primary-row {
+    order: 1 !important;
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    gap: 8px !important;
+    align-items: center !important;
+  }
+
   .order-actions-secondary-row {
+    order: 2 !important;
     display: flex !important;
     flex-direction: row !important;
     width: 100% !important;
@@ -5563,38 +5607,45 @@ details[open] .help-faq-summary::after {
 
   .order-primary-btn {
     flex: 1.6 !important;
-    height: 38px !important;
-    min-height: 38px !important;
-    font-size: 12px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    font-size: 13px !important;
     font-weight: 700 !important;
     justify-content: center !important;
     border-radius: 10px !important;
-    padding: 0 8px !important;
+    padding: 0 12px !important;
     white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
   }
 
   .order-cancel-btn {
     flex: 1 !important;
     height: 38px !important;
     min-height: 38px !important;
-    font-size: 12px !important;
+    font-size: 12.5px !important;
     font-weight: 700 !important;
     justify-content: center !important;
     border-radius: 10px !important;
     padding: 0 8px !important;
     white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
   }
 
   .order-chat-btn {
     flex: 1 !important;
     height: 38px !important;
     min-height: 38px !important;
-    font-size: 12px !important;
+    font-size: 12.5px !important;
     font-weight: 700 !important;
     justify-content: center !important;
     border-radius: 10px !important;
     padding: 0 8px !important;
     white-space: nowrap !important;
+    display: flex !important;
+    align-items: center !important;
   }
 
   .order-btn-details {
