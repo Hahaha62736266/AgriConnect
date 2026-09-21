@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { AccountDetailsModal } from '../components/AccountDetailsModal';
 import { UserAvatar } from '../components/UserAvatar';
+import { Skeleton } from '../components/Skeleton';
 import type { User } from '../types/auth';
 
 export const LGUAccountApprovalsPage: React.FC = () => {
@@ -348,8 +349,28 @@ export const LGUAccountApprovalsPage: React.FC = () => {
 
       {/* ─── Applicant Cards Grid ─── */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B', fontSize: '14px' }}>
-          Loading user verification queue...
+        <div
+          role="status"
+          aria-label="Loading user verification queue..."
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '18px' }}
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card" style={{ padding: '22px', borderRadius: '18px', background: 'var(--color-surface)' }}>
+              <div style={{ display: 'flex', gap: '14px', alignItems: 'center', marginBottom: '16px' }}>
+                <Skeleton variant="circular" width={48} height={48} />
+                <div style={{ flex: 1 }}>
+                  <Skeleton variant="text" width={140} height={18} style={{ marginBottom: '6px' }} />
+                  <Skeleton variant="pill" width={80} height={20} />
+                </div>
+              </div>
+              <Skeleton variant="text-sm" width="90%" style={{ marginBottom: '8px' }} />
+              <Skeleton variant="text-sm" width="70%" style={{ marginBottom: '18px' }} />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <Skeleton variant="rectangular" width="50%" height={38} borderRadius={10} />
+                <Skeleton variant="rectangular" width="50%" height={38} borderRadius={10} />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredUsers.length === 0 ? (
         <div

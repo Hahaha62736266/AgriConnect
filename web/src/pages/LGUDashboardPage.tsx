@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { analyticsApi } from '../api/analytics';
 import { PriceChart } from '../components/PriceChart';
+import { Skeleton } from '../components/Skeleton';
 import { useAuth } from '../contexts/AuthContext';
 import type { LGUDashboardSummary } from '../types/analytics';
 import { getRegions, getProvinces, getMunicipalities } from '../data/philippineLocations';
@@ -357,16 +358,23 @@ export const LGUDashboardPage: React.FC = () => {
 
         {/* ── Content ───────────────────────────────────────── */}
         {loading ? (
-          <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center',
-            justifyContent: 'center', padding: '80px 24px', gap: '16px',
-          }}>
-            <div style={{
-              width: '48px', height: '48px', borderRadius: '50%',
-              border: '4px solid #EAF6EE', borderTopColor: '#176B3A',
-              animation: 'spin 0.8s linear infinite',
-            }} />
-            <p style={{ color: '#525450', fontSize: '14px', fontWeight: 600 }}>Loading regional analytics…</p>
+          <div role="status" aria-label="Loading regional analytics...">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '28px' }}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="card" style={{ padding: '20px 24px', borderRadius: '16px', background: 'var(--color-surface)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <Skeleton variant="text-sm" width={80} style={{ marginBottom: 0 }} />
+                    <Skeleton variant="circular" width={28} height={28} />
+                  </div>
+                  <Skeleton variant="rectangular" width={120} height={28} borderRadius={8} style={{ marginBottom: '8px' }} />
+                  <Skeleton variant="text-sm" width={130} style={{ marginBottom: 0 }} />
+                </div>
+              ))}
+            </div>
+            <div className="card" style={{ padding: '24px', borderRadius: '16px', marginBottom: '28px', background: 'var(--color-surface)' }}>
+              <Skeleton variant="title" width={220} height={22} style={{ marginBottom: '16px' }} />
+              <Skeleton variant="rectangular" width="100%" height={260} borderRadius={12} />
+            </div>
           </div>
         ) : !data ? (
           <div className="empty-state">
