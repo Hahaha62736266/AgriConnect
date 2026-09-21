@@ -8,6 +8,8 @@ import { getCropImageFallback } from './ProduceTransactionsPage';
 import { useToast } from '../contexts/ToastContext';
 import type { DeliveryMethod, PaymentMethod, SupplyProduct } from '../types/supply';
 import type { PublicUserProfile } from '../types/auth';
+import gcashLogo from '../assets/gcash.png';
+import mayaLogo from '../assets/maya.webp';
 
 interface CartItem {
   product: SupplyProduct;
@@ -38,6 +40,7 @@ const getPaymentOptions = (isPickup: boolean): {
   id: PaymentMethod;
   label: string;
   icon: string;
+  isImage?: boolean;
   desc: string;
   comingSoon?: boolean;
 }[] => [
@@ -50,13 +53,15 @@ const getPaymentOptions = (isPickup: boolean): {
   {
     id: 'gcash',
     label: 'GCash Direct QR',
-    icon: '📱',
+    icon: gcashLogo,
+    isImage: true,
     desc: 'Scan QR code or transfer to seller GCash.',
   },
   {
     id: 'maya',
     label: 'Maya Direct',
-    icon: '💜',
+    icon: mayaLogo,
+    isImage: true,
     desc: 'Send via Maya e-wallet.',
   },
   {
@@ -797,7 +802,21 @@ export const CheckoutPage: React.FC = () => {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '22px' }}>{opt.icon}</span>
+                        {opt.isImage ? (
+                          <img
+                            src={opt.icon}
+                            alt={opt.label}
+                            style={{
+                              width: '24px',
+                              height: '24px',
+                              objectFit: 'contain',
+                              borderRadius: '4px',
+                              flexShrink: 0,
+                            }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '22px' }}>{opt.icon}</span>
+                        )}
                         <div style={{ flex: 1 }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
                             <div style={{ fontWeight: 700, fontSize: '14px', color: isSelected ? '#15803d' : (isDisabled ? '#94a3b8' : '#1e293b') }}>

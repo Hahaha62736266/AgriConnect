@@ -7,6 +7,8 @@ import { supplyApi } from '../api/supply';
 import type { SupplyOrder, PaymentMethod, PaymentStatus } from '../types/supply';
 
 import { LocationSelector } from '../components/LocationSelector';
+import gcashLogo from '../assets/gcash.png';
+import mayaLogo from '../assets/maya.webp';
 
 const roleLabelMap: Record<string, string> = {
   farmer: 'Farmer Producer',
@@ -514,7 +516,13 @@ export const ProfilePage: React.FC = () => {
 
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                           <span style={{ fontSize: '16px', color: '#525450', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span>{payMethod.icon}</span>
+                            {order.paymentMethod === 'gcash' ? (
+                              <img src={gcashLogo} alt="GCash" style={{ width: '18px', height: '18px', objectFit: 'contain', borderRadius: '3px' }} />
+                            ) : order.paymentMethod === 'maya' ? (
+                              <img src={mayaLogo} alt="Maya" style={{ width: '18px', height: '18px', objectFit: 'contain', borderRadius: '3px' }} />
+                            ) : (
+                              <span>{payMethod.icon}</span>
+                            )}
                             <span>{payMethod.label}</span>
                             <span>•</span>
                             <span>{order.deliveryMethod === 'pickup' ? '🏪 Pickup' : '🚚 Delivery'}</span>
@@ -818,8 +826,20 @@ export const ProfilePage: React.FC = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
                   {/* GCash Details */}
                   <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
-                    <div style={{ fontWeight: 800, color: '#005CE6', fontSize: '15px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      📱 GCash Account
+                    <div style={{ fontWeight: 800, color: '#005CE6', fontSize: '15px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <img
+                        src={gcashLogo}
+                        alt="GCash"
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          objectFit: 'contain',
+                          borderRadius: '4px',
+                          display: 'inline-block',
+                          flexShrink: 0,
+                        }}
+                      />
+                      GCash Account
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div>
@@ -870,8 +890,20 @@ export const ProfilePage: React.FC = () => {
 
                   {/* Maya Details */}
                   <div style={{ background: '#FFFFFF', padding: '16px', borderRadius: '12px', border: '1px solid #CBD5E1' }}>
-                    <div style={{ fontWeight: 800, color: '#7C3AED', fontSize: '15px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      💜 Maya Account
+                    <div style={{ fontWeight: 800, color: '#7C3AED', fontSize: '15px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <img
+                        src={mayaLogo}
+                        alt="Maya"
+                        style={{
+                          width: '22px',
+                          height: '22px',
+                          objectFit: 'contain',
+                          borderRadius: '4px',
+                          display: 'inline-block',
+                          flexShrink: 0,
+                        }}
+                      />
+                      Maya Account
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                       <div>
