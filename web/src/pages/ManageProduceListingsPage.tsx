@@ -5,6 +5,7 @@ import { produceApi } from '../api/produce';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
+import { ManageItemSkeleton } from '../components/PageSkeletons';
 import { PRODUCE_CATEGORIES, type ProduceListing, type ListingStatus } from '../types/produce';
 
 export const ManageProduceListingsPage: React.FC = () => {
@@ -837,9 +838,10 @@ export const ManageProduceListingsPage: React.FC = () => {
 
       {/* ─── Crop / Livestock List or Empty State ─── */}
       {isLoading ? (
-        <div style={{ padding: '60px', textAlign: 'center', color: '#64748b' }}>
-          <div style={{ fontSize: '36px', animation: 'spin 1s linear infinite', display: 'inline-block' }}>⏳</div>
-          <p style={{ marginTop: '12px', fontSize: '16px', fontWeight: 600 }}>Loading your live farm listings…</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }} role="status" aria-label="Loading your farm listings...">
+          <ManageItemSkeleton />
+          <ManageItemSkeleton />
+          <ManageItemSkeleton />
         </div>
       ) : filteredMyListings.length > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>

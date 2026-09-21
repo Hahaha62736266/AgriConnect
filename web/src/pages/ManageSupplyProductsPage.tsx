@@ -6,6 +6,7 @@ import { supplyApi } from '../api/supply';
 import { api, getImageUrl } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
+import { ManageItemSkeleton } from '../components/PageSkeletons';
 import type { SupplyCategory, SupplyProduct } from '../types/supply';
 import { SUPPLY_CATEGORIES } from '../types/supply';
 
@@ -533,9 +534,10 @@ export const ManageSupplyProductsPage: React.FC = () => {
 
         {/* Product List */}
         {loading ? (
-          <div style={{ padding: '60px', textAlign: 'center', backgroundColor: '#fff', borderRadius: '20px', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '32px', marginBottom: '12px' }}>🔄</div>
-            <p style={{ color: '#64748b', fontSize: '15px', fontWeight: 600, margin: 0 }}>Loading your store inventory...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} role="status" aria-label="Loading your store inventory...">
+            <ManageItemSkeleton />
+            <ManageItemSkeleton />
+            <ManageItemSkeleton />
           </div>
         ) : products.length === 0 ? (
           <div style={{ padding: '60px 24px', borderRadius: '20px', textAlign: 'center', backgroundColor: '#fff', border: '1.5px dashed #cbd5e1' }}>
