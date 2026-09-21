@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { api } from '../api';
 
 interface ForgotPasswordModalProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetEmail.trim() || !resetEmail.includes('@')) {
       setErrorMsg('Please enter a valid email address.');
@@ -27,11 +28,16 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
     setErrorMsg('');
     setLoading(true);
 
-    // Simulate reset link dispatch & RSBSA account security verification
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await api.forgotPassword(resetEmail.trim());
       setSubmitted(true);
-    }, 800);
+    } catch {
+      // The backend always returns 200 for valid requests,
+      // so an error here means a network issue or server error.
+      setErrorMsg('Something went wrong. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleResetState = () => {

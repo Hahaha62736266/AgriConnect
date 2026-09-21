@@ -59,9 +59,11 @@ func main() {
 	analyticsRepo := repository.NewAnalyticsRepository(db)
 	notifRepo := repository.NewNotificationRepository(db)
 	chatRepo := repository.NewChatRepository(db)
+	resetTokenRepo := repository.NewResetTokenRepository(db)
 
 	// Services
-	authService := service.NewAuthService(userRepo, cfg.JWTSecret, cfg.JWTExpiryHrs)
+	emailService := service.NewEmailService(cfg.BrevoAPIKey)
+	authService := service.NewAuthService(userRepo, resetTokenRepo, emailService, cfg.JWTSecret, cfg.JWTExpiryHrs, cfg.AppBaseURL)
 	userService := service.NewUserService(userRepo, storageSvc)
 	adminService := service.NewAdminService(userRepo)
 	produceService := service.NewProduceService(produceRepo, userRepo, notifRepo)

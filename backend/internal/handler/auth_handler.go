@@ -69,6 +69,54 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// ForgotPassword handles POST /api/auth/forgot-password.
+// Always returns 200 OK with a generic message to prevent email enumeration.
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req models.ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if req.Email == "" {
+		writeError(w, http.StatusBadRequest, "email is required")
+		return
+	}
+
+	// Fire-and-forget style: errors are logged server-side but not exposed to the client.
+	_ = h.authService.ForgotPassword(r.Context(), req.Email)
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "If an account exists for that email, a password reset link has been sent.",
+	})
+}
+
+// ResetPassword handles POST /api/auth/reset-password.
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req models.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+
+	if err := h.authService.ResetPassword(r.Context(), req.Token, req.NewPassword); err != nil {
+		status := http.StatusInternalServerError
+		switch err.Error() {
+		case "reset token is required",
+			"password must be at least 8 characters":
+			status = http.StatusBadRequest
+		case "reset token is invalid or has expired":
+			status = http.StatusUnauthorized
+		}
+		writeError(w, status, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{
+		"message": "Your password has been reset successfully. You can now sign in with your new password.",
+	})
+}
+
 // writeJSON sends a JSON response with the given status code.
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")

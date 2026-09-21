@@ -2,8 +2,11 @@ package service
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/agriconnect/backend/internal/models"
@@ -14,17 +17,30 @@ import (
 
 // AuthService handles authentication business logic.
 type AuthService struct {
-	repo      *repository.UserRepository
-	jwtSecret []byte
-	jwtExpiry time.Duration
+	repo           *repository.UserRepository
+	resetTokenRepo *repository.ResetTokenRepository
+	emailService   *EmailService
+	jwtSecret      []byte
+	jwtExpiry      time.Duration
+	appBaseURL     string
 }
 
 // NewAuthService creates a new AuthService.
-func NewAuthService(repo *repository.UserRepository, jwtSecret string, jwtExpiryHrs int) *AuthService {
+func NewAuthService(
+	repo *repository.UserRepository,
+	resetTokenRepo *repository.ResetTokenRepository,
+	emailService *EmailService,
+	jwtSecret string,
+	jwtExpiryHrs int,
+	appBaseURL string,
+) *AuthService {
 	return &AuthService{
-		repo:      repo,
-		jwtSecret: []byte(jwtSecret),
-		jwtExpiry: time.Duration(jwtExpiryHrs) * time.Hour,
+		repo:           repo,
+		resetTokenRepo: resetTokenRepo,
+		emailService:   emailService,
+		jwtSecret:      []byte(jwtSecret),
+		jwtExpiry:      time.Duration(jwtExpiryHrs) * time.Hour,
+		appBaseURL:     appBaseURL,
 	}
 }
 
@@ -194,4 +210,91 @@ func HashPassword(password string) (string, error) {
 // CheckPassword compares a plaintext password with a bcrypt hash.
 func CheckPassword(password, hash string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}
+
+// ForgotPassword generates a reset token, stores its hash, and emails the raw token link.
+// Always returns nil so the handler can respond with a generic 200 (prevents email enumeration).
+func (s *AuthService) ForgotPassword(ctx context.Context, email string) error {
+	user, err := s.repo.FindByEmail(ctx, email)
+	if err != nil {
+		// User not found — silently succeed to prevent enumeration.
+		log.Printf("⚠️  ForgotPassword: no user for email %s (silent success)\n", email)
+		return nil
+	}
+
+	// Clean up any previous tokens for this user
+	_ = s.resetTokenRepo.DeleteByUserID(ctx, user.ID)
+
+	// Generate a cryptographically-secure random token (32 bytes → 64 hex chars)
+	rawBytes := make([]byte, 32)
+	if _, err := rand.Read(rawBytes); err != nil {
+		return fmt.Errorf("generate random token: %w", err)
+	}
+	rawToken := hex.EncodeToString(rawBytes)
+	tokenHash := repository.HashToken(rawToken)
+
+	tok := &models.PasswordResetToken{
+		UserID:    user.ID,
+		Token:     tokenHash,
+		ExpiresAt: time.Now().Add(30 * time.Minute),
+		Used:      false,
+	}
+
+	if err := s.resetTokenRepo.Create(ctx, tok); err != nil {
+		return fmt.Errorf("store reset token: %w", err)
+	}
+
+	// Build the reset link with the raw (unhashed) token
+	resetLink := fmt.Sprintf("%s/reset-password?token=%s", s.appBaseURL, rawToken)
+	toName := user.FirstName
+	if toName == "" {
+		toName = user.Email
+	}
+
+	if err := s.emailService.SendPasswordResetEmail(user.Email, toName, resetLink); err != nil {
+		log.Printf("❌ Failed to send reset email to %s: %v\n", user.Email, err)
+		return fmt.Errorf("send reset email: %w", err)
+	}
+
+	return nil
+}
+
+// ResetPassword validates a reset token and updates the user's password.
+func (s *AuthService) ResetPassword(ctx context.Context, rawToken, newPassword string) error {
+	if rawToken == "" {
+		return errors.New("reset token is required")
+	}
+	if len(newPassword) < 8 {
+		return errors.New("password must be at least 8 characters")
+	}
+
+	tokenHash := repository.HashToken(rawToken)
+
+	tok, err := s.resetTokenRepo.FindByToken(ctx, tokenHash)
+	if err != nil {
+		return errors.New("reset token is invalid or has expired")
+	}
+
+	// Hash the new password
+	hashed, err := HashPassword(newPassword)
+	if err != nil {
+		return fmt.Errorf("hash new password: %w", err)
+	}
+
+	// Update the user's password
+	if err := s.repo.Update(ctx, tok.UserID, map[string]interface{}{
+		"password": hashed,
+	}); err != nil {
+		return fmt.Errorf("update password: %w", err)
+	}
+
+	// Mark the token as used
+	if err := s.resetTokenRepo.MarkUsed(ctx, tok.ID); err != nil {
+		log.Printf("⚠️  Failed to mark token as used: %v\n", err)
+	}
+
+	// Clean up remaining tokens for this user
+	_ = s.resetTokenRepo.DeleteByUserID(ctx, tok.UserID)
+
+	return nil
 }
