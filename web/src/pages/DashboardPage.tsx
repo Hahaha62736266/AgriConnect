@@ -5,6 +5,7 @@ import { adminApi } from '../api/admin';
 import { produceApi } from '../api/produce';
 import { priceApi } from '../api/price';
 import type { MarketPrice } from '../types/price';
+import { DashboardPriceListSkeleton } from '../components/PageSkeletons';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -582,9 +583,7 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           {!pricesLoaded ? (
-            <div style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-              Loading today's price benchmarks...
-            </div>
+            <DashboardPriceListSkeleton count={4} />
           ) : marketPrices.length === 0 ? (
             <div style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>
               <p style={{ margin: 0, fontSize: '14px' }}>No price records published yet for today.</p>

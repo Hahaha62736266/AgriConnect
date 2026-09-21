@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { priceApi } from '../api/price';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { TableRowSkeleton } from '../components/PageSkeletons';
 import type { MarketPrice } from '../types/price';
 
 interface CommodityPreset {
@@ -813,8 +814,11 @@ export const ManageMarketPricesPage: React.FC = () => {
 
           {/* Records Table / Feed */}
           {loadingRecords ? (
-            <div style={{ textAlign: 'center', padding: '48px', color: '#64748B', fontSize: '13px' }}>
-              Loading official commodity records...
+            <div className="card" role="status" aria-label="Loading official commodity records..." style={{ borderRadius: '16px', overflow: 'hidden' }}>
+              <TableRowSkeleton columns={5} />
+              <TableRowSkeleton columns={5} />
+              <TableRowSkeleton columns={5} />
+              <TableRowSkeleton columns={5} />
             </div>
           ) : filteredRecords.length === 0 ? (
             <div

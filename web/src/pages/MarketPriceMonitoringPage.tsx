@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { priceApi } from '../api/price';
 import { useAuth } from '../contexts/AuthContext';
 import { PriceChart } from '../components/PriceChart';
+import { Skeleton } from '../components/Skeleton';
 import type { MarketPrice } from '../types/price';
 
 interface CropOption {
@@ -863,8 +864,8 @@ export const MarketPriceMonitoringPage: React.FC<MarketPriceMonitoringPageProps>
             </div>
 
             {loading ? (
-              <div style={{ color: '#64748B', fontSize: '14px', textAlign: 'center', padding: '48px', fontWeight: 600 }}>
-                Loading market price trend chart…
+              <div style={{ padding: '16px 0' }} role="status" aria-label="Loading market price trend chart...">
+                <Skeleton variant="rectangular" height={280} width="100%" borderRadius={16} />
               </div>
             ) : (
               <div>
