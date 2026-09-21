@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
@@ -18,6 +18,20 @@ export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { success: toastSuccess, error: toastError, warning: toastWarning } = useToast();
 
+  // Exclude dark mode on the register page (same as login page)
+  useEffect(() => {
+    document.documentElement.removeAttribute('data-theme');
+    return () => {
+      const saved = localStorage.getItem('agriconnect_theme') || 'light';
+      let effective = saved;
+      if (saved === 'system') {
+        effective = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      if (effective === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    };
+  }, []);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
