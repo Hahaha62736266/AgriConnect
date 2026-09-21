@@ -7,6 +7,7 @@ import { supplyApi } from '../api/supply';
 import { api, getImageUrl } from '../api';
 import type { SupplyProduct, DeliveryMethod, PaymentMethod, SupplyOrder } from '../types/supply';
 import { SUPPLY_CATEGORIES } from '../types/supply';
+import { MarketplaceGridSkeleton } from '../components/PageSkeletons';
 
 const categories: { key: string; label: string; icon: string }[] = [
   { key: 'all', label: 'All Inputs', icon: '🏪' },
@@ -477,9 +478,7 @@ export const SupplyStorePage: React.FC = () => {
 
       {/* ─── Products Grid ─── */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', fontSize: '20px', color: '#525450', fontWeight: 700 }}>
-          Loading certified supply products…
-        </div>
+        <MarketplaceGridSkeleton count={8} />
       ) : products.length === 0 ? (
         <div className="card" style={{ padding: '60px', textAlign: 'center' }}>
           <div style={{ fontSize: '64px', marginBottom: '12px' }}>🚜</div>

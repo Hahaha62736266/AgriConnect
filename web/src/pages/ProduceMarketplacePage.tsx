@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useChat } from '../contexts/ChatContext';
 import type { ProduceListing, ProduceTransaction } from '../types/produce';
+import { MarketplaceGridSkeleton } from '../components/PageSkeletons';
 import gcashLogo from '../assets/gcash.png';
 import mayaLogo from '../assets/maya.webp';
 
@@ -146,7 +147,7 @@ export const ProduceMarketplacePage: React.FC = () => {
     navigate('/messages');
   };
   const [listings, setListings] = useState<ProduceListing[]>([]);
-  const [_loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Products');
 
@@ -458,7 +459,9 @@ export const ProduceMarketplacePage: React.FC = () => {
       </div>
 
       {/* ─── Crop Cards Grid ─── */}
-      {filteredListings.length > 0 ? (
+      {loading ? (
+        <MarketplaceGridSkeleton count={8} />
+      ) : filteredListings.length > 0 ? (
         <div className="marketplace-grid">
           {filteredListings.map((item: any) => {
             const qtyInCart = produceCartMap[item.id] || 0;
