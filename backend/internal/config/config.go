@@ -20,6 +20,10 @@ type Config struct {
 	R2SecretAccessKey string
 	R2BucketName      string
 	R2PublicURL       string
+
+	// Brevo (transactional email)
+	BrevoAPIKey string
+	AppBaseURL  string
 }
 
 // Load reads configuration from environment variables with sensible defaults.
@@ -36,6 +40,8 @@ func Load() *Config {
 		R2SecretAccessKey: getEnv("R2_SECRET_ACCESS_KEY", ""),
 		R2BucketName:      getEnv("R2_BUCKET_NAME", ""),
 		R2PublicURL:       getEnv("R2_PUBLIC_URL", ""),
+		BrevoAPIKey:       getEnv("BREVO_API_KEY", ""),
+		AppBaseURL:        getEnv("APP_BASE_URL", "http://localhost:5173"),
 	}
 	return cfg
 }
