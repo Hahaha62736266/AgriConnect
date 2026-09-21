@@ -5,6 +5,7 @@ import { useToast } from '../contexts/ToastContext';
 import type { Role } from '../types/auth';
 
 import { LocationSelector } from '../components/LocationSelector';
+import agriConnectLogo from '../assets/AgriConnect.png';
 
 const rolesList: { role: Role; title: string; desc: string; icon: string }[] = [
   { role: 'farmer', title: 'Farmer', desc: 'Sell produce and access live market rates', icon: '🧑‍🌾' },
@@ -23,30 +24,39 @@ export const RegisterPage: React.FC = () => {
     document.documentElement.removeAttribute('data-theme');
     return () => {
       const saved = localStorage.getItem('agriconnect_theme') || 'light';
-      let effective = saved;
-      if (saved === 'system') {
-        effective = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      }
-      if (effective === 'dark') {
+      if (saved === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
       }
     };
   }, []);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+
+  const [role, setRole] = useState<Role>('farmer');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [region, setRegion] = useState('Region III - Central Luzon');
-  const [province, setProvince] = useState('Bulacan');
-  const [municipality, setMunicipality] = useState('Malolos City');
-  const [barangay, setBarangay] = useState('Santo Rosario (Poblacion)');
-  const [role, setRole] = useState<Role>('farmer');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Cascading Philippine Location State
+  const [region, setRegion] = useState('');
+  const [province, setProvince] = useState('');
+  const [municipality, setMunicipality] = useState('');
+  const [barangay, setBarangay] = useState('');
 
   const [loading, setLoading] = useState(false);
-  const [submittedPending, setSubmittedPending] = useState(false);
+  const [isPendingApproval, setIsPendingApproval] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!firstName.trim() || !lastName.trim() || !email.trim() || !password) {
+      toastWarning('Incomplete Fields', 'Please fill in all required fields.');
+      return;
+    }
+
+    if (!region || !province || !municipality || (role !== 'lgu_staff' && !barangay)) {
+      toastWarning('Incomplete Location', 'Please select your region, province, municipality, and barangay.');
+      return;
+    }
 
     if (password.length < 8) {
       toastWarning('Password Too Short', 'Password must be at least 8 characters.');
@@ -56,26 +66,39 @@ export const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      const res = await register({ email, password, role, firstName, lastName, region, province, municipality, barangay });
-      if (res.token) {
+      const res = await register({
+        email: email.trim().toLowerCase(),
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        role,
+        region,
+        province,
+        municipality,
+        barangay: role === 'lgu_staff' ? '' : barangay,
+      });
+      if (res && (res as any).token) {
         toastSuccess('Registration Successful!', 'Welcome to AgriConnect!');
         navigate('/dashboard');
       } else {
+        setIsPendingApproval(true);
         toastSuccess('Registration Submitted', 'Your account is pending verification.');
-        setSubmittedPending(true);
       }
     } catch (err: any) {
-      toastError('Registration Failed', err.response?.data?.error || 'Registration failed. Please try again.');
+      const msg = err.response?.data?.error || err.message || 'Registration failed. Please try again.';
+      toastError('Registration Failed', msg);
     } finally {
       setLoading(false);
     }
   };
 
   const selectedRole = rolesList.find((r) => r.role === role);
+  const approverText =
+    role === 'lgu_staff'
+      ? 'DA (Department of Agriculture) Administrators'
+      : `LGU Officers of ${municipality || 'your municipality'}, ${province || 'your province'}`;
 
-  if (submittedPending) {
-    const approverText = role === 'lgu_staff' ? 'Super Admin' : `LGU Staff of ${region}`;
-
+  if (isPendingApproval) {
     return (
       <div
         className="gradient-bg"
@@ -102,7 +125,7 @@ export const RegisterPage: React.FC = () => {
             Registration Submitted!
           </h2>
           <p style={{ color: 'var(--color-text-muted)', fontSize: '15px', lineHeight: 1.6, marginBottom: '24px' }}>
-            Your account as <strong style={{ color: 'var(--color-text)' }}>{selectedRole?.title}</strong> for <strong style={{ color: 'var(--color-text)' }}>Brgy. {barangay}, {municipality}, {province} ({region})</strong> has been registered.
+            Your account as <strong style={{ color: 'var(--color-text)' }}>{selectedRole?.title}</strong> for <strong style={{ color: 'var(--color-text)' }}>{role === 'lgu_staff' ? `${municipality}, ${province} (${region})` : `Brgy. ${barangay}, ${municipality}, ${province} (${region})`}</strong> has been registered.
             <br />
             <br />
             It is currently <span style={{ color: '#d97706', fontWeight: 700 }}>Pending Approval</span> by the <strong>{approverText}</strong>. You will be able to log in once your account has been reviewed and approved.
@@ -142,27 +165,33 @@ export const RegisterPage: React.FC = () => {
         }}
       >
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '10px',
-              marginBottom: '14px',
-            }}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <Link
+            to="/"
+            className="register-brand-wrap"
+            title="AgriConnect Home"
           >
-            <span style={{ fontSize: '26px' }}>🌾</span>
-            <span
+            <img
+              src={agriConnectLogo}
+              alt="AgriConnect Logo"
               style={{
-                fontSize: '22px',
-                fontWeight: 800,
-                color: 'var(--color-text)',
-                letterSpacing: '-0.4px',
+                width: '44px',
+                height: '44px',
+                objectFit: 'contain',
+                flexShrink: 0,
+                display: 'block',
               }}
-            >
-              AgriConnect
-            </span>
-          </div>
+            />
+            <div style={{ textAlign: 'left' }}>
+              <div className="register-brand-title">
+                <span className="brand-part-1">Agri</span>
+                <span className="brand-part-2">Connect</span>
+              </div>
+              <div className="register-brand-subtitle">
+                Connect. Grow. Prosper.
+              </div>
+            </div>
+          </Link>
           <h1
             style={{
               fontSize: '26px',
@@ -296,22 +325,25 @@ export const RegisterPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Cascading Philippine Location Dropdowns */}
-          <div style={{ marginBottom: '18px', padding: '16px', borderRadius: 'var(--radius-md)', backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-text)', marginBottom: '4px' }}>
-              📍 {role === 'lgu_staff' ? 'Municipal Jurisdiction Location' : 'Account Location'}
+          {/* Location field */}
+          <div className="form-group" style={{ marginBottom: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <label className="form-label" style={{ marginBottom: 0 }}>
+                {role === 'lgu_staff' ? 'Municipal Jurisdiction' : 'Location'}
+              </label>
+              {role === 'lgu_staff' && (
+                <span style={{ fontSize: '11px', color: 'var(--color-text-secondary)', fontWeight: 500 }}>
+                  (Administered at municipal level)
+                </span>
+              )}
             </div>
-            {role === 'lgu_staff' && (
-              <p style={{ fontSize: '11px', color: '#64748B', margin: '0 0 10px 0' }}>
-                LGU officers administer at the municipal level (all barangays within the chosen municipality).
-              </p>
-            )}
             <LocationSelector
               region={region}
               province={province}
               municipality={municipality}
               barangay={barangay}
               excludeBarangay={role === 'lgu_staff'}
+              progressive={true}
               onChange={(r, p, m, b) => {
                 setRegion(r);
                 setProvince(p);

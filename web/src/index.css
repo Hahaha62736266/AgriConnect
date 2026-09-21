@@ -6477,3 +6477,498 @@ details[open] .help-faq-summary::after {
 [data-theme='dark'] .profile-logout-modal h3 {
   color: #F1F5F9 !important;
 }
+
+/* Progressive Location Dropdown Animation */
+.location-step-enter {
+  animation: locationStepFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes locationStepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom Auto-Expanding Location Dropdown */
+.auto-expand-group {
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  border: 1.5px solid var(--color-border, #E2E8F0);
+  background-color: var(--color-surface, #FFFFFF);
+  overflow: hidden;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auto-expand-group.is-open {
+  border-color: #16A34A !important;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15) !important;
+}
+
+.auto-expand-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--color-text, #1E293B);
+  transition: background-color 0.15s ease;
+}
+
+.auto-expand-header:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='dark'] .auto-expand-header:hover {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.auto-expand-panel {
+  border-top: 1px solid var(--color-border, #E2E8F0);
+  background-color: var(--color-surface, #FFFFFF);
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auto-expand-search-wrap {
+  padding: 6px 8px 8px 8px;
+  position: sticky;
+  top: 0;
+  background-color: var(--color-surface, #FFFFFF);
+  z-index: 2;
+  border-bottom: 1px solid var(--color-border, #E2E8F0);
+}
+
+.auto-expand-search-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border, #CBD5E1);
+  background-color: var(--color-background, #F8FAFC);
+  color: var(--color-text, #0F172A);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.auto-expand-search-input:focus {
+  border-color: #16A34A;
+  background-color: var(--color-surface, #FFFFFF);
+}
+
+.auto-expand-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  min-height: 38px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-text, #334155);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.auto-expand-item:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+}
+
+.auto-expand-item.is-selected {
+  background-color: #DCFCE7;
+  color: #15803D;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .auto-expand-item:hover {
+  background-color: #1E293B;
+  color: #F8FAFC;
+}
+
+[data-theme='dark'] .auto-expand-item.is-selected {
+  background-color: #14532D;
+  color: #86EFAC;
+}
+
+/* Single Hierarchical Location Dropdown - Refined UI/UX */
+.single-hierarchical-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.hierarchical-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 14px;
+  min-height: 50px;
+  background-color: var(--color-surface, #FFFFFF);
+  border: 1.5px solid var(--color-border, #CBD5E1);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  text-align: left;
+  gap: 12px;
+  box-sizing: border-box;
+}
+
+.hierarchical-trigger:hover {
+  border-color: #16A34A;
+  background-color: var(--color-surface-hover, #F8FAFC);
+}
+
+.hierarchical-trigger.is-open {
+  border-color: #16A34A !important;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18) !important;
+}
+
+.hierarchical-icon-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #DCFCE7;
+  color: #16A34A;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+[data-theme='dark'] .hierarchical-icon-badge {
+  background: #14371E;
+  color: #86EFAC;
+}
+
+.hierarchical-val-container {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  text-align: left;
+  justify-content: center;
+}
+
+.hierarchical-primary-val {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text, #0F172A);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.35;
+}
+
+.hierarchical-secondary-val {
+  font-size: 11.5px;
+  color: var(--color-text-secondary, #64748B);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-top: 2px;
+}
+
+.hierarchical-placeholder {
+  font-size: 13px;
+  color: var(--color-text-muted, #94A3B8);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hierarchical-change-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 9px;
+  border-radius: 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--color-border, #E2E8F0);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #475569);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hierarchical-change-btn:hover {
+  background-color: #E2E8F0;
+  color: var(--color-text, #0F172A);
+}
+
+[data-theme='dark'] .hierarchical-change-btn {
+  background-color: rgba(255, 255, 255, 0.08);
+  border-color: #2E3E31;
+  color: #94A3B8;
+}
+
+[data-theme='dark'] .hierarchical-change-btn:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #F8FAFC;
+}
+
+.hierarchical-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background-color: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-border, #CBD5E1);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px -6px rgba(0, 0, 0, 0.16), 0 8px 16px -4px rgba(0, 0, 0, 0.08);
+  z-index: 50;
+  overflow: hidden;
+  animation: locationStepFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.hierarchical-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: var(--color-background, #F8FAFC);
+}
+
+.hierarchical-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--color-surface, #FFFFFF);
+  border: 1px solid var(--color-border, #CBD5E1);
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--color-text, #334155);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hierarchical-back-btn:hover {
+  background-color: #F1F5F9;
+  border-color: #94A3B8;
+}
+
+.hierarchical-step-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #166534;
+  background-color: #DCFCE7;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+/* Stepper progress indicator pills */
+.hierarchical-progress-bar {
+  display: flex;
+  gap: 5px;
+  padding: 0 14px 9px 14px;
+  background-color: var(--color-background, #F8FAFC);
+  border-bottom: 1px solid var(--color-border, #E2E8F0);
+}
+
+.hierarchical-progress-seg {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background-color: var(--color-border, #CBD5E1);
+  transition: background-color 0.25s ease;
+}
+
+.hierarchical-progress-seg.is-active {
+  background-color: #16A34A !important;
+}
+
+.hierarchical-search-wrap {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--color-border, #E2E8F0);
+  background-color: var(--color-surface, #FFFFFF);
+}
+
+.hierarchical-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  border-radius: 8px;
+  border: 1.5px solid var(--color-border, #CBD5E1);
+  background-color: var(--color-background, #F8FAFC);
+  color: var(--color-text, #0F172A);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.hierarchical-search-input:focus {
+  border-color: #16A34A;
+  background-color: var(--color-surface, #FFFFFF);
+}
+
+.hierarchical-list {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hierarchical-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  min-height: 40px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-text, #334155);
+  transition: all 0.12s ease;
+}
+
+.hierarchical-item:hover {
+  background-color: #F1F5F9;
+  color: #0F172A;
+  transform: translateX(2px);
+}
+
+.hierarchical-item.is-selected {
+  background-color: #DCFCE7;
+  color: #15803D;
+  font-weight: 700;
+}
+
+/* Dark mode refinements */
+[data-theme='dark'] .hierarchical-trigger {
+  background-color: #101611 !important;
+  border-color: #2E3E31 !important;
+  color: #F1F5F9 !important;
+}
+
+[data-theme='dark'] .hierarchical-menu {
+  background-color: #141B15 !important;
+  border-color: #2E3E31 !important;
+}
+
+[data-theme='dark'] .hierarchical-nav,
+[data-theme='dark'] .hierarchical-progress-bar {
+  background-color: #101611 !important;
+  border-color: #243026 !important;
+}
+
+[data-theme='dark'] .hierarchical-progress-seg {
+  background-color: #243026 !important;
+}
+
+[data-theme='dark'] .hierarchical-progress-seg.is-active {
+  background-color: #16A34A !important;
+}
+
+[data-theme='dark'] .hierarchical-back-btn {
+  background-color: #1A241C !important;
+  border-color: #2E3E31 !important;
+  color: #F1F5F9 !important;
+}
+
+[data-theme='dark'] .hierarchical-search-wrap {
+  background-color: #141B15 !important;
+  border-color: #243026 !important;
+}
+
+[data-theme='dark'] .hierarchical-search-input {
+  background-color: #101611 !important;
+  border-color: #2E3E31 !important;
+  color: #F1F5F9 !important;
+}
+
+[data-theme='dark'] .hierarchical-item:hover {
+  background-color: #1E293B !important;
+  color: #F8FAFC !important;
+}
+
+[data-theme='dark'] .hierarchical-item.is-selected {
+  background-color: #14532D !important;
+  color: #86EFAC !important;
+}
+
+/* Register Page Official Brand Logo & Subtitle */
+.register-brand-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  text-decoration: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.register-brand-wrap:hover {
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+.register-brand-title {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.4px;
+  white-space: nowrap;
+}
+
+.register-brand-title .brand-part-1 {
+  color: #16523a;
+}
+
+.register-brand-title .brand-part-2 {
+  color: #599e36;
+}
+
+.register-brand-subtitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1c513d;
+  margin-top: 2px;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+  text-align: left;
+}
+
+[data-theme='dark'] .register-brand-title .brand-part-1 {
+  color: #4ADE80 !important;
+}
+
+[data-theme='dark'] .register-brand-title .brand-part-2 {
+  color: #86EFAC !important;
+}
+
+[data-theme='dark'] .register-brand-subtitle {
+  color: #94A3B8 !important;
+}
