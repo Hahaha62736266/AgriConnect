@@ -335,38 +335,100 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
 
   return (
     <div ref={dropdownRef} className="single-hierarchical-dropdown">
-      {/* The Single Trigger Dropdown Box */}
-      <button
-        type="button"
-        className={`hierarchical-trigger ${isOpen ? 'is-open' : ''}`}
-        onClick={() => {
-          if (disabled) return;
-          if (!isOpen) {
-            if (!draftRegion) setStep('region');
-            else if (!draftProvince) setStep('province');
-            else if (!draftMunicipality) setStep('municipality');
-            else if (!excludeBarangay && !currentBarangay) setStep('barangay');
-            else setStep('region');
-          }
-          setIsOpen(!isOpen);
-          setSearchQuery('');
-        }}
-        disabled={disabled}
-      >
-        <div className="hierarchical-icon-badge">
-          📍
-        </div>
-
-        {isComplete ? (
-          <div className="hierarchical-val-container">
-            <div className="hierarchical-primary-val">
-              {!excludeBarangay && currentBarangay ? `${currentBarangay}, ` : ''}{currentMunicipality}
+      {/* Option 1: Verified Location Summary Card (When complete) */}
+      {isComplete ? (
+        <div
+          className={`location-summary-card ${isOpen ? 'is-active' : ''}`}
+          onClick={() => {
+            if (disabled) return;
+            if (!isOpen) {
+              setStep('region');
+            }
+            setIsOpen(!isOpen);
+            setSearchQuery('');
+          }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              if (disabled) return;
+              setIsOpen(!isOpen);
+            }
+          }}
+        >
+          <div className="location-summary-top">
+            <div className="location-summary-badge">
+              <span className="location-summary-dot" />
+              <span>Registered Location</span>
             </div>
-            <div className="hierarchical-secondary-val">
-              {currentProvince} • {currentRegion}
+            <button
+              type="button"
+              className="location-summary-change-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (disabled) return;
+                setStep('region');
+                setIsOpen(true);
+                setSearchQuery('');
+              }}
+            >
+              <span>Change</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="location-summary-content">
+            {/* Primary Location: City/Municipality, Province */}
+            <div className="location-summary-primary">
+              <span className="location-summary-icon">📍</span>
+              <div className="location-summary-city-prov">
+                <span>{currentMunicipality}</span>
+                <span style={{ color: 'var(--color-text-secondary, #64748B)', fontWeight: 600 }}>, {currentProvince}</span>
+              </div>
+            </div>
+
+            {/* Tier Details: Barangay & Region */}
+            <div className="location-summary-meta-grid">
+              {!excludeBarangay && currentBarangay && (
+                <div className="location-summary-meta-item">
+                  <span className="location-meta-label">Barangay:</span>
+                  <span className="location-meta-val">{currentBarangay}</span>
+                </div>
+              )}
+              <div className="location-summary-meta-item">
+                <span className="location-meta-label">Region:</span>
+                <span className="location-meta-val">{currentRegion}</span>
+              </div>
             </div>
           </div>
-        ) : (
+        </div>
+      ) : (
+        /* The Single Trigger Dropdown Box (When not complete) */
+        <button
+          type="button"
+          className={`hierarchical-trigger ${isOpen ? 'is-open' : ''}`}
+          onClick={() => {
+            if (disabled) return;
+            if (!isOpen) {
+              if (!draftRegion) setStep('region');
+              else if (!draftProvince) setStep('province');
+              else if (!draftMunicipality) setStep('municipality');
+              else if (!excludeBarangay && !currentBarangay) setStep('barangay');
+              else setStep('region');
+            }
+            setIsOpen(!isOpen);
+            setSearchQuery('');
+          }}
+          disabled={disabled}
+        >
+          <div className="hierarchical-icon-badge">
+            📍
+          </div>
+
           <div className="hierarchical-val-container">
             <div className="hierarchical-placeholder">
               {currentRegion
@@ -374,14 +436,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
                 : 'Select Location (Region › Province › City › Barangay)...'}
             </div>
           </div>
-        )}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, marginLeft: 'auto' }}>
-          {isComplete && (
-            <span className="hierarchical-change-btn">
-              Change
-            </span>
-          )}
           <svg
             width="14"
             height="14"
@@ -396,12 +451,13 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
               transition: 'transform 0.2s ease',
               color: 'var(--color-text-secondary, #64748B)',
               flexShrink: 0,
+              marginLeft: 'auto',
             }}
           >
             <polyline points="6 9 12 15 18 9"></polyline>
           </svg>
-        </div>
-      </button>
+        </button>
+      )}
 
       {/* The Single Hierarchical Dropdown Menu (Drilldown) */}
       {isOpen && (
