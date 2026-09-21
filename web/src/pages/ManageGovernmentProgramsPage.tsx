@@ -5,6 +5,7 @@ import { api, getImageUrl } from '../api';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
 import { getRegions, getProvinces, getMunicipalities } from '../data/philippineLocations';
+import { ProgramCardSkeleton, TableRowSkeleton } from '../components/PageSkeletons';
 import type { GovernmentProgram, ProgramApplication, ApplicationStatus } from '../types/program';
 
 interface ProgramStats {
@@ -858,8 +859,13 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
 
         {/* ─── Program Cards Grid ─── */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', fontSize: '14px' }}>
-            Loading active agricultural programs...
+          <div
+            role="status"
+            aria-label="Loading active agricultural programs..."
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}
+          >
+            <ProgramCardSkeleton />
+            <ProgramCardSkeleton />
           </div>
         ) : displayedPrograms.length === 0 ? (
           <div
@@ -1343,8 +1349,10 @@ export const ManageGovernmentProgramsPage: React.FC = () => {
 
         {/* ─── Evaluation Applications Table ─── */}
         {loadingApps ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#64748B', fontSize: '13px' }}>
-            Loading applications queue...
+          <div className="card" role="status" aria-label="Loading applications queue..." style={{ borderRadius: '16px', overflow: 'hidden' }}>
+            <TableRowSkeleton columns={5} />
+            <TableRowSkeleton columns={5} />
+            <TableRowSkeleton columns={5} />
           </div>
         ) : filteredApplications.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '46px 20px', color: '#64748B' }}>

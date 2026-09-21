@@ -4,6 +4,7 @@ import { programApi } from '../api/program';
 import type { ProgramApplication, ApplicationStatus } from '../types/program';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { ProgramCardSkeleton } from '../components/PageSkeletons';
 
 interface UnifiedProgram {
   id: string;
@@ -729,8 +730,16 @@ export const GovernmentProgramsPage: React.FC = () => {
 
       {/* ─── Program Cards Feed ─── */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
-          Loading official government programs...
+        <div
+          className="programs-grid"
+          role="status"
+          aria-label="Loading government programs..."
+          style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '22px', margin: '20px 0' }}
+        >
+          <ProgramCardSkeleton />
+          <ProgramCardSkeleton />
+          <ProgramCardSkeleton />
+          <ProgramCardSkeleton />
         </div>
       ) : selectedCat.startsWith('My Applications') && filteredPrograms.length === 0 ? (
         <div
