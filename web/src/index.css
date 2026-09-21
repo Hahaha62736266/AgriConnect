@@ -6972,3 +6972,311 @@ details[open] .help-faq-summary::after {
 [data-theme='dark'] .register-brand-subtitle {
   color: #94A3B8 !important;
 }
+
+/* ─── Produce Marketplace Buy Modal Refinement ─── */
+.produce-buy-modal-container {
+  width: 100%;
+  max-width: 550px;
+  max-height: min(85vh, 600px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: var(--color-surface, #FFFFFF);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--color-border, #E2E8F0);
+  overflow: hidden;
+  position: relative;
+  animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes modalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.produce-buy-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  background: var(--color-surface, #FFFFFF);
+  border-bottom: 1px solid var(--color-border, #E2E8F0);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.produce-buy-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-background, #F1F5F9);
+  border: 1px solid var(--color-border, #E2E8F0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: var(--color-text-secondary, #64748B);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.produce-buy-modal-close-btn:hover {
+  background: #E2E8F0;
+  color: var(--color-text, #0F172A);
+  transform: scale(1.05);
+}
+
+.produce-buy-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 transparent;
+}
+
+.produce-buy-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.produce-buy-modal-body::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 10px;
+}
+
+.produce-buy-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.produce-buy-step-card {
+  background: var(--color-surface, #FFFFFF);
+  border: 1.5px solid var(--color-border, #E2E8F0);
+  border-radius: 14px;
+  padding: 12px 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.produce-buy-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.produce-buy-step-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--color-text, #0F172A);
+  letter-spacing: -0.15px;
+}
+
+.produce-buy-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #DCFCE7;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.produce-qty-preset-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.produce-qty-preset-chip {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--color-background, #F8FAFC);
+  border: 1px solid var(--color-border, #E2E8F0);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary, #475569);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.produce-qty-preset-chip:hover {
+  background: #DCFCE7;
+  color: #15803D;
+  border-color: #86EFAC;
+}
+
+.produce-qty-preset-chip.is-active {
+  background: #16A34A;
+  color: #FFFFFF;
+  border-color: #16A34A;
+}
+
+.produce-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.produce-choice-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1.5px solid var(--color-border, #E2E8F0);
+  background: var(--color-surface, #FFFFFF);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.produce-choice-card:hover {
+  border-color: #86EFAC;
+  transform: translateY(-1px);
+}
+
+.produce-choice-card.is-selected {
+  border-color: #16A34A !important;
+  background: #F0FDF4 !important;
+  box-shadow: 0 3px 10px -2px rgba(22, 163, 74, 0.12);
+}
+
+.produce-choice-icon-wrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  flex-shrink: 0;
+  background: #F8FAFC;
+  border: 1px solid var(--color-border, #E2E8F0);
+}
+
+.produce-choice-card.is-selected .produce-choice-icon-wrap {
+  background: #DCFCE7;
+  border-color: #BBF7D0;
+}
+
+.produce-buy-modal-footer {
+  padding: 12px 18px;
+  background: var(--color-surface, #FFFFFF);
+  border-top: 1px solid var(--color-border, #E2E8F0);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.produce-buy-footer-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.produce-buy-actions-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 10px;
+}
+
+/* Dark mode adjustments */
+[data-theme='dark'] .produce-buy-modal-container {
+  background-color: #141B15 !important;
+  border-color: #243026 !important;
+}
+
+[data-theme='dark'] .produce-buy-modal-header,
+[data-theme='dark'] .produce-buy-modal-footer {
+  background-color: #141B15 !important;
+  border-color: #243026 !important;
+}
+
+[data-theme='dark'] .produce-buy-step-card {
+  background-color: #18221B !important;
+  border-color: #243026 !important;
+}
+
+[data-theme='dark'] .produce-buy-modal-close-btn {
+  background-color: #101611 !important;
+  border-color: #2E3E31 !important;
+  color: #94A3B8 !important;
+}
+
+[data-theme='dark'] .produce-buy-modal-close-btn:hover {
+  background-color: #1F2E23 !important;
+  color: #F1F5F9 !important;
+}
+
+[data-theme='dark'] .produce-qty-preset-chip {
+  background-color: #101611 !important;
+  border-color: #2E3E31 !important;
+  color: #94A3B8 !important;
+}
+
+[data-theme='dark'] .produce-choice-card {
+  background-color: #101611 !important;
+  border-color: #243026 !important;
+}
+
+[data-theme='dark'] .produce-choice-card.is-selected {
+  background-color: #142E1B !important;
+  border-color: #16A34A !important;
+}
+
+[data-theme='dark'] .produce-choice-icon-wrap {
+  background-color: #141B15 !important;
+  border-color: #243026 !important;
+}
+
+@media (max-width: 640px) {
+  .produce-buy-modal-container {
+    max-height: 94vh;
+    border-radius: 20px 20px 0 0;
+    margin-top: auto;
+  }
+  .produce-buy-modal-header {
+    padding: 14px 18px;
+  }
+  .produce-buy-modal-body {
+    padding: 16px 18px;
+    gap: 16px;
+  }
+  .produce-choice-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .produce-buy-modal-footer {
+    padding: 14px 18px;
+  }
+  .produce-buy-actions-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
