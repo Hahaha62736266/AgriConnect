@@ -1727,7 +1727,7 @@ export const MessagesPage: React.FC = () => {
                         className="btn btn-primary"
                         style={{ width: '100%', padding: '9px 0', fontSize: '13px', fontWeight: 800 }}
                       >
-                        ⚡ Buy This Crop
+                        🛍️ Buy This Crop
                       </button>
                     )}
                     {activeConversation.context.type === 'supply' && (
@@ -1736,7 +1736,7 @@ export const MessagesPage: React.FC = () => {
                         className="btn btn-primary"
                         style={{ width: '100%', padding: '9px 0', fontSize: '13px', fontWeight: 800 }}
                       >
-                        ⚡ Order Supply Input
+                        🛍️ Order Supply Input
                       </button>
                     )}
                     {activeConversation.context.type === 'produce_order' && (

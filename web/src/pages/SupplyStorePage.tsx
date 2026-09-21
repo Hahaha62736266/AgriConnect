@@ -636,7 +636,7 @@ export const SupplyStorePage: React.FC = () => {
                           disabled={isOutOfStock}
                           className="btn btn-primary marketplace-btn-buy"
                         >
-                          <span>⚡</span>
+                          <span>🛍️</span>
                           <span> Buy</span>
                         </button>
                       </div>
@@ -1351,7 +1351,7 @@ export const SupplyStorePage: React.FC = () => {
                     className="btn btn-primary btn-large"
                     style={{ minHeight: '52px', fontSize: '15px', fontWeight: 800 }}
                   >
-                    ⚡ Buy Now
+                    🛍️ Buy Now
                   </button>
                 </div>
               </>
@@ -1491,7 +1491,7 @@ export const SupplyStorePage: React.FC = () => {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span className="badge badge-warning" style={{ fontSize: '12px' }}>
-                        ⚡ Express Buy Now
+                        🛍️ Express Buy Now
                       </span>
                       <span style={{ fontSize: '13px', color: '#525450' }}>Cart items untouched</span>
                     </div>
