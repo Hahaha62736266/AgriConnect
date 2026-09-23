@@ -390,48 +390,52 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
   // Handle LinkedIn-Style Reaction (Optimistic)
   const handleReact = async (postId: string, reaction: ReactionType) => {
     const prevPosts = posts;
+    const prevMyPosts = myPosts;
 
-    // Optimistically update post reactions
-    setPosts((prev) =>
-      prev.map((p) => {
-        if (p.id !== postId) return p;
+    const updatePostReaction = (p: Post) => {
+      if (p.id !== postId) return p;
 
-        const currentReaction = p.myReaction;
-        const counts = { ...(p.reactionCounts || {} as Record<ReactionType, number>) };
-        let total = p.totalReactions || 0;
-        let newReaction: ReactionType | undefined = reaction;
+      const currentReaction = p.myReaction;
+      const counts = { ...(p.reactionCounts || ({} as Record<ReactionType, number>)) };
+      let total = p.totalReactions || 0;
+      let newReaction: ReactionType | undefined = reaction;
 
-        if (currentReaction === reaction) {
-          // Toggle off
-          newReaction = undefined;
-          counts[reaction] = Math.max(0, (counts[reaction] || 1) - 1);
-          total = Math.max(0, total - 1);
+      if (currentReaction === reaction) {
+        // Toggle off
+        newReaction = undefined;
+        counts[reaction] = Math.max(0, (counts[reaction] || 1) - 1);
+        total = Math.max(0, total - 1);
+      } else {
+        // If replacing previous reaction
+        if (currentReaction) {
+          counts[currentReaction] = Math.max(0, (counts[currentReaction] || 1) - 1);
         } else {
-          // If replacing previous reaction
-          if (currentReaction) {
-            counts[currentReaction] = Math.max(0, (counts[currentReaction] || 1) - 1);
-          } else {
-            total += 1;
-          }
-          counts[reaction] = (counts[reaction] || 0) + 1;
+          total += 1;
         }
+        counts[reaction] = (counts[reaction] || 0) + 1;
+      }
 
-        return {
-          ...p,
-          myReaction: newReaction,
-          reactionCounts: counts,
-          totalReactions: total,
-        };
-      })
-    );
+      return {
+        ...p,
+        myReaction: newReaction,
+        reactionCounts: counts,
+        totalReactions: total,
+      };
+    };
+
+    // Optimistically update post reactions across feed and myPosts
+    setPosts((prev) => prev.map(updatePostReaction));
+    setMyPosts((prev) => prev.map(updatePostReaction));
 
     try {
       const updated = await communityApi.reactToPost(postId, reaction);
       setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
+      setMyPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)));
     } catch (err) {
       console.error('Failed to react to post:', err);
       // Rollback on failure
       setPosts(prevPosts);
+      setMyPosts(prevMyPosts);
     }
   };
 
@@ -580,6 +584,9 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
       const newComment = await communityApi.createComment(postId, { body: text });
       setInlineCommentInputs((prev) => ({ ...prev, [postId]: '' }));
       setPosts((prev) =>
+        prev.map((p) => (p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p))
+      );
+      setMyPosts((prev) =>
         prev.map((p) => (p.id === postId ? { ...p, commentsCount: (p.commentsCount || 0) + 1 } : p))
       );
       setInlineComments((prev) => ({
@@ -2059,9 +2066,11 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
               <p style={{ fontSize: '15px', color: '#64748B', margin: 0 }}>You haven't shared anything with the community yet.</p>
             </div>
           ) : (
-            myPosts.map((post) => (
-              <div
-                key={post.id}
+            myPosts.map((post) => {
+              const isCommentOpen = activeCommentPostId === post.id;
+              return (
+                <div
+                  key={post.id}
                 style={{
                   background: '#FFFFFF', borderRadius: '20px',
                   border: '1.5px solid #E2EBE6', marginBottom: '20px',
@@ -2146,17 +2155,289 @@ export const CommunityHubPage: React.FC<CommunityHubPageProps> = ({ initialTab }
                 {/* Stats row */}
                 <div style={{
                   padding: '10px 20px 14px', borderTop: '1px solid #F1F5F9',
-                  display: 'flex', gap: '16px', fontSize: '13px', color: '#64748B',
+                  display: 'flex', gap: '10px', alignItems: 'center', fontSize: '13px', color: '#64748B',
+                  flexWrap: 'wrap',
                 }}>
-                  <span>❤️ {post.totalReactions || 0} reactions</span>
-                  <span>💬 {post.commentsCount || 0} comments</span>
+                  <button
+                    type="button"
+                    onClick={() => setActiveReactionModalPost(post)}
+                    title="View reaction breakdown"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: 'transparent',
+                      border: 'none',
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#64748B',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#FFF1F2';
+                      e.currentTarget.style.color = '#BE123C';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.color = '#64748B';
+                    }}
+                  >
+                    <span>❤️</span>
+                    <span>{post.totalReactions || 0} {post.totalReactions === 1 ? 'reaction' : 'reactions'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleClickExistingComments(post.id)}
+                    title="View and reply to comments"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      background: isCommentOpen ? '#EFF6FF' : 'transparent',
+                      border: 'none',
+                      padding: '5px 10px',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: isCommentOpen ? '#2563EB' : '#64748B',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isCommentOpen) {
+                        e.currentTarget.style.backgroundColor = '#EFF6FF';
+                        e.currentTarget.style.color = '#2563EB';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isCommentOpen) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#64748B';
+                      }
+                    }}
+                  >
+                    <span>💬</span>
+                    <span>{post.commentsCount || 0} {post.commentsCount === 1 ? 'comment' : 'comments'}</span>
+                  </button>
+
                   <span style={{
                     marginLeft: 'auto', fontSize: '12px',
                     background: '#F1F5F9', borderRadius: '8px', padding: '3px 10px',
                   }}>{getCategoryLabel(post.category)}</span>
                 </div>
+
+                {/* Inline Comment Thread & Input Box on My Posts */}
+                {isCommentOpen && (
+                  <div
+                    style={{
+                      padding: '16px 20px',
+                      borderTop: '1px solid #F1F5F9',
+                      backgroundColor: '#FAFCFA',
+                      borderBottomLeftRadius: '20px',
+                      borderBottomRightRadius: '20px',
+                    }}
+                  >
+                    {/* Inline Comments from Others */}
+                    {loadingInlineComments[post.id] ? (
+                      <div style={{ padding: '12px 0', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                        Loading comments...
+                      </div>
+                    ) : inlineComments[post.id] && inlineComments[post.id].length > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '14px' }}>
+                        {inlineComments[post.id].map((c) => {
+                          const cBadge = getRoleBadge(c.authorRole);
+                          return (
+                            <div key={c.id} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
+                              <div
+                                style={{
+                                  width: '34px',
+                                  height: '34px',
+                                  borderRadius: '50%',
+                                  overflow: 'hidden',
+                                  backgroundColor: c.authorRole === 'lgu_staff' ? '#0D9488' : '#0E4A27',
+                                  color: '#FFFFFF',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontWeight: 800,
+                                  fontSize: '13px',
+                                  flexShrink: 0,
+                                  position: 'relative',
+                                }}
+                              >
+                                <span>{c.authorName ? c.authorName.charAt(0).toUpperCase() : 'U'}</span>
+                                {c.authorPhotoUrl && (
+                                  <img
+                                    src={getImageUrl(c.authorPhotoUrl)}
+                                    alt={c.authorName}
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                    }}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 0,
+                                      left: 0,
+                                      width: '100%',
+                                      height: '100%',
+                                      objectFit: 'cover',
+                                    }}
+                                  />
+                                )}
+                              </div>
+                              <div
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: '#FFFFFF',
+                                  border: '1px solid #E2EBE6',
+                                  borderRadius: '16px',
+                                  padding: '9px 14px',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
+                                    {c.authorName}
+                                  </span>
+                                  <span
+                                    style={{
+                                      fontSize: '10px',
+                                      fontWeight: 800,
+                                      color: cBadge.color,
+                                      backgroundColor: cBadge.bg,
+                                      padding: '1px 6px',
+                                      borderRadius: '8px',
+                                    }}
+                                  >
+                                    {cBadge.label}
+                                  </span>
+                                  <span style={{ fontSize: '11px', color: '#94A3B8', marginLeft: 'auto' }}>
+                                    {formatTimeAgo(c.createdAt)}
+                                  </span>
+                                </div>
+                                <p style={{ margin: 0, fontSize: '13px', color: '#334155', whiteSpace: 'pre-wrap' }}>
+                                  {c.body}
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div style={{ padding: '8px 0 14px 0', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
+                        No comments yet. Be the first to reply to your post!
+                      </div>
+                    )}
+
+                    {/* Comment Input Composer */}
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <div
+                        style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          overflow: 'hidden',
+                          backgroundColor: '#0E4A27',
+                          color: '#FFFFFF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 800,
+                          fontSize: '14px',
+                          flexShrink: 0,
+                          position: 'relative',
+                        }}
+                      >
+                        <span>{user?.firstName ? user.firstName.charAt(0).toUpperCase() : '👨‍🌾'}</span>
+                        {user?.photoUrl && (
+                          <img
+                            src={getImageUrl(user.photoUrl)}
+                            alt={user.firstName}
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div style={{ flex: 1, display: 'flex', gap: '8px' }}>
+                        <input
+                          id={`comment-input-${post.id}`}
+                          type="text"
+                          placeholder={`Reply as ${user?.firstName || 'farmer'}...`}
+                          value={inlineCommentInputs[post.id] || ''}
+                          onChange={(e) =>
+                            setInlineCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))
+                          }
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleInlineCommentSubmit(post.id);
+                            }
+                          }}
+                          style={{
+                            flex: 1,
+                            padding: '9px 16px',
+                            borderRadius: '20px',
+                            border: '1px solid #CBD5E1',
+                            background: '#FFFFFF',
+                            fontSize: '14px',
+                            color: '#1E293B',
+                            outline: 'none',
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleInlineCommentSubmit(post.id)}
+                          disabled={submittingComment[post.id] || !inlineCommentInputs[post.id]?.trim()}
+                          className="btn btn-primary"
+                          style={{
+                            padding: '8px 18px',
+                            borderRadius: '18px',
+                            fontSize: '13px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {submittingComment[post.id] ? 'Posting...' : 'Reply'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* View Full Discussion Thread Link */}
+                    <div style={{ textAlign: 'right', marginTop: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/community/posts/${post.id}#comments`)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          color: '#15803D',
+                          cursor: 'pointer',
+                          padding: 0,
+                          textDecoration: 'underline',
+                        }}
+                      >
+                        View full discussion thread →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            ))
+            );
+          })
           )}
         </div>
       )}
