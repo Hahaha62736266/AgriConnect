@@ -136,7 +136,34 @@ export const LoginPage: React.FC = () => {
         {/* Middle Narrative & 3 Feature Points matching reference */}
         <div className="login-hero-content" style={{ marginTop: 'clamp(14px, 2.5vh, 24px)', marginBottom: 'clamp(14px, 2.5vh, 24px)' }}>
           <div className="login-hero-eyebrow">
-            <span style={{ fontSize: '13px', lineHeight: 1 }}>🇵🇭</span>
+            <svg
+              width="16"
+              height="11"
+              viewBox="0 0 24 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              style={{
+                borderRadius: '2px',
+                flexShrink: 0,
+                boxShadow: '0 0 0 0.5px rgba(255, 255, 255, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3)',
+                display: 'block',
+              }}
+              aria-label="Philippine Flag"
+            >
+              <rect width="24" height="8" fill="#0038A8" />
+              <rect y="8" width="24" height="8" fill="#CE1126" />
+              <polygon points="0,0 12.5,8 0,16" fill="#FFFFFF" />
+              <circle cx="4.2" cy="8" r="1.8" fill="#FCD116" />
+              <path
+                d="M4.2 5.2v5.6M1.4 8h5.6M2.2 6l4 4M2.2 10l4-4"
+                stroke="#FCD116"
+                strokeWidth="0.5"
+                strokeLinecap="round"
+              />
+              <circle cx="1.6" cy="2.2" r="0.65" fill="#FCD116" />
+              <circle cx="1.6" cy="13.8" r="0.65" fill="#FCD116" />
+              <circle cx="10" cy="8" r="0.65" fill="#FCD116" />
+            </svg>
             <span>PHILIPPINE AGRICULTURAL PLATFORM</span>
           </div>
 
