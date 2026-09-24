@@ -5,7 +5,8 @@ import (
 
 	"github.com/agriconnect/backend/internal/models"
 )
-//Test
+
+// Test2
 // RequireRole returns a middleware that restricts access to the specified roles.
 // If the authenticated user's role is not in the allowed list, it returns 403 Forbidden.
 func RequireRole(roles ...models.Role) func(http.Handler) http.Handler {
